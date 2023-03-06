@@ -88,7 +88,6 @@
 #include "application.h"
 #include "database.h"
 #include "player.h"
-#include "appearance.h"
 #include "filesystemmusicstorage.h"
 #include "deletefiles.h"
 #ifdef Q_OS_MACOS
@@ -294,13 +293,13 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
       }),
       smartplaylists_view_(new SmartPlaylistsViewContainer(app, this)),
 #ifdef HAVE_SUBSONIC
-      subsonic_view_(new InternetSongsView(app_, app->internet_services()->ServiceBySource(Song::Source_Subsonic), SubsonicSettingsPage::kSettingsGroup, SettingsDialog::Page_Subsonic, this)),
+      subsonic_view_(new InternetSongsView(app_, app->internet_services()->ServiceBySource(Song::Source::Subsonic), SubsonicSettingsPage::kSettingsGroup, SettingsDialog::Page::Subsonic, this)),
 #endif
 #ifdef HAVE_TIDAL
-      tidal_view_(new InternetTabsView(app_, app->internet_services()->ServiceBySource(Song::Source_Tidal), TidalSettingsPage::kSettingsGroup, SettingsDialog::Page_Tidal, this)),
+      tidal_view_(new InternetTabsView(app_, app->internet_services()->ServiceBySource(Song::Source::Tidal), TidalSettingsPage::kSettingsGroup, SettingsDialog::Page::Tidal, this)),
 #endif
 #ifdef HAVE_QOBUZ
-      qobuz_view_(new InternetTabsView(app_, app->internet_services()->ServiceBySource(Song::Source_Qobuz), QobuzSettingsPage::kSettingsGroup, SettingsDialog::Page_Qobuz, this)),
+      qobuz_view_(new InternetTabsView(app_, app->internet_services()->ServiceBySource(Song::Source::Qobuz), QobuzSettingsPage::kSettingsGroup, SettingsDialog::Page::Qobuz, this)),
 #endif
       radio_view_(new RadioViewContainer(this)),
       lastfm_import_dialog_(new LastFMImportDialog(app_->lastfm_import(), this)),
@@ -332,10 +331,10 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
       track_slider_timer_(new QTimer(this)),
       keep_running_(false),
       playing_widget_(true),
-      doubleclick_addmode_(BehaviourSettingsPage::AddBehaviour_Append),
-      doubleclick_playmode_(BehaviourSettingsPage::PlayBehaviour_Never),
-      doubleclick_playlist_addmode_(BehaviourSettingsPage::PlaylistAddBehaviour_Play),
-      menu_playmode_(BehaviourSettingsPage::PlayBehaviour_Never),
+      doubleclick_addmode_(BehaviourSettingsPage::AddBehaviour::Append),
+      doubleclick_playmode_(BehaviourSettingsPage::PlayBehaviour::Never),
+      doubleclick_playlist_addmode_(BehaviourSettingsPage::PlaylistAddBehaviour::Play),
+      menu_playmode_(BehaviourSettingsPage::PlayBehaviour::Never),
       initialized_(false),
       was_maximized_(true),
       was_minimized_(false),
@@ -365,24 +364,24 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
   StyleHelper::setBaseColor(palette().color(QPalette::Highlight).darker());
 
   // Add tabs to the fancy tab widget
-  ui_->tabs->AddTab(context_view_, "context", IconLoader::Load("strawberry", false), tr("Context"));
-  ui_->tabs->AddTab(collection_view_, "collection", IconLoader::Load("library-music", false), tr("Collection"));
-  ui_->tabs->AddTab(queue_view_, "queue", IconLoader::Load("footsteps", false), tr("Queue"));
-  ui_->tabs->AddTab(playlist_list_, "playlists", IconLoader::Load("view-media-playlist", false), tr("Playlists"));
-  ui_->tabs->AddTab(smartplaylists_view_, "smartplaylists", IconLoader::Load("view-media-playlist", false), tr("Smart playlists"));
-  ui_->tabs->AddTab(file_view_, "files", IconLoader::Load("document-open", false), tr("Files"));
-  ui_->tabs->AddTab(radio_view_, "radios", IconLoader::Load("radio", false), tr("Radios"));
+  ui_->tabs->AddTab(context_view_, "context", IconLoader::Load("strawberry", true, 0, 32), tr("Context"));
+  ui_->tabs->AddTab(collection_view_, "collection", IconLoader::Load("library-music", true, 0, 32), tr("Collection"));
+  ui_->tabs->AddTab(queue_view_, "queue", IconLoader::Load("footsteps", true, 0, 32), tr("Queue"));
+  ui_->tabs->AddTab(playlist_list_, "playlists", IconLoader::Load("view-media-playlist", true, 0, 32), tr("Playlists"));
+  ui_->tabs->AddTab(smartplaylists_view_, "smartplaylists", IconLoader::Load("view-media-playlist", true, 0, 32), tr("Smart playlists"));
+  ui_->tabs->AddTab(file_view_, "files", IconLoader::Load("document-open", true, 0, 32), tr("Files"));
+  ui_->tabs->AddTab(radio_view_, "radios", IconLoader::Load("radio", true, 0, 32), tr("Radios"));
 #ifndef Q_OS_WIN
-  ui_->tabs->AddTab(device_view_, "devices", IconLoader::Load("device", false), tr("Devices"));
+  ui_->tabs->AddTab(device_view_, "devices", IconLoader::Load("device", true, 0, 32), tr("Devices"));
 #endif
 #ifdef HAVE_SUBSONIC
-  ui_->tabs->AddTab(subsonic_view_, "subsonic", IconLoader::Load("subsonic", false), tr("Subsonic"));
+  ui_->tabs->AddTab(subsonic_view_, "subsonic", IconLoader::Load("subsonic", true, 0, 32), tr("Subsonic"));
 #endif
 #ifdef HAVE_TIDAL
-  ui_->tabs->AddTab(tidal_view_, "tidal", IconLoader::Load("tidal", false), tr("Tidal"));
+  ui_->tabs->AddTab(tidal_view_, "tidal", IconLoader::Load("tidal", true, 0, 32), tr("Tidal"));
 #endif
 #ifdef HAVE_QOBUZ
-  ui_->tabs->AddTab(qobuz_view_, "qobuz", IconLoader::Load("qobuz", false), tr("Qobuz"));
+  ui_->tabs->AddTab(qobuz_view_, "qobuz", IconLoader::Load("qobuz", true, 0, 32), tr("Qobuz"));
 #endif
 
   // Add the playing widget to the fancy tab widget
@@ -676,7 +675,7 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
   collection_show_untagged_->setCheckable(true);
   collection_show_all_->setChecked(true);
 
-  QObject::connect(collection_view_group, &QActionGroup::triggered, this, &MainWindow::ChangeCollectionQueryMode);
+  QObject::connect(collection_view_group, &QActionGroup::triggered, this, &MainWindow::ChangeCollectionFilterMode);
 
   QAction *collection_config_action = new QAction(IconLoader::Load("configure"), tr("Configure collection..."), this);
   QObject::connect(collection_config_action, &QAction::triggered, this, &MainWindow::ShowCollectionConfig);
@@ -701,7 +700,7 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
   QObject::connect(tidal_view_->albums_collection_view(), &InternetCollectionView::AddToPlaylistSignal, this, &MainWindow::AddToPlaylist);
   QObject::connect(tidal_view_->songs_collection_view(), &InternetCollectionView::AddToPlaylistSignal, this, &MainWindow::AddToPlaylist);
   QObject::connect(tidal_view_->search_view(), &InternetSearchView::AddToPlaylist, this, &MainWindow::AddToPlaylist);
-  if (TidalService *tidalservice = qobject_cast<TidalService*>(app_->internet_services()->ServiceBySource(Song::Source_Tidal))) {
+  if (TidalService *tidalservice = qobject_cast<TidalService*>(app_->internet_services()->ServiceBySource(Song::Source::Tidal))) {
     QObject::connect(this, &MainWindow::AuthorizationUrlReceived, tidalservice, &TidalService::AuthorizationUrlReceived);
   }
 #endif
@@ -874,11 +873,6 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
   QObject::connect(ui_->action_console, &QAction::triggered, this, &MainWindow::ShowConsole);
   PlayingWidgetPositionChanged(ui_->widget_playing->show_above_status_bar());
 
-  // Load theme
-  // This is tricky: we need to save the default/system palette now,
-  // before loading user preferred theme (which will override it), to be able to restore it later
-  const_cast<QPalette&>(Appearance::kDefaultPalette) = QApplication::palette();
-  app_->appearance()->LoadUserTheme();
   StyleSheetLoader *css_loader = new StyleSheetLoader(this);
   css_loader->SetStyleSheet(this, ":/style/strawberry.css");
 
@@ -926,10 +920,9 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
   }
 
   ui_->tabs->setCurrentIndex(settings_.value("current_tab", 1).toInt());
-  FancyTabWidget::Mode default_mode = FancyTabWidget::Mode_LargeSidebar;
-  int tab_mode_int = settings_.value("tab_mode", default_mode).toInt();
-  FancyTabWidget::Mode tab_mode = static_cast<FancyTabWidget::Mode>(tab_mode_int);
-  if (tab_mode == FancyTabWidget::Mode_None) tab_mode = default_mode;
+  FancyTabWidget::Mode default_mode = FancyTabWidget::Mode::LargeSidebar;
+  FancyTabWidget::Mode tab_mode = static_cast<FancyTabWidget::Mode>(settings_.value("tab_mode", static_cast<int>(default_mode)).toInt());
+  if (tab_mode == FancyTabWidget::Mode::None) tab_mode = default_mode;
   ui_->tabs->SetMode(tab_mode);
 
   TabSwitched();
@@ -952,26 +945,26 @@ MainWindow::MainWindow(Application *app, std::shared_ptr<SystemTrayIcon> tray_ic
 #else
   QSettings s;
   s.beginGroup(BehaviourSettingsPage::kSettingsGroup);
-  BehaviourSettingsPage::StartupBehaviour behaviour = BehaviourSettingsPage::StartupBehaviour(s.value("startupbehaviour", BehaviourSettingsPage::Startup_Remember).toInt());
+  const BehaviourSettingsPage::StartupBehaviour startupbehaviour = static_cast<BehaviourSettingsPage::StartupBehaviour>(s.value("startupbehaviour", static_cast<int>(BehaviourSettingsPage::StartupBehaviour::Remember)).toInt());
   s.endGroup();
-  switch (behaviour) {
-    case BehaviourSettingsPage::Startup_Show:
+  switch (startupbehaviour) {
+    case BehaviourSettingsPage::StartupBehaviour::Show:
       show();
       break;
-    case BehaviourSettingsPage::Startup_ShowMaximized:
+    case BehaviourSettingsPage::StartupBehaviour::ShowMaximized:
       setWindowState(windowState() | Qt::WindowMaximized);
       show();
       break;
-    case BehaviourSettingsPage::Startup_ShowMinimized:
+    case BehaviourSettingsPage::StartupBehaviour::ShowMinimized:
       setWindowState(windowState() | Qt::WindowMinimized);
       show();
       break;
-    case BehaviourSettingsPage::Startup_Hide:
+    case BehaviourSettingsPage::StartupBehaviour::Hide:
       if (tray_icon_->IsSystemTrayAvailable() && tray_icon_->isVisible()) {
         break;
       }
       [[fallthrough]];
-    case BehaviourSettingsPage::Startup_Remember:
+    case BehaviourSettingsPage::StartupBehaviour::Remember:
     default: {
 
       was_maximized_ = settings_.value("maximized", true).toBool();
@@ -1073,10 +1066,10 @@ void MainWindow::ReloadSettings() {
   playing_widget_ = s.value("playing_widget", true).toBool();
   bool trayicon_progress = s.value("trayicon_progress", false).toBool();
   if (playing_widget_ != ui_->widget_playing->IsEnabled()) TabSwitched();
-  doubleclick_addmode_ = BehaviourSettingsPage::AddBehaviour(s.value("doubleclick_addmode", BehaviourSettingsPage::AddBehaviour_Append).toInt());
-  doubleclick_playmode_ = BehaviourSettingsPage::PlayBehaviour(s.value("doubleclick_playmode", BehaviourSettingsPage::PlayBehaviour_Never).toInt());
-  doubleclick_playlist_addmode_ = BehaviourSettingsPage::PlaylistAddBehaviour(s.value("doubleclick_playlist_addmode", BehaviourSettingsPage::PlayBehaviour_Never).toInt());
-  menu_playmode_ = BehaviourSettingsPage::PlayBehaviour(s.value("menu_playmode", BehaviourSettingsPage::PlayBehaviour_Never).toInt());
+  doubleclick_addmode_ = static_cast<BehaviourSettingsPage::AddBehaviour>(s.value("doubleclick_addmode", static_cast<int>(BehaviourSettingsPage::AddBehaviour::Append)).toInt());
+  doubleclick_playmode_ = static_cast<BehaviourSettingsPage::PlayBehaviour>(s.value("doubleclick_playmode", static_cast<int>(BehaviourSettingsPage::PlayBehaviour::Never)).toInt());
+  doubleclick_playlist_addmode_ = static_cast<BehaviourSettingsPage::PlaylistAddBehaviour>(s.value("doubleclick_playlist_addmode", static_cast<int>(BehaviourSettingsPage::PlayBehaviour::Never)).toInt());
+  menu_playmode_ = static_cast<BehaviourSettingsPage::PlayBehaviour>(s.value("menu_playmode", static_cast<int>(BehaviourSettingsPage::PlayBehaviour::Never)).toInt());
   s.endGroup();
 
   s.beginGroup(AppearanceSettingsPage::kSettingsGroup);
@@ -1230,7 +1223,7 @@ void MainWindow::Exit() {
     if (app_->player()->engine()->is_fadeout_enabled()) {
       // To shut down the application when fadeout will be finished
       QObject::connect(app_->player()->engine(), &EngineBase::FadeoutFinishedSignal, this, &MainWindow::DoExit);
-      if (app_->player()->GetState() == Engine::Playing) {
+      if (app_->player()->GetState() == Engine::State::Playing) {
         app_->player()->Stop();
         ignore_close_ = true;
         close();
@@ -1328,8 +1321,8 @@ void MainWindow::MediaPlaying() {
 
   PlaylistItemPtr item(app_->player()->GetCurrentItem());
   if (item) {
-    enable_play_pause = !(item->options() & PlaylistItem::PauseDisabled);
-    can_seek = !(item->options() & PlaylistItem::SeekDisabled);
+    enable_play_pause = !(item->options() & PlaylistItem::Option::PauseDisabled);
+    can_seek = !(item->options() & PlaylistItem::Option::SeekDisabled);
   }
   ui_->action_play_pause->setEnabled(enable_play_pause);
   ui_->track_slider->SetCanSeek(can_seek);
@@ -1443,8 +1436,8 @@ void MainWindow::SavePlaybackStatus() {
   QSettings s;
 
   s.beginGroup(Player::kSettingsGroup);
-  s.setValue("playback_state", app_->player()->GetState());
-  if (app_->player()->GetState() == Engine::Playing || app_->player()->GetState() == Engine::Paused) {
+  s.setValue("playback_state", static_cast<int>(app_->player()->GetState()));
+  if (app_->player()->GetState() == Engine::State::Playing || app_->player()->GetState() == Engine::State::Paused) {
     s.setValue("playback_playlist", app_->playlist_manager()->active()->id());
     s.setValue("playback_position", app_->player()->engine()->position_nanosec() / kNsecPerSec);
   }
@@ -1462,14 +1455,14 @@ void MainWindow::LoadPlaybackStatus() {
   QSettings s;
 
   s.beginGroup(BehaviourSettingsPage::kSettingsGroup);
-  bool resume_playback = s.value("resumeplayback", false).toBool();
+  const bool resume_playback = s.value("resumeplayback", false).toBool();
   s.endGroup();
 
   s.beginGroup(Player::kSettingsGroup);
-  Engine::State playback_state = static_cast<Engine::State>(s.value("playback_state", Engine::Empty).toInt());
+  const Engine::State playback_state = static_cast<Engine::State>(s.value("playback_state", static_cast<int>(Engine::State::Empty)).toInt());
   s.endGroup();
 
-  if (resume_playback && playback_state != Engine::Empty && playback_state != Engine::Idle) {
+  if (resume_playback && playback_state != Engine::State::Empty && playback_state != Engine::State::Idle) {
     std::shared_ptr<QMetaObject::Connection> connection = std::make_shared<QMetaObject::Connection>();
     *connection = QObject::connect(app_->playlist_manager(), &PlaylistManager::AllPlaylistsLoaded, this, [this, connection]() {
       QObject::disconnect(*connection);
@@ -1485,7 +1478,7 @@ void MainWindow::ResumePlayback() {
 
   QSettings s;
   s.beginGroup(Player::kSettingsGroup);
-  Engine::State playback_state = static_cast<Engine::State>(s.value("playback_state", Engine::Empty).toInt());
+  const Engine::State playback_state = static_cast<Engine::State>(s.value("playback_state", static_cast<int>(Engine::State::Empty)).toInt());
   int playback_playlist = s.value("playback_playlist", -1).toInt();
   int playback_position = s.value("playback_position", 0).toInt();
   s.endGroup();
@@ -1493,7 +1486,7 @@ void MainWindow::ResumePlayback() {
   if (playback_playlist == app_->playlist_manager()->current()->id()) {
     // Set active to current to resume playback on correct playlist.
     app_->playlist_manager()->SetActiveToCurrent();
-    if (playback_state == Engine::Paused) {
+    if (playback_state == Engine::State::Paused) {
       std::shared_ptr<QMetaObject::Connection> connection = std::make_shared<QMetaObject::Connection>();
       *connection = QObject::connect(app_->player(), &Player::Playing, app_->player(), [this, connection]() {
         QObject::disconnect(*connection);
@@ -1505,7 +1498,7 @@ void MainWindow::ResumePlayback() {
 
   // Reset saved playback status so we don't resume again from the same position.
   s.beginGroup(Player::kSettingsGroup);
-  s.setValue("playback_state", Engine::Empty);
+  s.setValue("playback_state", static_cast<int>(Engine::State::Empty));
   s.setValue("playback_playlist", -1);
   s.setValue("playback_position", 0);
   s.endGroup();
@@ -1523,7 +1516,7 @@ void MainWindow::PlayIndex(const QModelIndex &idx, Playlist::AutoScroll autoscro
   }
 
   app_->playlist_manager()->SetActiveToCurrent();
-  app_->player()->PlayAt(row, 0, Engine::Manual, autoscroll, true);
+  app_->player()->PlayAt(row, 0, Engine::TrackChangeType::Manual, autoscroll, true);
 
 }
 
@@ -1538,16 +1531,16 @@ void MainWindow::PlaylistDoubleClick(const QModelIndex &idx) {
   }
 
   switch (doubleclick_playlist_addmode_) {
-    case BehaviourSettingsPage::PlaylistAddBehaviour_Play:
+    case BehaviourSettingsPage::PlaylistAddBehaviour::Play:
       app_->playlist_manager()->SetActiveToCurrent();
-      app_->player()->PlayAt(source_idx.row(), 0, Engine::Manual, Playlist::AutoScroll_Never, true, true);
+      app_->player()->PlayAt(source_idx.row(), 0, Engine::TrackChangeType::Manual, Playlist::AutoScroll::Never, true, true);
       break;
 
-    case BehaviourSettingsPage::PlaylistAddBehaviour_Enqueue:
+    case BehaviourSettingsPage::PlaylistAddBehaviour::Enqueue:
       app_->playlist_manager()->current()->queue()->ToggleTracks(QModelIndexList() << source_idx);
-      if (app_->player()->GetState() != Engine::Playing) {
+      if (app_->player()->GetState() != Engine::State::Playing) {
         app_->playlist_manager()->SetActiveToCurrent();
-        app_->player()->PlayAt(app_->playlist_manager()->current()->queue()->TakeNext(), 0, Engine::Manual, Playlist::AutoScroll_Never, true);
+        app_->player()->PlayAt(app_->playlist_manager()->current()->queue()->TakeNext(), 0, Engine::TrackChangeType::Manual, Playlist::AutoScroll::Never, true);
       }
       break;
   }
@@ -1700,22 +1693,22 @@ void MainWindow::UpdateTrackSliderPosition() {
 void MainWindow::ApplyAddBehaviour(const BehaviourSettingsPage::AddBehaviour b, MimeData *mimedata) {
 
   switch (b) {
-    case BehaviourSettingsPage::AddBehaviour_Append:
+    case BehaviourSettingsPage::AddBehaviour::Append:
       mimedata->clear_first_ = false;
       mimedata->enqueue_now_ = false;
       break;
 
-    case BehaviourSettingsPage::AddBehaviour_Enqueue:
+    case BehaviourSettingsPage::AddBehaviour::Enqueue:
       mimedata->clear_first_ = false;
       mimedata->enqueue_now_ = true;
       break;
 
-    case BehaviourSettingsPage::AddBehaviour_Load:
+    case BehaviourSettingsPage::AddBehaviour::Load:
       mimedata->clear_first_ = true;
       mimedata->enqueue_now_ = false;
       break;
 
-    case BehaviourSettingsPage::AddBehaviour_OpenInNew:
+    case BehaviourSettingsPage::AddBehaviour::OpenInNew:
       mimedata->open_in_new_playlist_ = true;
       break;
   }
@@ -1724,16 +1717,16 @@ void MainWindow::ApplyAddBehaviour(const BehaviourSettingsPage::AddBehaviour b, 
 void MainWindow::ApplyPlayBehaviour(const BehaviourSettingsPage::PlayBehaviour b, MimeData *mimedata) const {
 
   switch (b) {
-    case BehaviourSettingsPage::PlayBehaviour_Always:
+    case BehaviourSettingsPage::PlayBehaviour::Always:
       mimedata->play_now_ = true;
       break;
 
-    case BehaviourSettingsPage::PlayBehaviour_Never:
+    case BehaviourSettingsPage::PlayBehaviour::Never:
       mimedata->play_now_ = false;
       break;
 
-    case BehaviourSettingsPage::PlayBehaviour_IfStopped:
-      mimedata->play_now_ = !(app_->player()->GetState() == Engine::Playing);
+    case BehaviourSettingsPage::PlayBehaviour::IfStopped:
+      mimedata->play_now_ = !(app_->player()->GetState() == Engine::State::Playing);
       break;
   }
 }
@@ -1768,7 +1761,7 @@ void MainWindow::AddToPlaylist(QMimeData *q_mimedata) {
 void MainWindow::AddToPlaylistFromAction(QAction *action) {
 
   const int destination = action->data().toInt();
-  PlaylistItemList items;
+  PlaylistItemPtrList items;
   SongList songs;
 
   // Get the selected playlist items
@@ -1819,7 +1812,7 @@ void MainWindow::PlaylistRightClick(const QPoint global_pos, const QModelIndex &
   playlist_menu_index_ = source_index;
 
   // Is this song currently playing?
-  if (app_->playlist_manager()->current()->current_row() == source_index.row() && app_->player()->GetState() == Engine::Playing) {
+  if (app_->playlist_manager()->current()->current_row() == source_index.row() && app_->player()->GetState() == Engine::State::Playing) {
     playlist_play_pause_->setText(tr("Pause"));
     playlist_play_pause_->setIcon(IconLoader::Load("media-playback-pause"));
   }
@@ -1830,7 +1823,7 @@ void MainWindow::PlaylistRightClick(const QPoint global_pos, const QModelIndex &
 
   // Are we allowed to pause?
   if (source_index.isValid()) {
-    playlist_play_pause_->setEnabled(app_->playlist_manager()->current()->current_row() != source_index.row() || !(app_->playlist_manager()->current()->item_at(source_index.row())->options() & PlaylistItem::PauseDisabled));
+    playlist_play_pause_->setEnabled(app_->playlist_manager()->current()->current_row() != source_index.row() || !(app_->playlist_manager()->current()->item_at(source_index.row())->options() & PlaylistItem::Option::PauseDisabled));
   }
   else {
     playlist_play_pause_->setEnabled(false);
@@ -1859,7 +1852,7 @@ void MainWindow::PlaylistRightClick(const QPoint global_pos, const QModelIndex &
     if (!item) continue;
 
     if (item->Metadata().url().isLocalFile()) ++local_songs;
-    if (item->Metadata().source() == Song::Source_Collection) ++collection_songs;
+    if (item->Metadata().source() == Song::Source::Collection) ++collection_songs;
 
     if (item->Metadata().has_cue()) {
       cue_selected = true;
@@ -2039,10 +2032,10 @@ void MainWindow::PlaylistRightClick(const QPoint global_pos, const QModelIndex &
 void MainWindow::PlaylistPlay() {
 
   if (app_->playlist_manager()->current()->current_row() == playlist_menu_index_.row()) {
-    app_->player()->PlayPause(Playlist::AutoScroll_Never);
+    app_->player()->PlayPause(0, Playlist::AutoScroll::Never);
   }
   else {
-    PlayIndex(playlist_menu_index_, Playlist::AutoScroll_Never);
+    PlayIndex(playlist_menu_index_, Playlist::AutoScroll::Never);
   }
 
 }
@@ -2063,7 +2056,7 @@ void MainWindow::RescanSongs() {
     if (item->IsLocalCollectionItem()) {
       songs << item->Metadata();
     }
-    else if (item->Metadata().source() == Song::Source_LocalFile) {
+    else if (item->Metadata().source() == Song::Source::LocalFile) {
       QPersistentModelIndex persistent_index = QPersistentModelIndex(source_index);
       app_->playlist_manager()->current()->ItemReload(persistent_index, item->OriginalMetadata(), false);
     }
@@ -2078,7 +2071,7 @@ void MainWindow::RescanSongs() {
 void MainWindow::EditTracks() {
 
   SongList songs;
-  PlaylistItemList items;
+  PlaylistItemPtrList items;
 
   for (const QModelIndex &proxy_index : ui_->playlist->view()->selectionModel()->selectedRows()) {
     const QModelIndex source_index = app_->playlist_manager()->current()->filter()->mapToSource(proxy_index);
@@ -2170,7 +2163,7 @@ void MainWindow::SelectionSetValue() {
       QPersistentModelIndex persistent_index = QPersistentModelIndex(source_index);
       QObject::connect(reply, &TagReaderReply::Finished, this, [this, reply, persistent_index]() { SongSaveComplete(reply, persistent_index); }, Qt::QueuedConnection);
     }
-    else if (song.source() == Song::Source_Stream) {
+    else if (song.source() == Song::Source::Stream) {
       app_->playlist_manager()->current()->setData(source_index, column_value, 0);
     }
   }
@@ -2205,7 +2198,7 @@ void MainWindow::AddFile() {
   PlaylistParser parser(app_->collection_backend());
 
   // Show dialog
-  QStringList file_names = QFileDialog::getOpenFileNames(this, tr("Add file"), directory, QString("%1 (%2);;%3;;%4").arg(tr("Music"), FileView::kFileFilter, parser.filters(PlaylistParser::Type_Load), tr(kAllFilesFilterSpec)));
+  QStringList file_names = QFileDialog::getOpenFileNames(this, tr("Add file"), directory, QString("%1 (%2);;%3;;%4").arg(tr("Music"), FileView::kFileFilter, parser.filters(PlaylistParser::Type::Load), tr(kAllFilesFilterSpec)));
 
   if (file_names.isEmpty()) return;
 
@@ -2341,30 +2334,30 @@ void MainWindow::CommandlineOptionsReceived(const quint32 instanceId, const QByt
 void MainWindow::CommandlineOptionsReceived(const CommandlineOptions &options) {
 
   switch (options.player_action()) {
-    case CommandlineOptions::Player_Play:
+    case CommandlineOptions::PlayerAction::Play:
       if (options.urls().empty()) {
         app_->player()->Play();
       }
       break;
-    case CommandlineOptions::Player_PlayPause:
-      app_->player()->PlayPause(Playlist::AutoScroll_Maybe);
+    case CommandlineOptions::PlayerAction::PlayPause:
+      app_->player()->PlayPause(0, Playlist::AutoScroll::Maybe);
       break;
-    case CommandlineOptions::Player_Pause:
+    case CommandlineOptions::PlayerAction::Pause:
       app_->player()->Pause();
       break;
-    case CommandlineOptions::Player_Stop:
+    case CommandlineOptions::PlayerAction::Stop:
       app_->player()->Stop();
       break;
-    case CommandlineOptions::Player_StopAfterCurrent:
+    case CommandlineOptions::PlayerAction::StopAfterCurrent:
       app_->player()->StopAfterCurrent();
       break;
-    case CommandlineOptions::Player_Previous:
+    case CommandlineOptions::PlayerAction::Previous:
       app_->player()->Previous();
       break;
-    case CommandlineOptions::Player_Next:
+    case CommandlineOptions::PlayerAction::Next:
       app_->player()->Next();
       break;
-    case CommandlineOptions::Player_PlayPlaylist:
+    case CommandlineOptions::PlayerAction::PlayPlaylist:
       if (options.playlist_name().isEmpty()) {
         qLog(Error) << "ERROR: playlist name missing";
       }
@@ -2372,11 +2365,11 @@ void MainWindow::CommandlineOptionsReceived(const CommandlineOptions &options) {
         app_->player()->PlayPlaylist(options.playlist_name());
       }
       break;
-    case CommandlineOptions::Player_RestartOrPrevious:
+    case CommandlineOptions::PlayerAction::RestartOrPrevious:
       app_->player()->RestartOrPrevious();
       break;
 
-    case CommandlineOptions::Player_ResizeWindow:{
+    case CommandlineOptions::PlayerAction::ResizeWindow:{
       if (options.window_size().contains('x') && options.window_size().length() >= 4) {
         QString str_w = options.window_size().left(options.window_size().indexOf('x'));
         QString str_h = options.window_size().right(options.window_size().length() - options.window_size().indexOf('x') - 1);
@@ -2413,7 +2406,7 @@ void MainWindow::CommandlineOptionsReceived(const CommandlineOptions &options) {
       break;
     }
 
-    case CommandlineOptions::Player_None:
+    case CommandlineOptions::PlayerAction::None:
       break;
 
   }
@@ -2433,22 +2426,22 @@ void MainWindow::CommandlineOptionsReceived(const CommandlineOptions &options) {
     // Behaviour depends on command line options, so set it here
     mimedata->override_user_settings_ = true;
 
-    if (options.player_action() == CommandlineOptions::Player_Play) mimedata->play_now_ = true;
+    if (options.player_action() == CommandlineOptions::PlayerAction::Play) mimedata->play_now_ = true;
     else ApplyPlayBehaviour(doubleclick_playmode_, mimedata);
 
     switch (options.url_list_action()) {
-      case CommandlineOptions::UrlList_Load:
+      case CommandlineOptions::UrlListAction::Load:
         mimedata->clear_first_ = true;
         break;
-      case CommandlineOptions::UrlList_Append:
+      case CommandlineOptions::UrlListAction::Append:
         // Nothing to do
         break;
-      case CommandlineOptions::UrlList_None:
+      case CommandlineOptions::UrlListAction::None:
         ApplyAddBehaviour(doubleclick_addmode_, mimedata);
         break;
-      case CommandlineOptions::UrlList_CreateNew:
+      case CommandlineOptions::UrlListAction::CreateNew:
         mimedata->name_for_new_playlist_ = options.playlist_name();
-        ApplyAddBehaviour(BehaviourSettingsPage::AddBehaviour_OpenInNew, mimedata);
+        ApplyAddBehaviour(BehaviourSettingsPage::AddBehaviour::OpenInNew, mimedata);
         break;
     }
 
@@ -2468,7 +2461,7 @@ void MainWindow::CommandlineOptionsReceived(const CommandlineOptions &options) {
     app_->player()->SeekTo(app_->player()->engine()->position_nanosec() / kNsecPerSec + options.seek_by());
   }
 
-  if (options.play_track_at() != -1) app_->player()->PlayAt(options.play_track_at(), 0, Engine::Manual, Playlist::AutoScroll_Maybe, true);
+  if (options.play_track_at() != -1) app_->player()->PlayAt(options.play_track_at(), 0, Engine::TrackChangeType::Manual, Playlist::AutoScroll::Maybe, true);
 
   if (options.show_osd()) app_->player()->ShowOSD();
 
@@ -2546,7 +2539,7 @@ void MainWindow::AddFilesToTranscoder() {
 }
 
 void MainWindow::ShowCollectionConfig() {
-  settings_dialog_->OpenAtPage(SettingsDialog::Page_Collection);
+  settings_dialog_->OpenAtPage(SettingsDialog::Page::Collection);
 }
 
 void MainWindow::TaskCountChanged(const int count) {
@@ -2616,7 +2609,7 @@ void MainWindow::EditFileTags(const QList<QUrl> &urls) {
     Song song;
     song.set_url(url);
     song.set_valid(true);
-    song.set_filetype(Song::FileType_MPEG);
+    song.set_filetype(Song::FileType::MPEG);
     songs << song;
   }
 
@@ -2758,16 +2751,16 @@ void MainWindow::PlaylistCopyToDevice() {
 
 }
 
-void MainWindow::ChangeCollectionQueryMode(QAction *action) {
+void MainWindow::ChangeCollectionFilterMode(QAction *action) {
 
   if (action == collection_show_duplicates_) {
-    collection_view_->filter_widget()->SetQueryMode(QueryOptions::QueryMode_Duplicates);
+    collection_view_->filter_widget()->SetFilterMode(CollectionFilterOptions::FilterMode::Duplicates);
   }
   else if (action == collection_show_untagged_) {
-    collection_view_->filter_widget()->SetQueryMode(QueryOptions::QueryMode_Untagged);
+    collection_view_->filter_widget()->SetFilterMode(CollectionFilterOptions::FilterMode::Untagged);
   }
   else {
-    collection_view_->filter_widget()->SetQueryMode(QueryOptions::QueryMode_All);
+    collection_view_->filter_widget()->SetFilterMode(CollectionFilterOptions::FilterMode::All);
   }
 
 }
@@ -2978,7 +2971,7 @@ void MainWindow::HandleNotificationPreview(const OSDBase::Behaviour type, const 
   else {
     qLog(Debug) << "The current playlist is empty, showing a fake song";
     // Create a fake song
-    Song fake(Song::Source_LocalFile);
+    Song fake(Song::Source::LocalFile);
     fake.Init("Title", "Artist", "Album", 123);
     fake.set_genre("Classical");
     fake.set_composer("Anonymous");
@@ -3002,7 +2995,7 @@ void MainWindow::ShowConsole() {
 void MainWindow::keyPressEvent(QKeyEvent *e) {
 
   if (e->key() == Qt::Key_Space) {
-    app_->player()->PlayPause(Playlist::AutoScroll_Never);
+    app_->player()->PlayPause(0, Playlist::AutoScroll::Never);
     e->accept();
   }
   else if (e->key() == Qt::Key_Left) {
@@ -3165,17 +3158,17 @@ void MainWindow::PlaylistDelete() {
 
   if (DeleteConfirmationDialog::warning(files) != QDialogButtonBox::Yes) return;
 
-  if (app_->player()->GetState() == Engine::Playing && app_->playlist_manager()->current()->rowCount() == selected_songs.count()) {
+  if (app_->player()->GetState() == Engine::State::Playing && app_->playlist_manager()->current()->rowCount() == selected_songs.count()) {
     app_->player()->Stop();
   }
 
   ui_->playlist->view()->RemoveSelected();
 
-  if (app_->player()->GetState() == Engine::Playing && is_current_item) {
+  if (app_->player()->GetState() == Engine::State::Playing && is_current_item) {
     app_->player()->Next();
   }
 
-  std::shared_ptr<MusicStorage> storage = std::make_shared<FilesystemMusicStorage>(Song::Source_LocalFile, "/");
+  std::shared_ptr<MusicStorage> storage = std::make_shared<FilesystemMusicStorage>(Song::Source::LocalFile, "/");
   DeleteFiles *delete_files = new DeleteFiles(app_->task_manager(), storage, true);
   //QObject::connect(delete_files, &DeleteFiles::Finished, this, &MainWindow::DeleteFinished);
   delete_files->Start(selected_songs);

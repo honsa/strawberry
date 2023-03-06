@@ -38,7 +38,6 @@
 #include <QByteArray>
 #include <QUrl>
 #include <QImage>
-#include <QNetworkCookie>
 #include <QNetworkReply>
 #include <QItemSelection>
 #ifdef HAVE_DBUS
@@ -54,7 +53,7 @@
 #ifdef HAVE_GSTREAMER
 #  include "engine/gstenginepipeline.h"
 #endif
-#include "collection/directory.h"
+#include "collection/collectiondirectory.h"
 #include "playlist/playlistitem.h"
 #include "playlist/playlistsequence.h"
 #include "covermanager/albumcoverloaderresult.h"
@@ -78,17 +77,18 @@
 #  include "device/mtpconnection.h"
 #endif
 
+#include "settings/playlistsettingspage.h"
+
+#include "smartplaylists/smartplaylistsearchterm.h"
+#include "smartplaylists/smartplaylistsitem.h"
+
 void RegisterMetaTypes() {
 
   qRegisterMetaType<const char*>("const char*");
   qRegisterMetaType<QList<int>>("QList<int>");
-  qRegisterMetaType<QList<QUrl>>("QList<QUrl>");
   qRegisterMetaType<QVector<int>>("QVector<int>");
+  qRegisterMetaType<QList<QUrl>>("QList<QUrl>");
   qRegisterMetaType<QFileInfo>("QFileInfo");
-  qRegisterMetaType<QAbstractSocket::SocketState>();
-  qRegisterMetaType<QAbstractSocket::SocketState>("QAbstractSocket::SocketState");
-  qRegisterMetaType<QNetworkCookie>("QNetworkCookie");
-  qRegisterMetaType<QList<QNetworkCookie>>("QList<QNetworkCookie>");
   qRegisterMetaType<QNetworkReply*>("QNetworkReply*");
   qRegisterMetaType<QNetworkReply**>("QNetworkReply**");
   qRegisterMetaType<QItemSelection>("QItemSelection");
@@ -98,16 +98,12 @@ void RegisterMetaTypes() {
   qRegisterMetaTypeStreamOperators<QMap<int, Qt::Alignment>>("ColumnAlignmentMap");
   qRegisterMetaTypeStreamOperators<QMap<int, int>>("ColumnAlignmentIntMap");
 #endif
-  qRegisterMetaType<Directory>("Directory");
-  qRegisterMetaType<DirectoryList>("DirectoryList");
-  qRegisterMetaType<Subdirectory>("Subdirectory");
-  qRegisterMetaType<SubdirectoryList>("SubdirectoryList");
   qRegisterMetaType<Song>("Song");
   qRegisterMetaType<SongList>("SongList");
   qRegisterMetaType<SongMap>("SongMap");
-  qRegisterMetaType<QList<Song>>("QList<Song>");
-  qRegisterMetaType<QMap<QString, Song>>("QMap<QString, Song>");
-  qRegisterMetaType<Engine::EngineType>("EngineType");
+  qRegisterMetaType<Song::Source>("Song::Source");
+  qRegisterMetaType<Song::FileType>("Song::FileType");
+  qRegisterMetaType<Engine::EngineType>("Engine::EngineType");
   qRegisterMetaType<Engine::SimpleMetaBundle>("Engine::SimpleMetaBundle");
   qRegisterMetaType<Engine::State>("Engine::State");
   qRegisterMetaType<Engine::TrackChangeFlags>("Engine::TrackChangeFlags");
@@ -117,23 +113,29 @@ void RegisterMetaTypes() {
   qRegisterMetaType<GstElement*>("GstElement*");
   qRegisterMetaType<GstEnginePipeline*>("GstEnginePipeline*");
 #endif
+  qRegisterMetaType<CollectionDirectory>("CollectionDirectory");
+  qRegisterMetaType<CollectionDirectoryList>("CollectionDirectoryList");
+  qRegisterMetaType<CollectionSubdirectory>("CollectionSubdirectory");
+  qRegisterMetaType<CollectionSubdirectoryList>("CollectionSubdirectoryList");
+  qRegisterMetaType<CollectionModel::Grouping>("CollectionModel::Grouping");
   qRegisterMetaType<PlaylistItemPtr>("PlaylistItemPtr");
-  qRegisterMetaType<PlaylistItemList>("PlaylistItemList");
-  qRegisterMetaType<QList<PlaylistItemPtr>>("QList<PlaylistItemPtr>");
+  qRegisterMetaType<PlaylistItemPtrList>("PlaylistItemPtrList");
   qRegisterMetaType<PlaylistSequence::RepeatMode>("PlaylistSequence::RepeatMode");
   qRegisterMetaType<PlaylistSequence::ShuffleMode>("PlaylistSequence::ShuffleMode");
   qRegisterMetaType<AlbumCoverLoaderResult>("AlbumCoverLoaderResult");
   qRegisterMetaType<AlbumCoverLoaderResult::Type>("AlbumCoverLoaderResult::Type");
   qRegisterMetaType<CoverProviderSearchResult>("CoverProviderSearchResult");
-  qRegisterMetaType<CoverSearchStatistics>("CoverSearchStatistics");
-  qRegisterMetaType<QList<CoverProviderSearchResult>>("QList<CoverProviderSearchResult>");
   qRegisterMetaType<CoverProviderSearchResults>("CoverProviderSearchResults");
+  qRegisterMetaType<CoverSearchStatistics>("CoverSearchStatistics");
+
   qRegisterMetaType<Equalizer::Params>("Equalizer::Params");
+
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
   qRegisterMetaTypeStreamOperators<Equalizer::Params>("Equalizer::Params");
 #endif
+
 #ifdef HAVE_DBUS
-  qDBusRegisterMetaType<QList<QByteArray>>();
+  qDBusRegisterMetaType<QByteArrayList>();
   qDBusRegisterMetaType<QImage>();
   qDBusRegisterMetaType<TrackMetadata>();
   qDBusRegisterMetaType<Track_Ids>();
@@ -144,15 +146,21 @@ void RegisterMetaTypes() {
   qDBusRegisterMetaType<ManagedObjectList>();
 #endif
 
-  qRegisterMetaType<InternetSearchView::ResultList>("InternetSearchView::ResultList");
   qRegisterMetaType<InternetSearchView::Result>("InternetSearchView::Result");
+  qRegisterMetaType<InternetSearchView::ResultList>("InternetSearchView::ResultList");
 
-  qRegisterMetaType<PlaylistGeneratorPtr>("PlaylistGeneratorPtr");
-
+  qRegisterMetaType<RadioChannel>("RadioChannel");
   qRegisterMetaType<RadioChannelList>("RadioChannelList");
 
 #ifdef HAVE_LIBMTP
   qRegisterMetaType<MtpConnection*>("MtpConnection*");
 #endif
+
+  qRegisterMetaType<PlaylistSettingsPage::PathType>("PlaylistSettingsPage::PathType");
+
+  qRegisterMetaType<PlaylistGeneratorPtr>("PlaylistGeneratorPtr");
+  qRegisterMetaType<SmartPlaylistSearchTerm::Operator>("SmartPlaylistSearchTerm::Operator");
+  qRegisterMetaType<SmartPlaylistSearchTerm::OperatorList>("SmartPlaylistSearchTerm::OperatorList");
+  qRegisterMetaType<SmartPlaylistsItem::Type>("SmartPlaylistsItem::Type");
 
 }

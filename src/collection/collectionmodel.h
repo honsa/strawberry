@@ -49,7 +49,9 @@
 #include "core/song.h"
 #include "core/sqlrow.h"
 #include "covermanager/albumcoverloader.h"
+#include "collectionfilteroptions.h"
 #include "collectionquery.h"
+#include "collectionqueryoptions.h"
 #include "collectionitem.h"
 #include "covermanager/albumcoverloaderoptions.h"
 
@@ -81,34 +83,34 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   };
 
   // These values get saved in QSettings - don't change them
-  enum GroupBy {
-    GroupBy_None = 0,
-    GroupBy_AlbumArtist = 1,
-    GroupBy_Artist = 2,
-    GroupBy_Album = 3,
-    GroupBy_AlbumDisc = 4,
-    GroupBy_YearAlbum = 5,
-    GroupBy_YearAlbumDisc = 6,
-    GroupBy_OriginalYearAlbum = 7,
-    GroupBy_OriginalYearAlbumDisc = 8,
-    GroupBy_Disc = 9,
-    GroupBy_Year = 10,
-    GroupBy_OriginalYear = 11,
-    GroupBy_Genre = 12,
-    GroupBy_Composer = 13,
-    GroupBy_Performer = 14,
-    GroupBy_Grouping = 15,
-    GroupBy_FileType = 16,
-    GroupBy_Format = 17,
-    GroupBy_Samplerate = 18,
-    GroupBy_Bitdepth = 19,
-    GroupBy_Bitrate = 20,
+  enum class GroupBy {
+    None = 0,
+    AlbumArtist = 1,
+    Artist = 2,
+    Album = 3,
+    AlbumDisc = 4,
+    YearAlbum = 5,
+    YearAlbumDisc = 6,
+    OriginalYearAlbum = 7,
+    OriginalYearAlbumDisc = 8,
+    Disc = 9,
+    Year = 10,
+    OriginalYear = 11,
+    Genre = 12,
+    Composer = 13,
+    Performer = 14,
+    Grouping = 15,
+    FileType = 16,
+    Format = 17,
+    Samplerate = 18,
+    Bitdepth = 19,
+    Bitrate = 20,
     GroupByCount = 21,
   };
   Q_ENUM(GroupBy)
 
   struct Grouping {
-    explicit Grouping(GroupBy f = GroupBy_None, GroupBy s = GroupBy_None, GroupBy t = GroupBy_None)
+    explicit Grouping(GroupBy f = GroupBy::None, GroupBy s = GroupBy::None, GroupBy t = GroupBy::None)
         : first(f), second(s), third(t) {}
 
     GroupBy first;
@@ -179,9 +181,9 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   quint64 icon_cache_disk_size() { return sIconCache->cacheSize(); }
 
   static bool IsArtistGroupBy(const GroupBy group_by) {
-    return group_by == CollectionModel::GroupBy_Artist || group_by == CollectionModel::GroupBy_AlbumArtist;
+    return group_by == CollectionModel::GroupBy::Artist || group_by == CollectionModel::GroupBy::AlbumArtist;
   }
-  static bool IsAlbumGroupBy(const GroupBy group_by) { return group_by == GroupBy_Album || group_by == GroupBy_YearAlbum || group_by == GroupBy_AlbumDisc || group_by == GroupBy_YearAlbumDisc || group_by == GroupBy_OriginalYearAlbum || group_by == GroupBy_OriginalYearAlbumDisc; }
+  static bool IsAlbumGroupBy(const GroupBy group_by) { return group_by == GroupBy::Album || group_by == GroupBy::YearAlbum || group_by == GroupBy::AlbumDisc || group_by == GroupBy::YearAlbumDisc || group_by == GroupBy::OriginalYearAlbum || group_by == GroupBy::OriginalYearAlbumDisc; }
 
   void set_use_lazy_loading(const bool value) { use_lazy_loading_ = value; }
 
@@ -203,9 +205,9 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   void GroupingChanged(CollectionModel::Grouping g, bool separate_albums_by_grouping);
 
  public slots:
-  void SetFilterAge(const int age);
-  void SetFilterText(const QString &text);
-  void SetFilterQueryMode(QueryOptions::QueryMode query_mode);
+  void SetFilterMode(CollectionFilterOptions::FilterMode filter_mode);
+  void SetFilterAge(const int filter_age);
+  void SetFilterText(const QString &filter_text);
 
   void Init(const bool async = true);
   void Reset();
@@ -232,20 +234,21 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   void AlbumCoverLoaded(const quint64 id, const AlbumCoverLoaderResult &result);
 
  private:
-  // Provides some optimisations for loading the list of items in the root.
+  // Provides some optimizations for loading the list of items in the root.
   // This gets called a lot when filtering the playlist, so it's nice to be able to do it in a background thread.
-  QueryResult RunQuery(CollectionItem *parent);
+  CollectionQueryOptions PrepareQuery(CollectionItem *parent);
+  QueryResult RunQuery(const CollectionFilterOptions &filter_options = CollectionFilterOptions(), const CollectionQueryOptions &query_options = CollectionQueryOptions());
   void PostQuery(CollectionItem *parent, const QueryResult &result, const bool signal);
 
-  bool HasCompilations(const QSqlDatabase &db, const CollectionQuery &query);
+  bool HasCompilations(const QSqlDatabase &db, const CollectionFilterOptions &filter_options, const CollectionQueryOptions &query_options);
 
   void BeginReset();
 
   // Functions for working with queries and creating items.
   // When the model is reset or when a node is lazy-loaded the Collection constructs a database query to populate the items.
   // Filters are added for each parent item, restricting the songs returned to a particular album or artist for example.
-  static void InitQuery(const GroupBy group_by, const bool separate_albums_by_grouping, CollectionQuery *q);
-  static void FilterQuery(const GroupBy group_by, const bool separate_albums_by_grouping, CollectionItem *item, CollectionQuery *q);
+  static void SetQueryColumnSpec(const GroupBy group_by, const bool separate_albums_by_grouping, CollectionQueryOptions *query_options);
+  static void AddQueryWhere(const GroupBy group_by, const bool separate_albums_by_grouping, CollectionItem *item, CollectionQueryOptions *query_options);
 
   // Items can be created either from a query that's been run to populate a node, or by a spontaneous SongsDiscovered emission from the backend.
   CollectionItem *ItemFromQuery(const GroupBy group_by, const bool separate_albums_by_grouping, const bool signal, const bool create_divider, CollectionItem *parent, const SqlRow &row, const int container_level);
@@ -279,7 +282,7 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   int total_artist_count_;
   int total_album_count_;
 
-  QueryOptions query_options_;
+  CollectionFilterOptions filter_options_;
   Grouping group_by_;
   bool separate_albums_by_grouping_;
 

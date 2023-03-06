@@ -48,7 +48,7 @@ QobuzSettingsPage::QobuzSettingsPage(SettingsDialog *dialog, QWidget *parent)
       service_(dialog->app()->internet_services()->Service<QobuzService>()) {
 
   ui_->setupUi(this);
-  setWindowIcon(IconLoader::Load("qobuz"));
+  setWindowIcon(IconLoader::Load("qobuz", true, 0, 32));
 
   QObject::connect(ui_->button_login, &QPushButton::clicked, this, &QobuzSettingsPage::LoginClicked);
   QObject::connect(ui_->login_state, &LoginStateWidget::LogoutClicked, this, &QobuzSettingsPage::LogoutClicked);
@@ -94,7 +94,7 @@ void QobuzSettingsPage::Load() {
 
   s.endGroup();
 
-  if (service_->authenticated()) ui_->login_state->SetLoggedIn(LoginStateWidget::LoggedIn);
+  if (service_->authenticated()) ui_->login_state->SetLoggedIn(LoginStateWidget::State::LoggedIn);
 
   Init(ui_->layout_qobuzsettingspage->parentWidget());
 
@@ -157,7 +157,7 @@ bool QobuzSettingsPage::eventFilter(QObject *object, QEvent *event) {
 void QobuzSettingsPage::LogoutClicked() {
 
   service_->Logout();
-  ui_->login_state->SetLoggedIn(LoginStateWidget::LoggedOut);
+  ui_->login_state->SetLoggedIn(LoginStateWidget::State::LoggedOut);
   ui_->button_login->setEnabled(true);
 
 }
@@ -165,7 +165,7 @@ void QobuzSettingsPage::LogoutClicked() {
 void QobuzSettingsPage::LoginSuccess() {
 
   if (!isVisible()) return;
-  ui_->login_state->SetLoggedIn(LoginStateWidget::LoggedIn);
+  ui_->login_state->SetLoggedIn(LoginStateWidget::State::LoggedIn);
   ui_->button_login->setEnabled(true);
 
 }

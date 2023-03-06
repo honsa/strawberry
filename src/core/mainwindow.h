@@ -180,7 +180,7 @@ class MainWindow : public QMainWindow, public PlatformInterface {
   void PlaylistCopyUrl();
   void ShowInCollection();
 
-  void ChangeCollectionQueryMode(QAction *action);
+  void ChangeCollectionFilterMode(QAction *action);
 
   void PlayIndex(const QModelIndex &idx, Playlist::AutoScroll autoscroll);
   void PlaylistDoubleClick(const QModelIndex &idx);
@@ -331,7 +331,7 @@ class MainWindow : public QMainWindow, public PlatformInterface {
   std::unique_ptr<TagFetcher> tag_fetcher_;
 #endif
   std::unique_ptr<TrackSelectionDialog> track_selection_dialog_;
-  PlaylistItemList autocomplete_tag_items_;
+  PlaylistItemPtrList autocomplete_tag_items_;
 
   SmartPlaylistsViewContainer *smartplaylists_view_;
 

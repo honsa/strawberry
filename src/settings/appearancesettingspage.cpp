@@ -42,7 +42,6 @@
 
 #include "appearancesettingspage.h"
 #include "utilities/colorutils.h"
-#include "core/appearance.h"
 #include "core/iconloader.h"
 #include "core/stylehelper.h"
 #include "covermanager/albumcoverchoicecontroller.h"
@@ -54,10 +53,6 @@ const char *AppearanceSettingsPage::kSettingsGroup = "Appearance";
 
 const char *AppearanceSettingsPage::kStyle = "style";
 const char *AppearanceSettingsPage::kSystemThemeIcons = "system_icons";
-
-const char *AppearanceSettingsPage::kUseCustomColorSet = "use-custom-set";
-const char *AppearanceSettingsPage::kForegroundColor = "foreground-color";
-const char *AppearanceSettingsPage::kBackgroundColor = "background-color";
 
 const char *AppearanceSettingsPage::kBackgroundImageType = "background_image_type";
 const char *AppearanceSettingsPage::kBackgroundImageFilename = "background_image_file";
@@ -89,29 +84,24 @@ const char *AppearanceSettingsPage::kPlaylistPlayingSongColor = "playlist_playin
 AppearanceSettingsPage::AppearanceSettingsPage(SettingsDialog *dialog, QWidget *parent)
     : SettingsPage(dialog, parent),
       ui_(new Ui_AppearanceSettingsPage),
-      original_use_a_custom_color_set_(false),
-      background_image_type_(BackgroundImageType_Default) {
+      background_image_type_(BackgroundImageType::Default) {
 
   ui_->setupUi(this);
-  setWindowIcon(IconLoader::Load("view-media-visualization"));
+  setWindowIcon(IconLoader::Load("view-media-visualization", true, 0, 32));
 
   ui_->combobox_style->addItem("default", "default");
   for (const QString &style : QStyleFactory::keys()) {
     ui_->combobox_style->addItem(style, style);
   }
 
-  ui_->combobox_backgroundimageposition->setItemData(0, BackgroundImagePosition_UpperLeft);
-  ui_->combobox_backgroundimageposition->setItemData(1, BackgroundImagePosition_UpperRight);
-  ui_->combobox_backgroundimageposition->setItemData(2, BackgroundImagePosition_Middle);
-  ui_->combobox_backgroundimageposition->setItemData(3, BackgroundImagePosition_BottomLeft);
-  ui_->combobox_backgroundimageposition->setItemData(4, BackgroundImagePosition_BottomRight);
+  ui_->combobox_backgroundimageposition->setItemData(0, static_cast<int>(BackgroundImagePosition::UpperLeft));
+  ui_->combobox_backgroundimageposition->setItemData(1, static_cast<int>(BackgroundImagePosition::UpperRight));
+  ui_->combobox_backgroundimageposition->setItemData(2, static_cast<int>(BackgroundImagePosition::Middle));
+  ui_->combobox_backgroundimageposition->setItemData(3, static_cast<int>(BackgroundImagePosition::BottomLeft));
+  ui_->combobox_backgroundimageposition->setItemData(4, static_cast<int>(BackgroundImagePosition::BottomRight));
 
   QObject::connect(ui_->blur_slider, &QSlider::valueChanged, this, &AppearanceSettingsPage::BlurLevelChanged);
   QObject::connect(ui_->opacity_slider, &QSlider::valueChanged, this, &AppearanceSettingsPage::OpacityLevelChanged);
-
-  QObject::connect(ui_->use_a_custom_color_set, &QRadioButton::toggled, this, &AppearanceSettingsPage::UseCustomColorSetOptionChanged);
-  QObject::connect(ui_->select_foreground_color, &QPushButton::pressed, this, &AppearanceSettingsPage::SelectForegroundColor);
-  QObject::connect(ui_->select_background_color, &QPushButton::pressed, this, &AppearanceSettingsPage::SelectBackgroundColor);
 
   QObject::connect(ui_->use_default_background, &QRadioButton::toggled, ui_->widget_custom_background_image_options, &AppearanceSettingsPage::setDisabled);
   QObject::connect(ui_->use_no_background, &QRadioButton::toggled, ui_->widget_custom_background_image_options, &AppearanceSettingsPage::setDisabled);
@@ -158,18 +148,6 @@ void AppearanceSettingsPage::Load() {
   ui_->checkbox_system_icons->setChecked(s.value(kSystemThemeIcons, false).toBool());
 #endif
 
-  QPalette p = QApplication::palette();
-
-  // Keep in mind originals colors, in case the user clicks on Cancel, to be able to restore colors
-  original_use_a_custom_color_set_ = s.value(kUseCustomColorSet, false).toBool();
-
-  original_foreground_color_ = s.value(kForegroundColor, p.color(QPalette::WindowText)).value<QColor>();
-  current_foreground_color_ = original_foreground_color_;
-  original_background_color_ = s.value(kBackgroundColor, p.color(QPalette::Window)).value<QColor>();
-  current_background_color_ = original_background_color_;
-
-  InitColorSelectorsColors();
-
   // Tab widget BG color settings.
   bool tabbar_system_color = s.value(kTabBarSystemColor, true).toBool();
   ui_->tabbar_gradient->setChecked(s.value(kTabBarGradient, true).toBool());
@@ -182,32 +160,29 @@ void AppearanceSettingsPage::Load() {
   TabBarSystemColor(ui_->tabbar_system_color->isChecked());
 
   // Playlist settings
-  background_image_type_ = static_cast<BackgroundImageType>(s.value(kBackgroundImageType).toInt());
+  background_image_type_ = static_cast<BackgroundImageType>(s.value(kBackgroundImageType, static_cast<int>(BackgroundImageType::Default)).toInt());
   background_image_filename_ = s.value(kBackgroundImageFilename).toString();
 
-  ui_->use_system_color_set->setChecked(!original_use_a_custom_color_set_);
-  ui_->use_a_custom_color_set->setChecked(original_use_a_custom_color_set_);
-
   switch (background_image_type_) {
-    case BackgroundImageType_Default:
+    case BackgroundImageType::Default:
       ui_->use_default_background->setChecked(true);
       break;
-    case BackgroundImageType_None:
+    case BackgroundImageType::None:
       ui_->use_no_background->setChecked(true);
       break;
-    case BackgroundImageType_Album:
+    case BackgroundImageType::Album:
       ui_->use_album_cover_background->setChecked(true);
       break;
-    case BackgroundImageType_Strawbs:
+    case BackgroundImageType::Strawbs:
       ui_->use_strawbs_background->setChecked(true);
       break;
-    case BackgroundImageType_Custom:
+    case BackgroundImageType::Custom:
       ui_->use_custom_background_image->setChecked(true);
       break;
   }
   ui_->background_image_filename->setText(background_image_filename_);
 
-  ui_->combobox_backgroundimageposition->setCurrentIndex(ui_->combobox_backgroundimageposition->findData(s.value(kBackgroundImagePosition, BackgroundImagePosition_BottomRight).toInt()));
+  ui_->combobox_backgroundimageposition->setCurrentIndex(ui_->combobox_backgroundimageposition->findData(s.value(kBackgroundImagePosition, static_cast<int>(BackgroundImagePosition::BottomRight)).toInt()));
   ui_->spinbox_background_image_maxsize->setValue(s.value(kBackgroundImageMaxSize, 0).toInt());
   ui_->checkbox_background_image_stretch->setChecked(s.value(kBackgroundImageStretch, false).toBool());
   ui_->checkbox_background_image_do_not_cut->setChecked(s.value(kBackgroundImageDoNotCut, true).toBool());
@@ -257,46 +232,33 @@ void AppearanceSettingsPage::Save() {
   s.setValue(kSystemThemeIcons, ui_->checkbox_system_icons->isChecked());
 #endif
 
-  bool use_a_custom_color_set = ui_->use_a_custom_color_set->isChecked();
-  s.setValue(kUseCustomColorSet, use_a_custom_color_set);
-  if (use_a_custom_color_set) {
-    s.setValue(kBackgroundColor, current_background_color_);
-    s.setValue(kForegroundColor, current_foreground_color_);
-  }
-  else {
-    dialog()->appearance()->ResetToSystemDefaultTheme();
-    s.remove(kBackgroundColor);
-    s.remove(kForegroundColor);
-  }
-
   background_image_filename_ = ui_->background_image_filename->text();
   if (ui_->use_default_background->isChecked()) {
-    background_image_type_ = BackgroundImageType_Default;
+    background_image_type_ = BackgroundImageType::Default;
   }
   else if (ui_->use_no_background->isChecked()) {
-    background_image_type_ = BackgroundImageType_None;
+    background_image_type_ = BackgroundImageType::None;
   }
   else if (ui_->use_album_cover_background->isChecked()) {
-    background_image_type_ = BackgroundImageType_Album;
+    background_image_type_ = BackgroundImageType::Album;
   }
   else if (ui_->use_strawbs_background->isChecked()) {
-    background_image_type_ = BackgroundImageType_Strawbs;
+    background_image_type_ = BackgroundImageType::Strawbs;
   }
   else if (ui_->use_custom_background_image->isChecked()) {
-    background_image_type_ = BackgroundImageType_Custom;
+    background_image_type_ = BackgroundImageType::Custom;
   }
-  s.setValue(kBackgroundImageType, background_image_type_);
+  s.setValue(kBackgroundImageType, static_cast<int>(background_image_type_));
 
-  if (background_image_type_ == BackgroundImageType_Custom) {
+  if (background_image_type_ == BackgroundImageType::Custom) {
     s.setValue(kBackgroundImageFilename, background_image_filename_);
   }
   else {
     s.remove(kBackgroundImageFilename);
   }
 
-  BackgroundImagePosition backgroundimageposition = static_cast<BackgroundImagePosition>(ui_->combobox_backgroundimageposition->itemData(ui_->combobox_backgroundimageposition->currentIndex()).toInt());
   s.setValue(kBackgroundImageMaxSize, ui_->spinbox_background_image_maxsize->value());
-  s.setValue(kBackgroundImagePosition, backgroundimageposition);
+  s.setValue(kBackgroundImagePosition, ui_->combobox_backgroundimageposition->currentData().toInt());
   s.setValue(kBackgroundImageStretch, ui_->checkbox_background_image_stretch->isChecked());
   s.setValue(kBackgroundImageDoNotCut, ui_->checkbox_background_image_do_not_cut->isChecked());
   s.setValue(kBackgroundImageKeepAspectRatio, ui_->checkbox_background_image_keep_aspect_ratio->isChecked());
@@ -323,70 +285,6 @@ void AppearanceSettingsPage::Save() {
   }
 
   s.endGroup();
-
-}
-
-void AppearanceSettingsPage::Cancel() {
-
-  if (original_use_a_custom_color_set_) {
-    dialog()->appearance()->ChangeForegroundColor(original_foreground_color_);
-    dialog()->appearance()->ChangeBackgroundColor(original_background_color_);
-  }
-  else {
-    dialog()->appearance()->ResetToSystemDefaultTheme();
-  }
-
-}
-
-void AppearanceSettingsPage::SelectForegroundColor() {
-
-  QColor color_selected = QColorDialog::getColor(current_foreground_color_);
-  if (!color_selected.isValid()) return;
-
-  current_foreground_color_ = color_selected;
-  dialog()->appearance()->ChangeForegroundColor(color_selected);
-
-  UpdateColorSelectorColor(ui_->select_foreground_color, color_selected);
-
-  set_changed();
-
-}
-
-void AppearanceSettingsPage::SelectBackgroundColor() {
-
-  QColor color_selected = QColorDialog::getColor(current_background_color_);
-  if (!color_selected.isValid()) return;
-
-  current_background_color_ = color_selected;
-  dialog()->appearance()->ChangeBackgroundColor(color_selected);
-
-  UpdateColorSelectorColor(ui_->select_background_color, color_selected);
-
-  set_changed();
-
-}
-
-void AppearanceSettingsPage::UseCustomColorSetOptionChanged(bool checked) {
-
-  if (checked) {
-    dialog()->appearance()->ChangeForegroundColor(current_foreground_color_);
-    dialog()->appearance()->ChangeBackgroundColor(current_background_color_);
-  }
-  else {
-    dialog()->appearance()->ResetToSystemDefaultTheme();
-    QPalette p = QApplication::palette();
-    current_foreground_color_ = p.color(QPalette::WindowText);
-    current_background_color_ = p.color(QPalette::Window);
-    UpdateColorSelectorColor(ui_->select_foreground_color, current_foreground_color_);
-    UpdateColorSelectorColor(ui_->select_background_color, current_background_color_);
-  }
-
-}
-
-void AppearanceSettingsPage::InitColorSelectorsColors() {
-
-  UpdateColorSelectorColor(ui_->select_foreground_color, current_foreground_color_);
-  UpdateColorSelectorColor(ui_->select_background_color, current_background_color_);
 
 }
 

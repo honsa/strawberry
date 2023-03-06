@@ -1,7 +1,6 @@
 /*
  * Strawberry Music Player
- * This file was part of Clementine.
- * Copyright 2012, Arnaud Bienner <arnaud.bienner@gmail.com>
+ * Copyright 2023, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,31 +17,18 @@
  *
  */
 
-#ifndef APPEARANCE_H
-#define APPEARANCE_H
+#include <QVariant>
+#include <QString>
 
-#include "config.h"
+#include "collectionqueryoptions.h"
+#include "collectionfilteroptions.h"
 
-#include <QObject>
-#include <QColor>
-#include <QPalette>
+CollectionQueryOptions::CollectionQueryOptions()
+    : compilation_requirement_(CollectionQueryOptions::CompilationRequirement::None),
+      query_have_compilations_(false) {}
 
-class Appearance : public QObject {
-  Q_OBJECT
+void CollectionQueryOptions::AddWhere(const QString &column, const QVariant &value, const QString &op) {
 
- public:
-  explicit Appearance(QObject *parent = nullptr);
+  where_clauses_ << Where(column, value, op);
 
-  static const QPalette kDefaultPalette;
-
-  void LoadUserTheme();
-  static void ResetToSystemDefaultTheme();
-  void ChangeForegroundColor(const QColor &color);
-  void ChangeBackgroundColor(const QColor &color);
-
- private:
-  QColor foreground_color_;
-  QColor background_color_;
-};
-
-#endif  // APPEARANCE_H
+}

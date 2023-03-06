@@ -98,18 +98,24 @@ GstEnginePipeline::GstEnginePipeline(QObject *parent)
       pending_seek_nanosec_(-1),
       last_known_position_ns_(0),
       next_uri_set_(false),
+      volume_internal_(-1.0),
       volume_percent_(100),
       use_fudge_timer_(false),
       pipeline_(nullptr),
       audiobin_(nullptr),
       audiosink_(nullptr),
       audioqueue_(nullptr),
+      audioqueueconverter_(nullptr),
       volume_(nullptr),
       volume_sw_(nullptr),
       volume_fading_(nullptr),
       audiopanorama_(nullptr),
       equalizer_(nullptr),
       equalizer_preamp_(nullptr),
+      eventprobe_(nullptr),
+      upstream_events_probe_cb_id_(0),
+      buffer_probe_cb_id_(0),
+      playbin_probe_cb_id_(0),
       element_added_cb_id_(-1),
       pad_added_cb_id_(-1),
       notify_source_cb_id_(-1),
@@ -153,11 +159,29 @@ GstEnginePipeline::~GstEnginePipeline() {
       g_signal_handler_disconnect(G_OBJECT(volume_), notify_volume_cb_id_);
     }
 
-    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
-    if (bus) {
-      gst_bus_remove_watch(bus);
-      gst_bus_set_sync_handler(bus, nullptr, nullptr, nullptr);
-      gst_object_unref(bus);
+    if (upstream_events_probe_cb_id_ != 0) {
+      GstPad *pad = gst_element_get_static_pad(eventprobe_, "src");
+      if (pad) {
+        gst_pad_remove_probe(pad, upstream_events_probe_cb_id_);
+        gst_object_unref(pad);
+      }
+    }
+
+    if (buffer_probe_cb_id_ != 0) {
+      GstPad *pad = gst_element_get_static_pad(audioqueueconverter_, "src");
+      if (pad) {
+        gst_pad_remove_probe(pad, buffer_probe_cb_id_);
+        gst_object_unref(pad);
+      }
+    }
+
+    {
+      GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
+      if (bus) {
+        gst_bus_remove_watch(bus);
+        gst_bus_set_sync_handler(bus, nullptr, nullptr, nullptr);
+        gst_object_unref(bus);
+      }
     }
 
     gst_element_set_state(pipeline_, GST_STATE_NULL);
@@ -165,6 +189,12 @@ GstEnginePipeline::~GstEnginePipeline() {
     gst_object_unref(GST_OBJECT(pipeline_));
 
     pipeline_ = nullptr;
+
+    if (audiobin_ && !pipeline_is_connected_) {
+      gst_object_unref(GST_OBJECT(audiobin_));
+    }
+
+    audiobin_ = nullptr;
 
   }
 
@@ -258,11 +288,19 @@ bool GstEnginePipeline::InitFromUrl(const QByteArray &stream_url, const QUrl &or
   original_url_ = original_url;
   end_offset_nanosec_ = end_nanosec;
 
-  pipeline_ = CreateElement("playbin", "pipeline", nullptr, error);
+  guint version_major = 0, version_minor = 0, version_micro = 0, version_nano = 0;
+  gst_plugins_base_version(&version_major, &version_minor, &version_micro, &version_nano);
+  if (QVersionNumber::compare(QVersionNumber(version_major, version_minor, version_micro), QVersionNumber(1, 22, 0)) >= 0) {
+    pipeline_ = CreateElement("playbin3", "pipeline", nullptr, error);
+  }
+  else {
+    pipeline_ = CreateElement("playbin", "pipeline", nullptr, error);
+  }
+
   if (!pipeline_) return false;
 
-  pad_added_cb_id_ = CHECKED_GCONNECT(G_OBJECT(pipeline_), "pad-added", &NewPadCallback, this);
-  notify_source_cb_id_ = CHECKED_GCONNECT(G_OBJECT(pipeline_), "notify::source", &SourceSetupCallback, this);
+  pad_added_cb_id_ = CHECKED_GCONNECT(G_OBJECT(pipeline_), "pad-added", &PadAddedCallback, this);
+  notify_source_cb_id_ = CHECKED_GCONNECT(G_OBJECT(pipeline_), "notify::source", &NotifySourceCallback, this);
   about_to_finish_cb_id_ = CHECKED_GCONNECT(G_OBJECT(pipeline_), "about-to-finish", &AboutToFinishCallback, this);
 
   if (!InitAudioBin(error)) return false;
@@ -306,7 +344,6 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Create the sink
   audiosink_ = CreateElement(output_, output_, audiobin_, error);
   if (!audiosink_) {
-    gst_object_unref(GST_OBJECT(audiobin_));
     return false;
   }
 
@@ -426,22 +463,16 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
 
   audioqueue_ = CreateElement("queue2", "audioqueue", audiobin_, error);
   if (!audioqueue_) {
-    gst_object_unref(GST_OBJECT(audiobin_));
-    audiobin_ = nullptr;
     return false;
   }
 
-  GstElement *audioqueueconverter = CreateElement("audioconvert", "audioqueueconverter", audiobin_, error);
-  if (!audioqueueconverter) {
-    gst_object_unref(GST_OBJECT(audiobin_));
-    audiobin_ = nullptr;
+  audioqueueconverter_ = CreateElement("audioconvert", "audioqueueconverter", audiobin_, error);
+  if (!audioqueueconverter_) {
     return false;
   }
 
   GstElement *audiosinkconverter = CreateElement("audioconvert", "audiosinkconverter", audiobin_, error);
   if (!audiosinkconverter) {
-    gst_object_unref(GST_OBJECT(audiobin_));
-    audiobin_ = nullptr;
     return false;
   }
 
@@ -449,8 +480,6 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (volume_enabled_ && !volume_) {
     volume_sw_ = CreateElement("volume", "volume_sw", audiobin_, error);
     if (!volume_sw_) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
   }
@@ -458,8 +487,6 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (fading_enabled_) {
     volume_fading_ = CreateElement("volume", "volume_fading", audiobin_, error);
     if (!volume_fading_) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
   }
@@ -468,8 +495,6 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (stereo_balancer_enabled_) {
     audiopanorama_ = CreateElement("audiopanorama", "audiopanorama", audiobin_, error);
     if (!audiopanorama_) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
     // Set the stereo balance.
@@ -480,14 +505,10 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (eq_enabled_) {
     equalizer_preamp_ = CreateElement("volume", "equalizer_preamp", audiobin_, error);
     if (!equalizer_preamp_) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
     equalizer_ = CreateElement("equalizer-nbands", "equalizer_nbands", audiobin_, error);
     if (!equalizer_) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
     // Setting the equalizer bands:
@@ -530,30 +551,24 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   }
 
   // Create the replaygain elements if it's enabled.
-  GstElement *eventprobe = audioqueueconverter;
+  eventprobe_ = audioqueueconverter_;
   GstElement *rgvolume = nullptr;
   GstElement *rglimiter = nullptr;
   GstElement *rgconverter = nullptr;
   if (rg_enabled_) {
     rgvolume = CreateElement("rgvolume", "rgvolume", audiobin_, error);
     if (!rgvolume) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
     rglimiter = CreateElement("rglimiter", "rglimiter", audiobin_, error);
     if (!rglimiter) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
     rgconverter = CreateElement("audioconvert", "rgconverter", audiobin_, error);
     if (!rgconverter) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
-    eventprobe = rgconverter;
+    eventprobe_ = rgconverter;
     // Set replaygain settings
     g_object_set(G_OBJECT(rgvolume), "album-mode", rg_mode_, nullptr);
     g_object_set(G_OBJECT(rgvolume), "pre-amp", rg_preamp_, nullptr);
@@ -565,8 +580,6 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (bs2b_enabled_) {
     bs2b = CreateElement("bs2b", "bs2b", audiobin_, error);
     if (!bs2b) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
       return false;
     }
   }
@@ -582,9 +595,9 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Add a data probe on the src pad of the audioconvert element for our scope.
   // We do it here because we want pre-equalized and pre-volume samples so that our visualization are not be affected by them.
   {
-    GstPad *pad = gst_element_get_static_pad(eventprobe, "src");
+    GstPad *pad = gst_element_get_static_pad(eventprobe_, "src");
     if (pad) {
-      gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_UPSTREAM, &EventHandoffCallback, this, nullptr);
+      upstream_events_probe_cb_id_ = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_UPSTREAM, &UpstreamEventsProbeCallback, this, nullptr);
       gst_object_unref(pad);
     }
   }
@@ -605,21 +618,17 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
 
   // Link all elements
 
-  if (!gst_element_link(audioqueue_, audioqueueconverter)) {
-    gst_object_unref(GST_OBJECT(audiobin_));
-    audiobin_ = nullptr;
-    error = "gst_element_link() failed.";
+  if (!gst_element_link(audioqueue_, audioqueueconverter_)) {
+    error = "Failed to link audio queue to audio queue converter.";
     return false;
   }
 
-  GstElement *element_link = audioqueueconverter;  // The next element to link from.
+  GstElement *element_link = audioqueueconverter_;  // The next element to link from.
 
   // Link replaygain elements if enabled.
   if (rg_enabled_ && rgvolume && rglimiter && rgconverter) {
     if (!gst_element_link_many(element_link, rgvolume, rglimiter, rgconverter, nullptr)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link_many() failed.";
+      error = "Failed to link replaygain volume, limiter and converter elements.";
       return false;
     }
     element_link = rgconverter;
@@ -628,9 +637,7 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Link equalizer elements if enabled.
   if (eq_enabled_ && equalizer_ && equalizer_preamp_) {
     if (!gst_element_link_many(element_link, equalizer_preamp_, equalizer_, nullptr)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link_many() failed.";
+      error = "Failed to link equalizer and equalizer preamp elements.";
       return false;
     }
     element_link = equalizer_;
@@ -639,9 +646,7 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Link stereo balancer elements if enabled.
   if (stereo_balancer_enabled_ && audiopanorama_) {
     if (!gst_element_link(element_link, audiopanorama_)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link() failed.";
+      error = "Failed to link audio panorama (stereo balancer).";
       return false;
     }
     element_link = audiopanorama_;
@@ -650,9 +655,7 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Link software volume element if enabled.
   if (volume_enabled_ && volume_sw_) {
     if (!gst_element_link(element_link, volume_sw_)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link() failed.";
+      error = "Failed to link software volume.";
       return false;
     }
     element_link = volume_sw_;
@@ -661,9 +664,7 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   // Link fading volume element if enabled.
   if (fading_enabled_ && volume_fading_) {
     if (!gst_element_link(element_link, volume_fading_)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link() failed.";
+      error = "Failed to link fading volume.";
       return false;
     }
     element_link = volume_fading_;
@@ -673,41 +674,39 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   if (bs2b_enabled_ && bs2b) {
     qLog(Debug) << "Enabling bs2b";
     if (!gst_element_link(element_link, bs2b)) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_element_link() failed.";
+      error = "Failed to link bs2b.";
       return false;
     }
     element_link = bs2b;
   }
 
   if (!gst_element_link(element_link, audiosinkconverter)) {
-    gst_object_unref(GST_OBJECT(audiobin_));
-    audiobin_ = nullptr;
-    error = "gst_element_link() failed.";
+    error = "Failed to link audio sink converter.";
     return false;
   }
 
   {
     GstCaps *caps = gst_caps_new_empty_simple("audio/x-raw");
     if (!caps) {
-      gst_object_unref(GST_OBJECT(audiobin_));
-      audiobin_ = nullptr;
-      error = "gst_caps_new_empty_simple() failed.";
+      error = "Failed to create caps for raw audio.";
       return false;
     }
     if (channels_enabled_ && channels_ > 0) {
       qLog(Debug) << "Setting channels to" << channels_;
       gst_caps_set_simple(caps, "channels", G_TYPE_INT, channels_, nullptr);
     }
-    gst_element_link_filtered(audiosinkconverter, audiosink_, caps);
+    const bool link_filtered_result = gst_element_link_filtered(audiosinkconverter, audiosink_, caps);
     gst_caps_unref(caps);
+    if (!link_filtered_result) {
+      error = "Failed to link audio sink converter to audio sink with filter for " + output_;
+      return false;
+    }
   }
 
   {  // Add probes and handlers.
-    GstPad *pad = gst_element_get_static_pad(audioqueueconverter, "src");
+    GstPad *pad = gst_element_get_static_pad(audioqueueconverter_, "src");
     if (pad) {
-      gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, HandoffCallback, this, nullptr);
+      buffer_probe_cb_id_ = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, BufferProbeCallback, this, nullptr);
       gst_object_unref(pad);
     }
   }
@@ -715,8 +714,8 @@ bool GstEnginePipeline::InitAudioBin(QString &error) {
   {
     GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
     if (bus) {
-      gst_bus_set_sync_handler(bus, BusCallbackSync, this, nullptr);
-      gst_bus_add_watch(bus, BusCallback, this);
+      gst_bus_set_sync_handler(bus, BusSyncCallback, this, nullptr);
+      gst_bus_add_watch(bus, BusWatchCallback, this);
       gst_object_unref(bus);
     }
   }
@@ -732,11 +731,13 @@ void GstEnginePipeline::SetupVolume(GstElement *element) {
   if (volume_) return;
 
   volume_ = element;
-  notify_volume_cb_id_ = CHECKED_GCONNECT(G_OBJECT(element), "notify::volume", &VolumeCallback, this);
+  notify_volume_cb_id_ = CHECKED_GCONNECT(G_OBJECT(element), "notify::volume", &NotifyVolumeCallback, this);
 
 }
 
-GstPadProbeReturn GstEnginePipeline::EventHandoffCallback(GstPad*, GstPadProbeInfo *info, gpointer self) {
+GstPadProbeReturn GstEnginePipeline::UpstreamEventsProbeCallback(GstPad *pad, GstPadProbeInfo *info, gpointer self) {
+
+  Q_UNUSED(pad)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -787,7 +788,9 @@ void GstEnginePipeline::ElementAddedCallback(GstBin *bin, GstBin*, GstElement *e
 
 }
 
-void GstEnginePipeline::SourceSetupCallback(GstPlayBin *bin, GParamSpec*, gpointer self) {
+void GstEnginePipeline::NotifySourceCallback(GstPlayBin *bin, GParamSpec *param_spec, gpointer self) {
+
+  Q_UNUSED(param_spec)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -833,14 +836,16 @@ void GstEnginePipeline::SourceSetupCallback(GstPlayBin *bin, GParamSpec*, gpoint
 
 }
 
-void GstEnginePipeline::VolumeCallback(GstElement*, GParamSpec*, gpointer self) {
+void GstEnginePipeline::NotifyVolumeCallback(GstElement *element, GParamSpec *param_spec, gpointer self) {
+
+  Q_UNUSED(element)
+  Q_UNUSED(param_spec)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
-  gdouble volume = 0;
-  g_object_get(G_OBJECT(instance->volume_), "volume", &volume, nullptr);
+  g_object_get(G_OBJECT(instance->volume_), "volume", &instance->volume_internal_, nullptr);
 
-  const uint volume_percent = static_cast<uint>(qBound(0L, lround(qBound(0.0, gst_stream_volume_convert_volume(GST_STREAM_VOLUME_FORMAT_LINEAR, GST_STREAM_VOLUME_FORMAT_CUBIC, volume), 1.0) / 0.01), 100L));
+  const uint volume_percent = static_cast<uint>(qBound(0L, lround(instance->volume_internal_ / 0.01), 100L));
   if (volume_percent != instance->volume_percent_) {
     instance->volume_percent_ = volume_percent;
     emit instance->VolumeChanged(volume_percent);
@@ -848,7 +853,9 @@ void GstEnginePipeline::VolumeCallback(GstElement*, GParamSpec*, gpointer self) 
 
 }
 
-void GstEnginePipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer self) {
+void GstEnginePipeline::PadAddedCallback(GstElement *element, GstPad *pad, gpointer self) {
+
+  Q_UNUSED(element)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -869,7 +876,7 @@ void GstEnginePipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer self) 
   gst_pad_set_offset(pad, static_cast<gint64>(running_time));
 
   // Add a probe to the pad so we can update last_playbin_segment_.
-  gst_pad_add_probe(pad, static_cast<GstPadProbeType>(GST_PAD_PROBE_TYPE_BUFFER | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM | GST_PAD_PROBE_TYPE_EVENT_FLUSH), PlaybinProbe, instance, nullptr);
+  instance->playbin_probe_cb_id_ = gst_pad_add_probe(pad, static_cast<GstPadProbeType>(GST_PAD_PROBE_TYPE_BUFFER | GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM | GST_PAD_PROBE_TYPE_EVENT_FLUSH), PlaybinProbeCallback, instance, nullptr);
 
   instance->pipeline_is_connected_ = true;
   if (instance->pending_seek_nanosec_ != -1 && instance->pipeline_is_initialized_) {
@@ -878,9 +885,9 @@ void GstEnginePipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer self) 
 
 }
 
-GstPadProbeReturn GstEnginePipeline::PlaybinProbe(GstPad *pad, GstPadProbeInfo *info, gpointer data) {
+GstPadProbeReturn GstEnginePipeline::PlaybinProbeCallback(GstPad *pad, GstPadProbeInfo *info, gpointer self) {
 
-  GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(data);
+  GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
   const GstPadProbeType info_type = GST_PAD_PROBE_INFO_TYPE(info);
 
@@ -918,7 +925,7 @@ GstPadProbeReturn GstEnginePipeline::PlaybinProbe(GstPad *pad, GstPadProbeInfo *
 
 }
 
-GstPadProbeReturn GstEnginePipeline::HandoffCallback(GstPad *pad, GstPadProbeInfo *info, gpointer self) {
+GstPadProbeReturn GstEnginePipeline::BufferProbeCallback(GstPad *pad, GstPadProbeInfo *info, gpointer self) {
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -1081,7 +1088,9 @@ GstPadProbeReturn GstEnginePipeline::HandoffCallback(GstPad *pad, GstPadProbeInf
 
 }
 
-void GstEnginePipeline::AboutToFinishCallback(GstPlayBin*, gpointer self) {
+void GstEnginePipeline::AboutToFinishCallback(GstPlayBin *playbin, gpointer self) {
+
+  Q_UNUSED(playbin)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -1094,32 +1103,9 @@ void GstEnginePipeline::AboutToFinishCallback(GstPlayBin*, gpointer self) {
 
 }
 
-gboolean GstEnginePipeline::BusCallback(GstBus*, GstMessage *msg, gpointer self) {
+GstBusSyncReply GstEnginePipeline::BusSyncCallback(GstBus *bus, GstMessage *msg, gpointer self) {
 
-  GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
-
-  switch (GST_MESSAGE_TYPE(msg)) {
-    case GST_MESSAGE_ERROR:
-      instance->ErrorMessageReceived(msg);
-      break;
-
-    case GST_MESSAGE_TAG:
-      instance->TagMessageReceived(msg);
-      break;
-
-    case GST_MESSAGE_STATE_CHANGED:
-      instance->StateChangedMessageReceived(msg);
-      break;
-
-    default:
-      break;
-  }
-
-  return TRUE;
-
-}
-
-GstBusSyncReply GstEnginePipeline::BusCallbackSync(GstBus*, GstMessage *msg, gpointer self) {
+  Q_UNUSED(bus)
 
   GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
 
@@ -1164,6 +1150,33 @@ GstBusSyncReply GstEnginePipeline::BusCallbackSync(GstBus*, GstMessage *msg, gpo
 
 }
 
+gboolean GstEnginePipeline::BusWatchCallback(GstBus *bus, GstMessage *msg, gpointer self) {
+
+  Q_UNUSED(bus)
+
+  GstEnginePipeline *instance = reinterpret_cast<GstEnginePipeline*>(self);
+
+  switch (GST_MESSAGE_TYPE(msg)) {
+    case GST_MESSAGE_ERROR:
+      instance->ErrorMessageReceived(msg);
+      break;
+
+    case GST_MESSAGE_TAG:
+      instance->TagMessageReceived(msg);
+      break;
+
+    case GST_MESSAGE_STATE_CHANGED:
+      instance->StateChangedMessageReceived(msg);
+      break;
+
+    default:
+      break;
+  }
+
+  return TRUE;
+
+}
+
 void GstEnginePipeline::StreamStatusMessageReceived(GstMessage *msg) {
 
   GstStreamStatusType type = GST_STREAM_STATUS_TYPE_CREATE;
@@ -1198,7 +1211,11 @@ void GstEnginePipeline::StreamStartMessageReceived() {
 
 }
 
-void GstEnginePipeline::TaskEnterCallback(GstTask*, GThread*, gpointer) {
+void GstEnginePipeline::TaskEnterCallback(GstTask *task, GThread *thread, gpointer self) {
+
+  Q_UNUSED(task)
+  Q_UNUSED(thread)
+  Q_UNUSED(self)
 
   // Bump the priority of the thread only on macOS
 
@@ -1238,7 +1255,7 @@ void GstEnginePipeline::ErrorMessageReceived(GstMessage *msg) {
   g_error_free(error);
   g_free(debugs);
 
-  if (pipeline_is_initialized_ && next_uri_set_ && (domain == GST_RESOURCE_ERROR || domain == GST_STREAM_ERROR)) {
+  if (pipeline_is_initialized_ && next_uri_set_ && (domain == GST_CORE_ERROR || domain == GST_RESOURCE_ERROR || domain == GST_STREAM_ERROR)) {
     // A track is still playing and the next uri is not playable. We ignore the error here so it can play until the end.
     // But there is no message send to the bus when the current track finishes, we have to add an EOS ourself.
     qLog(Info) << "Ignoring error" << domain << code << message << debugstr << "when loading next track";
@@ -1276,7 +1293,7 @@ void GstEnginePipeline::TagMessageReceived(GstMessage *msg) {
   gst_message_parse_tag(msg, &taglist);
 
   Engine::SimpleMetaBundle bundle;
-  bundle.type = Engine::SimpleMetaBundle::Type_Current;
+  bundle.type = Engine::SimpleMetaBundle::Type::Current;
   bundle.url = original_url_;
   bundle.title = ParseStrTag(taglist, GST_TAG_TITLE);
   bundle.artist = ParseStrTag(taglist, GST_TAG_ARTIST);
@@ -1468,8 +1485,11 @@ bool GstEnginePipeline::Seek(const qint64 nanosec) {
 void GstEnginePipeline::SetVolume(const uint volume_percent) {
 
   if (volume_) {
-    const double volume = gst_stream_volume_convert_volume(GST_STREAM_VOLUME_FORMAT_CUBIC, GST_STREAM_VOLUME_FORMAT_LINEAR, static_cast<double>(volume_percent) * 0.01);
-    g_object_set(G_OBJECT(volume_), "volume", volume, nullptr);
+    const double volume_internal = static_cast<double>(volume_percent) * 0.01;
+    if (volume_internal != volume_internal_) {
+      volume_internal_ = volume_internal;
+      g_object_set(G_OBJECT(volume_), "volume", volume_internal, nullptr);
+    }
   }
 
   volume_percent_ = volume_percent;

@@ -1,4 +1,4 @@
-name: build
+name: Build
 on: [push, pull_request]
 
 jobs:
@@ -139,12 +139,12 @@ jobs:
       image: fedora:${{matrix.fedora_version}}
     steps:
       - name: Update repositories
-        run: yum update --assumeyes
+        run: dnf update -y
       - name: Upgrade packages
-        run: yum upgrade --assumeyes
+        run: dnf upgrade -y
       - name: Install dependencies
         run: >
-            dnf install --assumeyes
+            dnf install -y
             @development-tools
             redhat-lsb-core
             which
@@ -223,12 +223,12 @@ jobs:
       image: openmandriva/${{matrix.openmandriva_version}}
     steps:
       - name: Update repositories
-        run: dnf update --assumeyes
+        run: dnf update -y
       - name: Upgrade packages
-        run: dnf upgrade --assumeyes
+        run: dnf upgrade -y
       - name: Install dependencies
         run: >
-          dnf install --assumeyes
+          dnf install -y
           glibc
           gcc-c++
           git
@@ -310,7 +310,7 @@ jobs:
       image: debian:${{matrix.debian_version}}
     steps:
       - name: Update repositories
-        run: apt update
+        run: apt update -y
       - name: Install packages
         env:
           DEBIAN_FRONTEND: noninteractive
@@ -353,24 +353,12 @@ jobs:
         if: matrix.debian_version == 'buster' || matrix.debian_version == 'bullseye'
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: >
-            apt install -y
-            qtbase5-dev
-            qtbase5-dev-tools
-            qttools5-dev
-            qttools5-dev-tools
-            libqt5x11extras5-dev
+        run: apt install -y qtbase5-dev qtbase5-dev-tools qttools5-dev qttools5-dev-tools libqt5x11extras5-dev
       - name: Install Qt 6
         if: matrix.debian_version != 'buster' && matrix.debian_version != 'bullseye'
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: >
-            apt install -y
-            qt6-base-dev
-            qt6-base-dev-tools
-            qt6-tools-dev
-            qt6-tools-dev-tools
-            qt6-l10n-tools
+        run: apt install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -395,11 +383,13 @@ jobs:
     container:
       image: ubuntu:${{matrix.ubuntu_version}}
     steps:
+      - name: Update repositories
+        run: apt update -y
       - name: Install packages
         env:
           DEBIAN_FRONTEND: noninteractive
         run: >
-            apt-get update && apt-get install -y
+            apt install -y
             build-essential
             dh-make
             ssh
@@ -440,12 +430,12 @@ jobs:
         if: matrix.ubuntu_version == 'bionic' || matrix.ubuntu_version == 'focal'
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: apt-get update && apt-get install -y qtbase5-dev qtbase5-dev-tools qttools5-dev qttools5-dev-tools libqt5x11extras5-dev
+        run: apt install -y qtbase5-dev qtbase5-dev-tools qttools5-dev qttools5-dev-tools libqt5x11extras5-dev
       - name: Install Qt 6
         if: matrix.ubuntu_version != 'bionic' && matrix.ubuntu_version != 'focal'
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: apt-get update && apt-get install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools
+        run: apt install -y qt6-base-dev qt6-base-dev-tools qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -469,7 +459,7 @@ jobs:
         fetch-depth: 0
     - name: Build FreeBSD
       id: build-freebsd
-      uses: vmactions/freebsd-vm@v0.2.9
+      uses: vmactions/freebsd-vm@v0.3.0
       with:
         usesh: true
         mem: 4096
@@ -490,7 +480,7 @@ jobs:
     steps:
 
       - name: Remove packages
-        run: brew remove aliyun-cli ant aws-sam-cli azure-cli bazelisk bicep composer geckodriver ghostscript go@1.17 helm httpd imagemagick kotlin maven mongodb-community@5.0 mongodb-database-tools mongosh nginx node@16 php postgresql@14 ruby@2.7 rustup-init sbt selenium-server swiftformat switchaudio-osx chromedriver firefox google-chrome graalvm-ce-java11 julia microsoft-edge r session-manager-plugin
+        run: brew remove aliyun-cli ant aws-sam-cli azure-cli bazelisk bicep composer geckodriver ghostscript go@1.17 helm httpd imagemagick kotlin maven mongodb-community@5.0 mongodb-database-tools mongosh nginx php postgresql@14 ruby@2.7 rustup-init sbt selenium-server swiftformat switchaudio-osx chromedriver firefox google-chrome graalvm-ce-java11 julia microsoft-edge r session-manager-plugin
 
       - name: Update packages
         run: brew update
@@ -633,7 +623,7 @@ jobs:
         arch: [ 'i686', 'x86_64' ]
         build_type: [ 'debug', 'release' ]
     container:
-      image: jonaski/strawberry-mxe-${{matrix.arch}}
+      image: jonaski/strawberry-mxe-${{matrix.arch}}-${{matrix.build_type}}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -663,12 +653,12 @@ jobs:
         run: >
           cmake ..
           -DCMAKE_TOOLCHAIN_FILE="../cmake/Toolchain-${{matrix.arch}}-w64-mingw32-shared.cmake"
-          -DCMAKE_BUILD_TYPE="${{env.build_type}}"
+          -DCMAKE_BUILD_TYPE="${{matrix.build_type}}"
           -DCMAKE_PREFIX_PATH="/strawberry-mxe/usr/${{matrix.arch}}-w64-mingw32.shared/qt6"
           -DBUILD_WITH_QT6=ON
           -DBUILD_WERROR=OFF
           -DARCH="${{matrix.arch}}"
-          -DENABLE_WIN32_CONSOLE=${{env.build_type}}
+          -DENABLE_WIN32_CONSOLE=${{env.win32_console}}
           -DENABLE_DBUS=OFF
           -DENABLE_LIBGPOD=OFF
           -DENABLE_LIBMTP=OFF
@@ -715,6 +705,11 @@ jobs:
         working-directory: build
         run: cp /strawberry-mxe/usr/${{matrix.arch}}-w64-mingw32.shared/bin/{sqlite3.exe,gst-launch-1.0.exe,gst-discoverer-1.0.exe,libsoup-3.0-0.dll,libnghttp2.dll} .
 
+      - name: Copy extra binaries (debug)
+        if: matrix.build_type == 'debug'
+        working-directory: build
+        run: cp /strawberry-mxe/usr/${{matrix.arch}}-w64-mingw32.shared/bin/{gdb.exe,libreadline8.dll} .
+
       - name: Copy dependencies
         working-directory: build
         run: >
@@ -750,7 +745,7 @@ jobs:
 
   build-windows-msvc:
     name: Build Windows MSVC
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -761,7 +756,9 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{matrix.arch}}
-          toolset: 14.29
+          sdk: 10.0.20348.0
+          vsversion: 17
+          toolset: 14.3
 
       - uses: actions/checkout@v3
         with:
@@ -770,7 +767,7 @@ jobs:
       - name: Delete conflicting files
         shell: bash
         run: |
-          rm -f /c/programdata/chocolatey/bin/{addr2line.exe,ar.exe,as.exe,c++.exe,c++filt.exe,cc1.exe,cc1plus.exe,cpp.exe,g++.exe,gcc-ar.exe,gcc-nm.exe,gcc-ranlib.exe,gcc.exe,gdb.exe,gfortran.exe,ld.bfd.exe,ld.exe,ld.gold.exe,nm.exe,ranlib.exe,readelf.exe,windres.exe,x86_64-w64-mingw32-c++.exe,x86_64-w64-mingw32-g++.exe,x86_64-w64-mingw32-gcc-8.1.0.exe,x86_64-w64-mingw32-gcc-ar.exe,x86_64-w64-mingw32-gcc-nm.exe,x86_64-w64-mingw32-gcc-ranlib.exe,x86_64-w64-mingw32-gcc.exe,x86_64-w64-mingw32-gfortran.exe}
+          rm -f /c/programdata/chocolatey/bin/{addr2line.exe,ar.exe,as.exe,c++.exe,c++filt.exe,cc1.exe,cc1plus.exe,cpp.exe,g++.exe,gcc-ar.exe,gcc-nm.exe,gcc-ranlib.exe,gcc.exe,gdb.exe,gfortran.exe,ld.bfd.exe,ld.exe,ld.gold.exe,nm.exe,ranlib.exe,readelf.exe,windres.exe,x86_64-w64-mingw32-c++.exe,x86_64-w64-mingw32-g++.exe,x86_64-w64-mingw32-gcc-8.1.0.exe,x86_64-w64-mingw32-gcc-ar.exe,x86_64-w64-mingw32-gcc-nm.exe,x86_64-w64-mingw32-gcc-ranlib.exe,x86_64-w64-mingw32-gcc.exe,x86_64-w64-mingw32-gfortran.exe,ccache.exe}
           rm -f /c/strawberry/c/bin/{addr2line.exe,ar.exe,as.exe,c++.exe,c++filt.exe,cpp.exe,g++.exe,gcc-ar.exe,gcc-nm.exe,gcc-ranlib.exe,gcc.exe,ld.exe,nm.exe,ranlib.exe,readelf.exe,widl.exe,windmc.exe,windres.exe,x86_64-w64-mingw32-c++.exe,x86_64-w64-mingw32-g++.exe,x86_64-w64-mingw32-gcc-8.3.0.exe,x86_64-w64-mingw32-gcc-ar.exe,x86_64-w64-mingw32-gcc-nm.exe,x86_64-w64-mingw32-gcc-ranlib.exe,x86_64-w64-mingw32-gcc.exe,x86_64-w64-mingw32-gfortran.exe}
 
       - name: Get latest MSVC dependencies
@@ -1033,7 +1030,7 @@ jobs:
   upload-windows-msvc:
     name: Upload Windows MSVC Setup
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/msvc'
     needs:
       - build-windows-msvc
     steps:

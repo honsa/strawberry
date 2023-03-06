@@ -29,7 +29,7 @@
 #include "core/database.h"
 #include "collection/collectionbackend.h"
 #include "collection/collectionmodel.h"
-#include "collection/directory.h"
+#include "collection/collectiondirectory.h"
 #include "connecteddevice.h"
 #include "devicelister.h"
 #include "devicemanager.h"
@@ -61,7 +61,7 @@ ConnectedDevice::ConnectedDevice(const QUrl &url, DeviceLister *lister, const QS
 
   backend_->Init(app_->database(),
                  app_->task_manager(),
-                 Song::Source_Device,
+                 Song::Source::Device,
                  QString("device_%1_songs").arg(database_id),
                  QString("device_%1_fts").arg(database_id),
                  QString("device_%1_directories").arg(database_id),
@@ -78,7 +78,7 @@ ConnectedDevice::~ConnectedDevice() {
 
 void ConnectedDevice::InitBackendDirectory(const QString &mount_point, const bool first_time, const bool rewrite_path) {
 
-  QList<Directory> directories = backend_->GetAllDirectories();
+  QList<CollectionDirectory> directories = backend_->GetAllDirectories();
   if (first_time || directories.isEmpty()) {
     backend_->AddDirectory(mount_point);
   }
@@ -90,7 +90,7 @@ void ConnectedDevice::InitBackendDirectory(const QString &mount_point, const boo
       // This can be done entirely in sqlite so it's relatively fast...
 
       // Get the directory it was mounted at last time.  Devices only have one directory (the root).
-      Directory dir = directories[0];
+      CollectionDirectory dir = directories[0];
       if (dir.path != mount_point) {
         // The directory is different, commence the munging.
         qLog(Info) << "Changing path from" << dir.path << "to" << mount_point;
@@ -154,10 +154,10 @@ MusicStorage::TranscodeMode ConnectedDevice::GetTranscodeMode() const {
 Song::FileType ConnectedDevice::GetTranscodeFormat() const {
 
   DeviceInfo *info = manager_->FindDeviceById(unique_id_);
-  if (!info) return Song::FileType_Unknown;
+  if (!info) return Song::FileType::Unknown;
 
   QModelIndex idx = manager_->ItemToIndex(info);
-  if (!idx.isValid()) return Song::FileType_Unknown;
+  if (!idx.isValid()) return Song::FileType::Unknown;
 
   return static_cast<Song::FileType>(idx.data(DeviceManager::Role_TranscodeFormat).toInt());
 
@@ -167,4 +167,3 @@ void ConnectedDevice::BackendTotalSongCountUpdated(int count) {
   song_count_ = count;
   emit SongCountUpdated(count);
 }
-

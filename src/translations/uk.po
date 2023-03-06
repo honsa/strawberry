@@ -78,7 +78,7 @@ msgstr " Ярлики на %1 зазвичай використовують че
 #: ../build/src/ui_transcoderoptionsspeex.h:220
 #: ../build/src/ui_transcoderoptionsspeex.h:223
 #: ../build/src/ui_transcoderoptionsasf.h:76
-#: ../build/src/ui_transcoderoptionsmp3.h:194
+#: ../build/src/ui_transcoderoptionsmp3.h:195
 msgid " kbps"
 msgstr " кб/с"
 
@@ -349,7 +349,7 @@ msgstr "&Створити список відтворення"
 msgid "&Next track"
 msgstr "&Наступна композиція"
 
-#: ../build/src/ui_appearancesettingspage.h:601
+#: ../build/src/ui_appearancesettingspage.h:527
 msgid "&No background image"
 msgstr "&Без фонового зображення"
 
@@ -413,13 +413,9 @@ msgstr "&Перекодування музики"
 msgid "&Update changed collection folders"
 msgstr "&Оновити змінені теки колекції"
 
-#: ../build/src/ui_appearancesettingspage.h:594
+#: ../build/src/ui_appearancesettingspage.h:520
 msgid "&Use the system default color"
 msgstr "&Використати стандартний системний колір"
-
-#: ../build/src/ui_appearancesettingspage.h:587
-msgid "&Use the system default color set"
-msgstr "&Використати стандартний системний набір кольорів"
 
 #: ../build/src/ui_networkproxysettingspage.h:171
 msgid "&Use the system proxy settings"
@@ -447,7 +443,7 @@ msgstr "0"
 msgid "0:00:00"
 msgstr "0:00:00"
 
-#: ../build/src/ui_appearancesettingspage.h:621
+#: ../build/src/ui_appearancesettingspage.h:547
 msgid "0px"
 msgstr "0 пкс"
 
@@ -459,7 +455,7 @@ msgstr "1 день"
 msgid "1 track"
 msgstr "1 композиція"
 
-#: ../build/src/ui_appearancesettingspage.h:623
+#: ../build/src/ui_appearancesettingspage.h:549
 msgid "40%"
 msgstr "40%"
 
@@ -479,7 +475,7 @@ msgstr ""
 "<p>Якщо взяти частину тексту з міткою у фігурні дужки, цю частину буде "
 "приховано, якщо мітка порожня.</p>"
 
-#: ../build/src/ui_appearancesettingspage.h:606
+#: ../build/src/ui_appearancesettingspage.h:532
 msgid "A Taste of Strawbs"
 msgstr "Смак соломки"
 
@@ -504,7 +500,7 @@ msgstr ""
 msgid "A&utomatic"
 msgstr "&Автоматично"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:427
+#: smartplaylists/smartplaylistsearchterm.cpp:429
 msgid "A-Z"
 msgstr "А-Я"
 
@@ -576,11 +572,11 @@ msgstr "Додати новий рядок, якщо підтримується 
 msgid "Add all tracks from a directory and all its subdirectories"
 msgstr "Додати усі композиції з каталогу та усіх його підкаталогів"
 
-#: settings/collectionsettingspage.cpp:124
+#: settings/collectionsettingspage.cpp:135
 msgid "Add directory..."
 msgstr "Додати папку..."
 
-#: core/mainwindow.cpp:2208
+#: core/mainwindow.cpp:2201
 msgid "Add file"
 msgstr "Додати файл"
 
@@ -596,7 +592,7 @@ msgstr "Додати файли для перекодування"
 msgid "Add files to transcode"
 msgstr "Додати файли для перекодування"
 
-#: core/mainwindow.cpp:2234 transcoder/transcodedialog.cpp:424
+#: core/mainwindow.cpp:2227 transcoder/transcodedialog.cpp:424
 msgid "Add folder"
 msgstr "Додати папку"
 
@@ -706,7 +702,7 @@ msgstr "Додати потік..."
 msgid "Add to albums"
 msgstr "Додати до альбомів"
 
-#: core/mainwindow.cpp:2010
+#: core/mainwindow.cpp:2003
 msgid "Add to another playlist"
 msgstr "Додати до іншого списку відтворення"
 
@@ -756,7 +752,7 @@ msgstr "Додано за три місяці"
 msgid "Advanced"
 msgstr "Додатково"
 
-#: collection/collectionfilterwidget.cpp:325
+#: collection/collectionfilterwidget.cpp:327
 msgid "Advanced grouping..."
 msgstr "Розширене групування..."
 
@@ -768,11 +764,11 @@ msgstr "Для застосування додаткових налаштува�
 msgid "After copying..."
 msgstr "Після копіювання..."
 
-#: ../build/src/ui_appearancesettingspage.h:605
+#: ../build/src/ui_appearancesettingspage.h:531
 msgid "Albu&m cover"
 msgstr "Обкладинка &альбому"
 
-#: collection/savedgroupingmanager.cpp:97 playlist/playlist.cpp:1335
+#: collection/savedgroupingmanager.cpp:97 playlist/playlist.cpp:1355
 #: organize/organizedialog.cpp:102 ../build/src/ui_groupbydialog.h:193
 #: ../build/src/ui_groupbydialog.h:215 ../build/src/ui_groupbydialog.h:237
 #: ../build/src/ui_albumcoversearcher.h:107
@@ -792,7 +788,7 @@ msgstr "Альбом (ідеальна гучність для всіх комп
 msgid "Album - Disc"
 msgstr "Альбом - Диск"
 
-#: collection/savedgroupingmanager.cpp:91 playlist/playlist.cpp:1342
+#: collection/savedgroupingmanager.cpp:91 playlist/playlist.cpp:1362
 #: organize/organizedialog.cpp:105 ../build/src/ui_groupbydialog.h:192
 #: ../build/src/ui_groupbydialog.h:214 ../build/src/ui_groupbydialog.h:236
 #: ../build/src/ui_edittagdialog.h:847
@@ -828,7 +824,7 @@ msgstr "Альбоми з обкладинками"
 msgid "Albums without covers"
 msgstr "Альбоми без обкладинок"
 
-#: core/mainwindow.cpp:219
+#: core/mainwindow.cpp:218
 msgid "All Files (*)"
 msgstr "Всі файли (*)"
 
@@ -840,7 +836,7 @@ msgstr "Всі альбоми"
 msgid "All artists"
 msgstr "Всі виконавці"
 
-#: covermanager/albumcoverchoicecontroller.cpp:78
+#: covermanager/albumcoverchoicecontroller.cpp:79
 msgid "All files (*)"
 msgstr "Всі файли (*)"
 
@@ -874,12 +870,12 @@ msgstr "Завжди починати відтворення"
 msgid "An error occurred loading the iTunes database"
 msgstr "Виникла помилка завантаження бази даних iTunes"
 
-#: dialogs/edittagdialog.cpp:1417
+#: dialogs/edittagdialog.cpp:1430
 #, qt-format
 msgid "An error occurred writing cover art to '%1'"
 msgstr "Трапилася помилка під час запису обкладинки до '%1'"
 
-#: playlist/playlist.cpp:419 dialogs/edittagdialog.cpp:1394
+#: playlist/playlist.cpp:419 dialogs/edittagdialog.cpp:1407
 #, qt-format
 msgid "An error occurred writing metadata to '%1'"
 msgstr "Трапилася помилка під час запису метаданих до '%1'"
@@ -896,7 +892,7 @@ msgstr "ІД додатку"
 msgid "App Secret"
 msgstr "Ключ додатку"
 
-#: ../build/src/ui_appearancesettingspage.h:581
+#: ../build/src/ui_appearancesettingspage.h:514
 msgid "Appearance"
 msgstr "Вигляд"
 
@@ -933,11 +929,11 @@ msgstr "Дійсно продовжити?"
 msgid "Are you sure you want to delete the \"%1\" preset?"
 msgstr "Дійсно видалити визначені налаштування «%1»?"
 
-#: dialogs/edittagdialog.cpp:1298
+#: dialogs/edittagdialog.cpp:1315
 msgid "Are you sure you want to reset this song's statistics?"
 msgstr "Дійсно скинути статистику для цієї композиції?"
 
-#: settings/collectionsettingspage.cpp:382
+#: settings/collectionsettingspage.cpp:405
 msgid ""
 "Are you sure you want to write song playcounts and ratings to file for all "
 "songs in your collection?"
@@ -953,7 +949,7 @@ msgstr "Автоматично"
 msgid "Art Manual"
 msgstr "Вручну"
 
-#: collection/savedgroupingmanager.cpp:94 playlist/playlist.cpp:1334
+#: collection/savedgroupingmanager.cpp:94 playlist/playlist.cpp:1354
 #: organize/organizedialog.cpp:103 ../build/src/ui_groupbydialog.h:191
 #: ../build/src/ui_groupbydialog.h:213 ../build/src/ui_groupbydialog.h:235
 #: ../build/src/ui_albumcoversearcher.h:103
@@ -1005,7 +1001,7 @@ msgid "Authentication"
 msgstr "Автентифікація"
 
 #: settings/coverssettingspage.cpp:274 settings/lyricssettingspage.cpp:254
-#: settings/tidalsettingspage.cpp:218 settings/qobuzsettingspage.cpp:176
+#: settings/tidalsettingspage.cpp:213 settings/qobuzsettingspage.cpp:176
 msgid "Authentication failed"
 msgstr "Помилка автентификації"
 
@@ -1058,7 +1054,7 @@ msgstr "Автоматично сортувати список відтворе�
 msgid "Available"
 msgstr "Доступне"
 
-#: collection/collectionfilterwidget.cpp:88
+#: collection/collectionfilterwidget.cpp:89
 msgid "Available fields"
 msgstr "Доступні поля"
 
@@ -1078,7 +1074,7 @@ msgstr "Бекенд"
 msgid "Background color"
 msgstr "Колір фону"
 
-#: ../build/src/ui_appearancesettingspage.h:599
+#: ../build/src/ui_appearancesettingspage.h:525
 msgid "Background image"
 msgstr "Зображення тла"
 
@@ -1111,7 +1107,7 @@ msgid "Best"
 msgstr "Найкраще"
 
 #: context/contextview.cpp:211 collection/savedgroupingmanager.cpp:145
-#: playlist/playlist.cpp:1352 organize/organizedialog.cpp:118
+#: playlist/playlist.cpp:1372 organize/organizedialog.cpp:118
 #: ../build/src/ui_groupbydialog.h:208 ../build/src/ui_groupbydialog.h:230
 #: ../build/src/ui_groupbydialog.h:252 ../build/src/ui_edittagdialog.h:826
 msgid "Bit depth"
@@ -1122,13 +1118,13 @@ msgid "Bit rate"
 msgstr "Бітова швидкість"
 
 #: context/contextview.cpp:212 collection/savedgroupingmanager.cpp:148
-#: playlist/playlist.cpp:1353 ../build/src/ui_groupbydialog.h:209
+#: playlist/playlist.cpp:1373 ../build/src/ui_groupbydialog.h:209
 #: ../build/src/ui_groupbydialog.h:231 ../build/src/ui_groupbydialog.h:253
 #: ../build/src/ui_transcoderoptionsaac.h:132
 #: ../build/src/ui_transcoderoptionsopus.h:76
 #: ../build/src/ui_transcoderoptionsspeex.h:218
 #: ../build/src/ui_transcoderoptionsasf.h:75
-#: ../build/src/ui_transcoderoptionsmp3.h:193
+#: ../build/src/ui_transcoderoptionsmp3.h:194
 msgid "Bitrate"
 msgstr "Бітова швидкість"
 
@@ -1145,7 +1141,7 @@ msgstr "Блок аналізатора"
 msgid "Block type"
 msgstr "Тип блоку"
 
-#: ../build/src/ui_appearancesettingspage.h:620
+#: ../build/src/ui_appearancesettingspage.h:546
 msgid "Blur amount"
 msgstr "Рівень розмивання"
 
@@ -1157,15 +1153,15 @@ msgstr "Текст"
 msgid "Boom analyzer"
 msgstr "Плаваючий аналізатор"
 
-#: ../build/src/ui_appearancesettingspage.h:613
+#: ../build/src/ui_appearancesettingspage.h:539
 msgid "Bottom Left"
 msgstr "Внизу ліворуч"
 
-#: ../build/src/ui_appearancesettingspage.h:614
+#: ../build/src/ui_appearancesettingspage.h:540
 msgid "Bottom Right"
 msgstr "Внизу праворуч"
 
-#: ../build/src/ui_appearancesettingspage.h:608
+#: ../build/src/ui_appearancesettingspage.h:534
 msgid "Browse..."
 msgstr "Огляд..."
 
@@ -1193,7 +1189,7 @@ msgstr "Відтворення компакт-дисків доступне ли
 msgid "CDDA"
 msgstr "CDDA"
 
-#: playlist/playlist.cpp:1366
+#: playlist/playlist.cpp:1386
 msgid "CUE"
 msgstr "CUE"
 
@@ -1229,7 +1225,7 @@ msgstr "Змінити поточну відтворювану композиц�
 msgid "Change the language"
 msgstr "Змінити мову"
 
-#: core/mainwindow.cpp:804
+#: core/mainwindow.cpp:803
 msgid "Check for updates..."
 msgstr "Перевірити оновлення..."
 
@@ -1280,11 +1276,11 @@ msgstr "Очистити"
 msgid "Clear Disk Cache"
 msgstr "Очистити кеш диска"
 
-#: covermanager/albumcoverchoicecontroller.cpp:113
+#: covermanager/albumcoverchoicecontroller.cpp:114
 msgid "Clear cover"
 msgstr "Стерти обкладинку"
 
-#: core/mainwindow.cpp:2299 ../build/src/ui_mainwindow.h:637
+#: core/mainwindow.cpp:2292 ../build/src/ui_mainwindow.h:637
 msgid "Clear playlist"
 msgstr "Очистити список відтворення"
 
@@ -1329,7 +1325,7 @@ msgstr "Закриття цього вікна зупинить пошук об�
 msgid "Club"
 msgstr "Клубна"
 
-#: core/mainwindow.cpp:369 ../build/src/ui_collectionsettingspage.h:589
+#: core/mainwindow.cpp:368 ../build/src/ui_collectionsettingspage.h:589
 #: ../build/src/ui_scrobblersettingspage.h:418
 msgid "Collection"
 msgstr "Фонотека"
@@ -1342,7 +1338,7 @@ msgstr "Фільтр фонотеки"
 msgid "Collection advanced grouping"
 msgstr "Розширене групування фонотеки"
 
-#: core/mainwindow.cpp:2872
+#: core/mainwindow.cpp:2865
 msgid "Collection rescan notice"
 msgstr "Повідомлення про повторне сканування фонотеки"
 
@@ -1350,16 +1346,12 @@ msgstr "Повідомлення про повторне сканування ф
 msgid "Collection search"
 msgstr "Пошук по фонотеці"
 
-#: ../build/src/ui_appearancesettingspage.h:586
-msgid "Colors"
-msgstr "Кольори"
-
 #: core/commandlineoptions.cpp:193
 msgid "Comma separated list of class:level, level is 0-3"
 msgstr ""
 "Список, розділений комами, виду клас:рівень, рівень може бути від 0 до 3"
 
-#: playlist/playlist.cpp:1362 smartplaylists/smartplaylistsearchterm.cpp:389
+#: playlist/playlist.cpp:1382 smartplaylists/smartplaylistsearchterm.cpp:391
 #: organize/organizedialog.cpp:114 ../build/src/ui_edittagdialog.h:855
 msgid "Comment"
 msgstr "Коментар"
@@ -1376,16 +1368,16 @@ msgstr "Заповнити мітки автоматично"
 msgid "Complete tags automatically..."
 msgstr "Заповнити мітки автоматично..."
 
-#: collection/savedgroupingmanager.cpp:127 playlist/playlist.cpp:1343
+#: collection/savedgroupingmanager.cpp:127 playlist/playlist.cpp:1363
 #: organize/organizedialog.cpp:106 ../build/src/ui_groupbydialog.h:203
 #: ../build/src/ui_groupbydialog.h:225 ../build/src/ui_groupbydialog.h:247
 #: ../build/src/ui_edittagdialog.h:852
 msgid "Composer"
 msgstr "Композитор"
 
-#: settings/subsonicsettingspage.cpp:130 settings/tidalsettingspage.cpp:156
-#: settings/tidalsettingspage.cpp:163 settings/tidalsettingspage.cpp:167
-#: settings/tidalsettingspage.cpp:171 settings/qobuzsettingspage.cpp:130
+#: settings/subsonicsettingspage.cpp:130 settings/tidalsettingspage.cpp:151
+#: settings/tidalsettingspage.cpp:158 settings/tidalsettingspage.cpp:162
+#: settings/tidalsettingspage.cpp:166 settings/qobuzsettingspage.cpp:130
 #: settings/qobuzsettingspage.cpp:134 settings/qobuzsettingspage.cpp:138
 msgid "Configuration incomplete"
 msgstr "Конфігурація неповна"
@@ -1400,11 +1392,11 @@ msgstr "Конфігурація з помилками"
 msgid "Configure %1..."
 msgstr "Налаштувати %1..."
 
-#: ../build/src/ui_appearancesettingspage.h:628
+#: ../build/src/ui_appearancesettingspage.h:554
 msgid "Configure buttons"
 msgstr "Налаштувати кнопки"
 
-#: core/mainwindow.cpp:681
+#: core/mainwindow.cpp:680
 msgid "Configure collection..."
 msgstr "Налаштувати фонотеку..."
 
@@ -1416,11 +1408,11 @@ msgstr "Підключити пристрій"
 msgid "Console"
 msgstr "Консоль"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:195
+#: ../build/src/ui_transcoderoptionsmp3.h:196
 msgid "Constant bitrate"
 msgstr "Стала бітова швидкість"
 
-#: core/mainwindow.cpp:368 ../build/src/ui_contextsettingspage.h:363
+#: core/mainwindow.cpp:367 ../build/src/ui_contextsettingspage.h:363
 msgid "Context"
 msgstr "Контекст"
 
@@ -1442,7 +1434,7 @@ msgstr "Конвертувати всю музику"
 msgid "Convert any music that the device can't play"
 msgstr "Конвертувати всю музику, яку не може відтворити пристрій"
 
-#: core/mainwindow.cpp:750
+#: core/mainwindow.cpp:749
 msgid "Copy URL(s)..."
 msgstr "Копіювати адреси..."
 
@@ -1450,7 +1442,7 @@ msgstr "Копіювати адреси..."
 msgid "Copy album cover artwork"
 msgstr "Копіювати обкладинку альбому"
 
-#: core/mainwindow.cpp:754 widgets/fileviewlist.cpp:46
+#: core/mainwindow.cpp:753 widgets/fileviewlist.cpp:46
 #: device/deviceview.cpp:246
 msgid "Copy to collection..."
 msgstr "Скопіювати до фонотеки..."
@@ -1459,7 +1451,7 @@ msgstr "Скопіювати до фонотеки..."
 msgid "Copy to device"
 msgstr "Скопіювати до пристрою"
 
-#: core/mainwindow.cpp:757 collection/collectionview.cpp:359
+#: core/mainwindow.cpp:756 collection/collectionview.cpp:359
 #: playlist/playlistlistcontainer.cpp:89 widgets/fileviewlist.cpp:48
 msgid "Copy to device..."
 msgstr "Копіюваня до пристрою..."
@@ -1472,7 +1464,7 @@ msgstr ""
 "Перш ніж видаляти snap, скопіюйте файли strawberry.conf і strawberry.db з "
 "каталогу ~/snap, щоб не втратити свою конфігурацію:"
 
-#: transcoder/transcoder.cpp:64
+#: transcoder/transcoder.cpp:67
 #, qt-format
 msgid ""
 "Could not create the GStreamer element \"%1\" - make sure you have all the "
@@ -1565,7 +1557,7 @@ msgstr "Обкладинку змінено: вона буде прибрана 
 msgid "Cover changed: Will set new when saved."
 msgstr "Обкладинку змінено: під час збереження буде встановлена нова."
 
-#: covermanager/albumcoverchoicecontroller.cpp:188
+#: covermanager/albumcoverchoicecontroller.cpp:189
 #, qt-format
 msgid "Cover file %1 is empty."
 msgstr "Файл обкладинки %1 пустий."
@@ -1664,11 +1656,11 @@ msgstr "Поточний кеш диска:"
 msgid "Custom"
 msgstr "Інша"
 
-#: ../build/src/ui_appearancesettingspage.h:633
+#: ../build/src/ui_appearancesettingspage.h:559
 msgid "Custom color"
 msgstr "Власний колір"
 
-#: ../build/src/ui_appearancesettingspage.h:607
+#: ../build/src/ui_appearancesettingspage.h:533
 msgid "Custom image:"
 msgstr "Власне зображення:"
 
@@ -1696,15 +1688,15 @@ msgstr "Танцювальна"
 msgid "Database corruption detected."
 msgstr "Виявлено пошкодження бази даних."
 
-#: playlist/playlist.cpp:1360 ../build/src/ui_edittagdialog.h:832
+#: playlist/playlist.cpp:1380 ../build/src/ui_edittagdialog.h:832
 msgid "Date created"
 msgstr "Дата створення"
 
-#: playlist/playlist.cpp:1359 ../build/src/ui_edittagdialog.h:830
+#: playlist/playlist.cpp:1379 ../build/src/ui_edittagdialog.h:830
 msgid "Date modified"
 msgstr "Дата зміни"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:449
+#: smartplaylists/smartplaylistsearchterm.cpp:451
 msgid "Days"
 msgstr "Дні"
 
@@ -1720,7 +1712,7 @@ msgstr "Зменшити гучність на <value> відсотків"
 msgid "Decrease volume"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:600
+#: ../build/src/ui_appearancesettingspage.h:526
 msgid "Default bac&kground image"
 msgstr "Стандартне &фонове зображення"
 
@@ -1733,7 +1725,7 @@ msgstr "Стандартні значення"
 msgid "Delete"
 msgstr "Видалити"
 
-#: covermanager/albumcoverchoicecontroller.cpp:112
+#: covermanager/albumcoverchoicecontroller.cpp:113
 msgid "Delete cover"
 msgstr "Видалити обкладинку"
 
@@ -1745,7 +1737,7 @@ msgstr "Видалити файли"
 msgid "Delete from device..."
 msgstr "Видалити з пристрою..."
 
-#: core/mainwindow.cpp:759 collection/collectionview.cpp:361
+#: core/mainwindow.cpp:758 collection/collectionview.cpp:361
 #: widgets/fileviewlist.cpp:49
 msgid "Delete from disk..."
 msgstr "Видалити з диска..."
@@ -1771,11 +1763,11 @@ msgstr "Видалити оригінальні файли"
 msgid "Deleting files"
 msgstr "Видалення файлів"
 
-#: core/mainwindow.cpp:1925
+#: core/mainwindow.cpp:1918
 msgid "Dequeue selected tracks"
 msgstr "Вилучити з черги вибрані композиції"
 
-#: core/mainwindow.cpp:1924
+#: core/mainwindow.cpp:1917
 msgid "Dequeue track"
 msgstr "Вилучити композицію з черги"
 
@@ -1787,7 +1779,7 @@ msgstr "Призначення"
 msgid "Details..."
 msgstr "Детальніше..."
 
-#: context/contextview.cpp:179 device/giolister.cpp:193
+#: context/contextview.cpp:179 device/giolister.cpp:192
 #: ../build/src/ui_backendsettingspage.h:559
 #: ../build/src/ui_scrobblersettingspage.h:422
 msgid "Device"
@@ -1801,7 +1793,7 @@ msgstr "Налаштування пристрою"
 msgid "Device properties..."
 msgstr "Налаштування пристрою..."
 
-#: core/mainwindow.cpp:376
+#: core/mainwindow.cpp:375
 msgid "Devices"
 msgstr "Пристрої"
 
@@ -1830,7 +1822,7 @@ msgctxt "Refers to a disabled notification type in Notification settings."
 msgid "Disabled"
 msgstr "Вимкнено"
 
-#: collection/savedgroupingmanager.cpp:115 playlist/playlist.cpp:1337
+#: collection/savedgroupingmanager.cpp:115 playlist/playlist.cpp:1357
 #: organize/organizedialog.cpp:110 ../build/src/ui_groupbydialog.h:195
 #: ../build/src/ui_groupbydialog.h:217 ../build/src/ui_groupbydialog.h:239
 #: ../build/src/ui_edittagdialog.h:845
@@ -1845,7 +1837,7 @@ msgstr "Переривчаста передача"
 msgid "Disk Cache Size"
 msgstr "Розмір кешу диска"
 
-#: collection/collectionfilterwidget.cpp:129
+#: collection/collectionfilterwidget.cpp:130
 #: ../build/src/ui_collectionsettingspage.h:605
 msgid "Display options"
 msgstr "Налаштування відображення"
@@ -1858,7 +1850,7 @@ msgstr "Показувати екранні повідомлення"
 msgid "Do not convert any music"
 msgstr "Не конвертувати ніяку музику"
 
-#: ../build/src/ui_appearancesettingspage.h:619
+#: ../build/src/ui_appearancesettingspage.h:545
 msgid "Do not cut image"
 msgstr "Не обрізати зображення"
 
@@ -1940,7 +1932,7 @@ msgstr "Змінити розумний список відтворення"
 msgid "Edit smart playlist..."
 msgstr "Змінити розумний список відтворення..."
 
-#: core/mainwindow.cpp:1968
+#: core/mainwindow.cpp:1961
 #, qt-format
 msgid "Edit tag \"%1\"..."
 msgstr "Змінити тег «%1»..."
@@ -2041,7 +2033,7 @@ msgstr "Увімкнено"
 msgid "Encoding complexity"
 msgstr "Складність кодування"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:196
+#: ../build/src/ui_transcoderoptionsmp3.h:197
 msgid "Encoding engine quality"
 msgstr "Якість кодування"
 
@@ -2110,7 +2102,7 @@ msgstr "Відповідає --log-levels *:1"
 msgid "Equivalent to --log-levels *:3"
 msgstr "Відповідає --log-levels *:3"
 
-#: core/mainwindow.cpp:2603 core/mainwindow.cpp:2754
+#: core/mainwindow.cpp:2596 core/mainwindow.cpp:2747
 #: collection/collectionview.cpp:586
 msgid "Error"
 msgstr "Помилка"
@@ -2247,34 +2239,34 @@ msgstr "Згасання"
 msgid "Fading duration"
 msgstr "Тривалість згасання"
 
-#: covermanager/albumcoverchoicecontroller.cpp:406
-#: covermanager/albumcoverchoicecontroller.cpp:423
+#: covermanager/albumcoverchoicecontroller.cpp:407
+#: covermanager/albumcoverchoicecontroller.cpp:424
 #, qt-format
 msgid "Failed to delete cover file %1: %2"
 msgstr "Не вдалось видалити файл обкладинки %1: %2"
 
-#: covermanager/albumcoverchoicecontroller.cpp:198
+#: covermanager/albumcoverchoicecontroller.cpp:199
 #, qt-format
 msgid "Failed to open cover file %1 for reading: %2"
 msgstr "Не вдалось відкрити файл обкладинки %1 для читання: %2"
 
-#: covermanager/albumcoverchoicecontroller.cpp:272
-#: covermanager/albumcoverchoicecontroller.cpp:642
+#: covermanager/albumcoverchoicecontroller.cpp:273
+#: covermanager/albumcoverchoicecontroller.cpp:643
 #, qt-format
 msgid "Failed to open cover file %1 for writing: %2"
 msgstr "Не вдалось відкрити файл обкладинки %1 для запису: %2"
 
-#: covermanager/albumcoverchoicecontroller.cpp:636
+#: covermanager/albumcoverchoicecontroller.cpp:637
 #, qt-format
 msgid "Failed to write cover to file %1: %2"
 msgstr "Не вдалось записати обкладинку в файл %1: %2"
 
-#: covermanager/albumcoverchoicecontroller.cpp:278
+#: covermanager/albumcoverchoicecontroller.cpp:279
 #, qt-format
 msgid "Failed writing cover to file %1."
 msgstr "Не вдалось записати обкладинку в файл %1."
 
-#: covermanager/albumcoverchoicecontroller.cpp:266
+#: covermanager/albumcoverchoicecontroller.cpp:267
 #, qt-format
 msgid "Failed writing cover to file %1: %2"
 msgstr "Не вдалось записати обкладинку в файл %1: %2"
@@ -2284,7 +2276,7 @@ msgid "Fallback-gain"
 msgstr "Вирівнювання гучності"
 
 #: ../build/src/ui_transcoderoptionsflac.h:78
-#: ../build/src/ui_transcoderoptionsmp3.h:197
+#: ../build/src/ui_transcoderoptionsmp3.h:198
 msgid "Fast"
 msgstr "Швидко"
 
@@ -2331,11 +2323,11 @@ msgstr "Розширення файлу"
 msgid "File formats"
 msgstr "Формати файлів"
 
-#: playlist/playlist.cpp:1355
+#: playlist/playlist.cpp:1375
 msgid "File name"
 msgstr "Назва файлу"
 
-#: playlist/playlist.cpp:1356
+#: playlist/playlist.cpp:1376
 msgid "File name (without path)"
 msgstr "Назва файлу (без шляху)"
 
@@ -2343,11 +2335,11 @@ msgstr "Назва файлу (без шляху)"
 msgid "File paths"
 msgstr "Шляхи до файлів"
 
-#: playlist/playlist.cpp:1357 ../build/src/ui_edittagdialog.h:838
+#: playlist/playlist.cpp:1377 ../build/src/ui_edittagdialog.h:838
 msgid "File size"
 msgstr "Розмір файлу"
 
-#: collection/savedgroupingmanager.cpp:136 playlist/playlist.cpp:1358
+#: collection/savedgroupingmanager.cpp:136 playlist/playlist.cpp:1378
 #: ../build/src/ui_groupbydialog.h:206 ../build/src/ui_groupbydialog.h:228
 #: ../build/src/ui_groupbydialog.h:250 ../build/src/ui_edittagdialog.h:825
 msgid "File type"
@@ -2361,7 +2353,7 @@ msgstr "Назва файлу"
 msgid "Filename:"
 msgstr "Назва файлу:"
 
-#: core/mainwindow.cpp:373
+#: core/mainwindow.cpp:372
 msgid "Files"
 msgstr "Файли"
 
@@ -2369,7 +2361,7 @@ msgstr "Файли"
 msgid "Files to transcode"
 msgstr "Файли для перекодування"
 
-#: ../build/src/ui_appearancesettingspage.h:629
+#: ../build/src/ui_appearancesettingspage.h:555
 msgid "Files, playlists and queue buttons"
 msgstr "Кнопки файлів, списків відтворення і черг"
 
@@ -2424,7 +2416,7 @@ msgstr "Для Ubuntu існує офіційне PPA-сховище на %1."
 msgid "For a better experience please consider the other options above."
 msgstr "Також вам можливо стануть у нагоді інші варіанти вище."
 
-#: ../build/src/ui_transcoderoptionsmp3.h:201
+#: ../build/src/ui_transcoderoptionsmp3.h:202
 msgid "Force mono encoding"
 msgstr "Примусове моно-кодування"
 
@@ -2461,7 +2453,7 @@ msgstr ""
 #: ../build/src/ui_transcoderoptionsopus.h:75
 #: ../build/src/ui_transcoderoptionsspeex.h:216
 #: ../build/src/ui_transcoderoptionsasf.h:74
-#: ../build/src/ui_transcoderoptionsmp3.h:189
+#: ../build/src/ui_transcoderoptionsmp3.h:190
 msgid "Form"
 msgstr "Форма"
 
@@ -2470,7 +2462,7 @@ msgstr "Форма"
 msgid "Format"
 msgstr "Формат"
 
-#: analyzer/analyzercontainer.cpp:63
+#: analyzer/analyzercontainer.cpp:64
 msgid "Framerate"
 msgstr "Частота кадрів"
 
@@ -2494,7 +2486,7 @@ msgstr "Повні баси + верхи"
 msgid "Full Treble"
 msgstr "Повні верхи"
 
-#: settings/settingsdialog.cpp:132
+#: settings/settingsdialog.cpp:131
 msgid "General"
 msgstr "Загальне"
 
@@ -2506,7 +2498,7 @@ msgstr "Загальні налаштування"
 msgid "Genius Authentication"
 msgstr "Автентифікація на Genius"
 
-#: collection/savedgroupingmanager.cpp:124 playlist/playlist.cpp:1341
+#: collection/savedgroupingmanager.cpp:124 playlist/playlist.cpp:1361
 #: organize/organizedialog.cpp:113 ../build/src/ui_groupbydialog.h:197
 #: ../build/src/ui_groupbydialog.h:219 ../build/src/ui_groupbydialog.h:241
 #: ../build/src/ui_edittagdialog.h:854
@@ -2554,79 +2546,79 @@ msgstr "Виділяти сірим недоступні пісні у спис�
 msgid "Group Collection by..."
 msgstr "Групувати фонотеку за..."
 
-#: collection/collectionfilterwidget.cpp:123
+#: collection/collectionfilterwidget.cpp:124
 #: internet/internetsearchview.cpp:345
 msgid "Group by"
 msgstr "Групувати за"
 
-#: collection/collectionfilterwidget.cpp:290
+#: collection/collectionfilterwidget.cpp:292
 msgid "Group by Album"
 msgstr "Групувати за альбомом"
 
-#: collection/collectionfilterwidget.cpp:287
+#: collection/collectionfilterwidget.cpp:289
 msgid "Group by Album Artist"
 msgstr "Групувати за виконавцем альбому"
 
-#: collection/collectionfilterwidget.cpp:274
+#: collection/collectionfilterwidget.cpp:276
 msgid "Group by Album artist/Album"
 msgstr "Групувати за виконавцем альбому/альбомом"
 
-#: collection/collectionfilterwidget.cpp:275
+#: collection/collectionfilterwidget.cpp:277
 msgid "Group by Album artist/Album - Disc"
 msgstr "Групувати за виконавцем альбому/альбомом - диском"
 
-#: collection/collectionfilterwidget.cpp:276
+#: collection/collectionfilterwidget.cpp:278
 msgid "Group by Album artist/Year - Album"
 msgstr "Групувати за виконавцем альбому/роком - альбомом"
 
-#: collection/collectionfilterwidget.cpp:277
+#: collection/collectionfilterwidget.cpp:279
 msgid "Group by Album artist/Year - Album - Disc"
 msgstr "Групувати за виконавцем альбому/роком - альбомом - диском"
 
-#: collection/collectionfilterwidget.cpp:288
+#: collection/collectionfilterwidget.cpp:290
 msgid "Group by Artist"
 msgstr "Групувати за виконавцем"
 
-#: collection/collectionfilterwidget.cpp:279
+#: collection/collectionfilterwidget.cpp:281
 msgid "Group by Artist/Album"
 msgstr "Групувати за виконавецем/альбомом"
 
-#: collection/collectionfilterwidget.cpp:280
+#: collection/collectionfilterwidget.cpp:282
 msgid "Group by Artist/Album - Disc"
 msgstr "Групувати за виконавцем/альбомом - диском"
 
-#: collection/collectionfilterwidget.cpp:281
+#: collection/collectionfilterwidget.cpp:283
 msgid "Group by Artist/Year - Album"
 msgstr "Групувати за виконавцем/роком - альбомом"
 
-#: collection/collectionfilterwidget.cpp:282
+#: collection/collectionfilterwidget.cpp:284
 msgid "Group by Artist/Year - Album - Disc"
 msgstr "Групувати за виконавцем/роком - альбомом - диском"
 
-#: collection/collectionfilterwidget.cpp:291
+#: collection/collectionfilterwidget.cpp:293
 msgid "Group by Genre/Album"
 msgstr "Групувати за жанром/альбомом"
 
-#: collection/collectionfilterwidget.cpp:284
+#: collection/collectionfilterwidget.cpp:286
 msgid "Group by Genre/Album artist/Album"
 msgstr "Групувати за жанром/виконавцем альбому/альбомом"
 
-#: collection/collectionfilterwidget.cpp:285
+#: collection/collectionfilterwidget.cpp:287
 msgid "Group by Genre/Artist/Album"
 msgstr "Групувати за жанром/виконавцем/альбомом"
 
-#: collection/savedgroupingmanager.cpp:133 playlist/playlist.cpp:1345
+#: collection/savedgroupingmanager.cpp:133 playlist/playlist.cpp:1365
 #: organize/organizedialog.cpp:108 ../build/src/ui_groupbydialog.h:205
 #: ../build/src/ui_groupbydialog.h:227 ../build/src/ui_groupbydialog.h:249
 #: ../build/src/ui_edittagdialog.h:846
 msgid "Grouping"
 msgstr "Групування"
 
-#: collection/collectionfilterwidget.cpp:348
+#: collection/collectionfilterwidget.cpp:350
 msgid "Grouping Name"
 msgstr "Назва групування"
 
-#: collection/collectionfilterwidget.cpp:348
+#: collection/collectionfilterwidget.cpp:350
 msgid "Grouping name:"
 msgstr "Назва групування:"
 
@@ -2658,11 +2650,11 @@ msgstr "Шістнадцяткове"
 msgid "Hide the main window"
 msgstr "Сховати головне вікно"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:199
+#: ../build/src/ui_transcoderoptionsmp3.h:200
 msgid "High"
 msgstr "Високий"
 
-#: analyzer/analyzercontainer.cpp:78
+#: analyzer/analyzercontainer.cpp:79
 #, qt-format
 msgid "High (%1 fps)"
 msgstr "Висока (%1 к/с)"
@@ -2671,7 +2663,7 @@ msgstr "Висока (%1 к/с)"
 msgid "High watermark"
 msgstr "Водяний знак зверху"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:447
+#: smartplaylists/smartplaylistsearchterm.cpp:449
 msgid "Hours"
 msgstr "Години"
 
@@ -2683,7 +2675,7 @@ msgstr "Пріоритет вводу-виводу"
 msgid "Icon"
 msgstr "Піктограма"
 
-#: ../build/src/ui_appearancesettingspage.h:624
+#: ../build/src/ui_appearancesettingspage.h:550
 msgid "Icon sizes"
 msgstr "Розміри піктограм"
 
@@ -2719,12 +2711,12 @@ msgstr ""
 "Якщо вам подобається Strawberry і ви часто ним користуєтесь, подумайте про "
 "спонсорство або пожертвування."
 
-#: covermanager/albumcoverchoicecontroller.cpp:76
+#: covermanager/albumcoverchoicecontroller.cpp:77
 msgid "Images (*.png *.jpg *.jpeg *.bmp *.gif *.xpm *.pbm *.pgm *.ppm *.xbm)"
 msgstr ""
 "Зображення (*.png *.jpg *.jpeg *.bmp *.gif *.xpm *.pbm *.pgm *.ppm *.xbm)"
 
-#: covermanager/albumcoverchoicecontroller.cpp:77
+#: covermanager/albumcoverchoicecontroller.cpp:78
 msgid "Images (*.png *.jpg *.jpeg *.bmp *.xpm *.pbm *.ppm *.xbm)"
 msgstr "Зображення (*.png *.jpg *.jpeg *.bmp *.xpm *.pbm *.ppm *.xbm)"
 
@@ -2830,7 +2822,7 @@ msgstr "Було виявлено, що Strawberry працює як Snap"
 msgid "Jump to previous song right away"
 msgstr "Перейти до попередньої композиції негайно"
 
-#: ../build/src/ui_appearancesettingspage.h:618
+#: ../build/src/ui_appearancesettingspage.h:544
 msgid "Keep aspect ratio"
 msgstr "Зберегти співвідношення сторін"
 
@@ -2862,7 +2854,7 @@ msgstr "Велика обкладинка альбому"
 msgid "Large sidebar"
 msgstr "Велика бічна панель"
 
-#: playlist/playlist.cpp:1349 smartplaylists/smartplaylistsmodel.cpp:91
+#: playlist/playlist.cpp:1369 smartplaylists/smartplaylistsmodel.cpp:91
 #: ../build/src/ui_lastfmimportdialog.h:150
 msgid "Last played"
 msgstr "Останнє відтворення"
@@ -2889,7 +2881,7 @@ msgstr "Найменш улюблені композиції"
 msgid "Left"
 msgstr "Ліворуч"
 
-#: context/contextview.cpp:209 playlist/playlist.cpp:1338
+#: context/contextview.cpp:209 playlist/playlist.cpp:1358
 #: organize/organizedialog.cpp:115 ../build/src/ui_edittagdialog.h:824
 msgid "Length"
 msgstr "Тривалість"
@@ -2922,16 +2914,16 @@ msgstr "Завантажити"
 msgid "Load cover from URL"
 msgstr "Завантаження обкладинки за адресою"
 
-#: covermanager/albumcoverchoicecontroller.cpp:109
+#: covermanager/albumcoverchoicecontroller.cpp:110
 msgid "Load cover from URL..."
 msgstr "Завантажити обкладинку з адресою..."
 
-#: covermanager/albumcoverchoicecontroller.cpp:177
-#: covermanager/albumcoverchoicecontroller.cpp:209
+#: covermanager/albumcoverchoicecontroller.cpp:178
+#: covermanager/albumcoverchoicecontroller.cpp:210
 msgid "Load cover from disk"
 msgstr "Завантаження обкладинки з диска"
 
-#: covermanager/albumcoverchoicecontroller.cpp:107
+#: covermanager/albumcoverchoicecontroller.cpp:108
 msgid "Load cover from disk..."
 msgstr "Завантажити обкладинку з диска..."
 
@@ -2951,7 +2943,7 @@ msgstr "Завантаження бази даних iPod"
 msgid "Loading smart playlist"
 msgstr "Завантаження розумного списку відтворення"
 
-#: collection/collectionmodel.cpp:197
+#: collection/collectionmodel.cpp:199
 msgid "Loading songs"
 msgstr "Завантаження пісень"
 
@@ -2963,7 +2955,7 @@ msgstr "Завантаження композицій"
 msgid "Loading tracks info"
 msgstr "Завантаження даних композицій"
 
-#: collection/collectionmodel.cpp:190
+#: collection/collectionmodel.cpp:192
 #: ../build/src/ui_smartplaylistsearchpreview.h:103
 #: ../build/src/ui_organizedialog.h:280
 msgid "Loading..."
@@ -2996,7 +2988,7 @@ msgstr "Профіль довготривалого передбачення (LT
 msgid "Love"
 msgstr "Люблю"
 
-#: analyzer/analyzercontainer.cpp:76
+#: analyzer/analyzercontainer.cpp:77
 #, qt-format
 msgid "Low (%1 fps)"
 msgstr "Низька (%1 к/с)"
@@ -3063,7 +3055,7 @@ msgstr "Відповідати кожному критерію пошуку (л�
 msgid "Match one or more search terms (OR)"
 msgstr "Відповідати одному чи кільком критеріям пошуку (логічне АБО)"
 
-#: ../build/src/ui_appearancesettingspage.h:616
+#: ../build/src/ui_appearancesettingspage.h:542
 msgid "Max cover size"
 msgstr "Найбільший розмір обкладинки"
 
@@ -3075,7 +3067,7 @@ msgstr "Найбільша бітова швидкість"
 msgid "Maximum number of login attempts reached."
 msgstr "Досягнута максимальна кількість спроб входу."
 
-#: analyzer/analyzercontainer.cpp:77
+#: analyzer/analyzercontainer.cpp:78
 #, qt-format
 msgid "Medium (%1 fps)"
 msgstr "Середня (%1 к/с)"
@@ -3084,7 +3076,7 @@ msgstr "Середня (%1 к/с)"
 msgid "Metadata"
 msgstr "Метадані"
 
-#: ../build/src/ui_appearancesettingspage.h:612
+#: ../build/src/ui_appearancesettingspage.h:538
 msgid "Middle"
 msgstr "Середній"
 
@@ -3092,7 +3084,7 @@ msgstr "Середній"
 msgid "Minimum bitrate"
 msgstr "Найменша бітова швидкість"
 
-#: settings/tidalsettingspage.cpp:163
+#: settings/tidalsettingspage.cpp:158
 msgid "Missing API token."
 msgstr "Відсутній маркер API."
 
@@ -3128,7 +3120,7 @@ msgstr "Відсутній маркер API, ім'я користувача аб
 msgid "Missing Tidal API token."
 msgstr "Відсутній маркер API Tidal."
 
-#: settings/tidalsettingspage.cpp:156
+#: settings/tidalsettingspage.cpp:151
 msgid "Missing Tidal client ID."
 msgstr "Відсутній ID клієнта Tidal."
 
@@ -3144,7 +3136,7 @@ msgstr "Відсутнє ім'я користувача Tidal."
 msgid "Missing app id."
 msgstr "Відсутній ідентифікатор додатку."
 
-#: settings/tidalsettingspage.cpp:171 settings/qobuzsettingspage.cpp:138
+#: settings/tidalsettingspage.cpp:166 settings/qobuzsettingspage.cpp:138
 msgid "Missing password."
 msgstr "Відсутній пароль."
 
@@ -3160,7 +3152,7 @@ msgstr "Відсутнє ім'я користувача або пароль."
 msgid "Missing username, please login to last.fm first!"
 msgstr "Відсутнє ім'я користувача. Спочатку увійдіть до last.fm!"
 
-#: settings/tidalsettingspage.cpp:167 settings/qobuzsettingspage.cpp:134
+#: settings/tidalsettingspage.cpp:162 settings/qobuzsettingspage.cpp:134
 msgid "Missing username."
 msgstr "Відсутнє ім'я користувача."
 
@@ -3172,11 +3164,11 @@ msgstr "Модель"
 msgid "Monitor the collection for changes"
 msgstr "Стежити за змінами у фонотеці"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:453
+#: smartplaylists/smartplaylistsearchterm.cpp:455
 msgid "Months"
 msgstr "Місяці"
 
-#: playlist/playlist.cpp:1364
+#: playlist/playlist.cpp:1384
 msgid "Mood"
 msgstr "Настрій"
 
@@ -3193,7 +3185,7 @@ msgstr "Стиль панелі настрою"
 msgid "Most played"
 msgstr "Найчастіше відтворювались"
 
-#: device/giolister.cpp:192
+#: device/giolister.cpp:191
 msgid "Mount point"
 msgstr "Точка монтування"
 
@@ -3206,7 +3198,7 @@ msgstr "Точки монтування"
 msgid "Move down"
 msgstr "Перемістити вниз"
 
-#: core/mainwindow.cpp:755 widgets/fileviewlist.cpp:47
+#: core/mainwindow.cpp:754 widgets/fileviewlist.cpp:47
 msgid "Move to collection..."
 msgstr "Перемістити до фонотеки..."
 
@@ -3215,7 +3207,7 @@ msgstr "Перемістити до фонотеки..."
 msgid "Move up"
 msgstr "Перемістити вгору"
 
-#: core/mainwindow.cpp:2208 transcoder/transcodedialog.cpp:333
+#: core/mainwindow.cpp:2201 transcoder/transcodedialog.cpp:333
 msgid "Music"
 msgstr "Музика"
 
@@ -3259,7 +3251,7 @@ msgstr "Ніколи не починати відтворення"
 msgid "New folder"
 msgstr "Нова папка"
 
-#: core/mainwindow.cpp:2026
+#: core/mainwindow.cpp:2019
 msgid "New playlist"
 msgstr "Новий список відтворення"
 
@@ -3295,7 +3287,7 @@ msgstr ""
 msgid "Next week"
 msgstr "Наступного тижня"
 
-#: analyzer/analyzercontainer.cpp:89
+#: analyzer/analyzercontainer.cpp:91
 msgid "No analyzer"
 msgstr "Без аналізатора"
 
@@ -3307,7 +3299,7 @@ msgstr "Немає зображень обкладинок для експорт
 msgid "No long blocks"
 msgstr "Без довгих блоків"
 
-#: tidal/tidalrequest.cpp:1352 qobuz/qobuzrequest.cpp:1414
+#: tidal/tidalrequest.cpp:1358 qobuz/qobuzrequest.cpp:1414
 msgid "No match."
 msgstr "Немає збігів."
 
@@ -3336,7 +3328,7 @@ msgstr "Нічого не відтворюється"
 msgid "None"
 msgstr "Немає"
 
-#: core/mainwindow.cpp:2603 core/mainwindow.cpp:2754
+#: core/mainwindow.cpp:2596 core/mainwindow.cpp:2747
 #: collection/collectionview.cpp:586
 msgid "None of the selected songs were suitable for copying to a device"
 msgstr "Жодна з вибраних композицій не придатна для копіювання на пристрій"
@@ -3420,7 +3412,7 @@ msgstr "Під час запуску"
 msgid "Only show the first"
 msgstr "Показати тільки перший"
 
-#: ../build/src/ui_appearancesettingspage.h:622
+#: ../build/src/ui_appearancesettingspage.h:548
 msgid "Opacity"
 msgstr "Непрозорість"
 
@@ -3458,11 +3450,11 @@ msgstr "Відкрити у новому списку відтворення"
 msgid "Open..."
 msgstr "Відкрити..."
 
-#: ../build/src/ui_transcoderoptionsmp3.h:192
+#: ../build/src/ui_transcoderoptionsmp3.h:193
 msgid "Opti&mize for bitrate"
 msgstr "Оптимізувати під &бітову швидкість"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:190
+#: ../build/src/ui_transcoderoptionsmp3.h:191
 msgid "Optimize for &quality"
 msgstr "Оптимізувати під &якість"
 
@@ -3482,7 +3474,7 @@ msgstr "Opus"
 msgid "Organize Files"
 msgstr "Впорядкування файлів"
 
-#: core/mainwindow.cpp:753 collection/collectionview.cpp:357
+#: core/mainwindow.cpp:752 collection/collectionview.cpp:357
 msgid "Organize files..."
 msgstr "Впорядкувати файли..."
 
@@ -3494,7 +3486,7 @@ msgstr "Впорядкування файлів"
 msgid "Original tags"
 msgstr "Початкові теги"
 
-#: collection/savedgroupingmanager.cpp:121 playlist/playlist.cpp:1340
+#: collection/savedgroupingmanager.cpp:121 playlist/playlist.cpp:1360
 #: organize/organizedialog.cpp:112 ../build/src/ui_groupbydialog.h:201
 #: ../build/src/ui_groupbydialog.h:223 ../build/src/ui_groupbydialog.h:245
 msgid "Original year"
@@ -3572,7 +3564,7 @@ msgstr "Шлях"
 msgid "Pattern"
 msgstr "Шаблон"
 
-#: core/mainwindow.cpp:1324 core/mainwindow.cpp:1823
+#: core/mainwindow.cpp:1317 core/mainwindow.cpp:1816
 #: core/qtsystemtrayicon.cpp:144 globalshortcuts/globalshortcutsmanager.cpp:62
 msgid "Pause"
 msgstr "Призупинити"
@@ -3585,7 +3577,7 @@ msgstr "Призупинити відтворення"
 msgid "Paused"
 msgstr "Призупинено"
 
-#: collection/savedgroupingmanager.cpp:130 playlist/playlist.cpp:1344
+#: collection/savedgroupingmanager.cpp:130 playlist/playlist.cpp:1364
 #: organize/organizedialog.cpp:107 ../build/src/ui_groupbydialog.h:204
 #: ../build/src/ui_groupbydialog.h:226 ../build/src/ui_groupbydialog.h:248
 #: ../build/src/ui_edittagdialog.h:856
@@ -3600,17 +3592,17 @@ msgstr "Піксель"
 msgid "Plain sidebar"
 msgstr "Звичайна бічна панель"
 
-#: core/mainwindow.cpp:722 core/mainwindow.cpp:1281 core/mainwindow.cpp:1308
-#: core/mainwindow.cpp:1827 core/qtsystemtrayicon.cpp:157
+#: core/mainwindow.cpp:721 core/mainwindow.cpp:1274 core/mainwindow.cpp:1301
+#: core/mainwindow.cpp:1820 core/qtsystemtrayicon.cpp:157
 #: core/qtsystemtrayicon.cpp:171 globalshortcuts/globalshortcutsmanager.cpp:61
 msgid "Play"
 msgstr "Відтворити"
 
-#: ../build/src/ui_appearancesettingspage.h:627
+#: ../build/src/ui_appearancesettingspage.h:553
 msgid "Play control buttons"
 msgstr "Кнопки керування відтворенням"
 
-#: playlist/playlist.cpp:1347 ../build/src/ui_edittagdialog.h:831
+#: playlist/playlist.cpp:1367 ../build/src/ui_edittagdialog.h:831
 msgid "Play count"
 msgstr "Кількість відтворень"
 
@@ -3666,7 +3658,7 @@ msgstr "Налаштування програвача"
 msgid "Playlist"
 msgstr "Список відтворення"
 
-#: ../build/src/ui_appearancesettingspage.h:625
+#: ../build/src/ui_appearancesettingspage.h:551
 msgid "Playlist buttons"
 msgstr "Кнопки керування списком відтворення"
 
@@ -3674,7 +3666,7 @@ msgstr "Кнопки керування списком відтворення"
 msgid "Playlist finished"
 msgstr "Список відтворення завершився"
 
-#: core/mainwindow.cpp:2299
+#: core/mainwindow.cpp:2292
 #, qt-format
 msgid ""
 "Playlist has %1 songs, too large to undo, are you sure you want to clear the "
@@ -3692,7 +3684,7 @@ msgstr "Спочатку необхідно відкрити список від
 msgid "Playlist options"
 msgstr "Налаштування списку відтворення"
 
-#: ../build/src/ui_appearancesettingspage.h:631
+#: ../build/src/ui_appearancesettingspage.h:557
 msgid "Playlist playing song color"
 msgstr "Колір відтворюваної композиції у списку"
 
@@ -3700,7 +3692,7 @@ msgstr "Колір відтворюваної композиції у списк
 msgid "Playlist type"
 msgstr "Тип списку відтворення"
 
-#: core/mainwindow.cpp:371
+#: core/mainwindow.cpp:370
 msgid "Playlists"
 msgstr "Списки відтворення"
 
@@ -3725,7 +3717,7 @@ msgstr "Тривалість спливаючого сповіщення"
 msgid "Port"
 msgstr "Порт"
 
-#: ../build/src/ui_appearancesettingspage.h:609
+#: ../build/src/ui_appearancesettingspage.h:535
 msgid "Position"
 msgstr "Розташування"
 
@@ -3752,7 +3744,7 @@ msgstr "Бажані імена файлів для обкладинок, роз
 msgid "Preferred format"
 msgstr "Бажаний формат"
 
-#: collection/collectionfilterwidget.cpp:78
+#: collection/collectionfilterwidget.cpp:79
 msgid ""
 "Prefix a word with a field name to limit the search to that field, e.g.:"
 msgstr ""
@@ -3826,7 +3818,7 @@ msgstr "Поступ"
 msgid "Put songs in a random order"
 msgstr "Перемішати композиції у довільному порядку"
 
-#: core/mainwindow.cpp:385 ../build/src/ui_scrobblersettingspage.h:423
+#: core/mainwindow.cpp:384 ../build/src/ui_scrobblersettingspage.h:423
 #: ../build/src/ui_qobuzsettingspage.h:276
 msgid "Qobuz"
 msgstr "Qobuz"
@@ -3843,7 +3835,7 @@ msgstr ""
 #: ../build/src/ui_transcoderoptionsflac.h:77
 #: ../build/src/ui_transcoderoptionsvorbis.h:198
 #: ../build/src/ui_transcoderoptionsspeex.h:217
-#: ../build/src/ui_transcoderoptionsmp3.h:191
+#: ../build/src/ui_transcoderoptionsmp3.h:192
 msgctxt "Sound quality"
 msgid "Quality"
 msgstr "Якість"
@@ -3852,24 +3844,24 @@ msgstr "Якість"
 msgid "Querying device..."
 msgstr "Опитування пристрою..."
 
-#: core/mainwindow.cpp:370
+#: core/mainwindow.cpp:369
 msgid "Queue"
 msgstr "Черга"
 
-#: core/mainwindow.cpp:1927
+#: core/mainwindow.cpp:1920
 msgid "Queue selected tracks"
 msgstr "Додати до черги обрані композиції"
 
-#: core/mainwindow.cpp:728 core/mainwindow.cpp:1931
+#: core/mainwindow.cpp:727 core/mainwindow.cpp:1924
 msgid "Queue selected tracks to play next"
 msgstr "Відтворити наступними обрані композиції"
 
-#: core/mainwindow.cpp:1934 collection/collectionview.cpp:354
+#: core/mainwindow.cpp:1927 collection/collectionview.cpp:354
 #: internet/internetcollectionview.cpp:320
 msgid "Queue to play next"
 msgstr "Відтворити наступним"
 
-#: core/mainwindow.cpp:1926 collection/collectionview.cpp:353
+#: core/mainwindow.cpp:1919 collection/collectionview.cpp:353
 #: smartplaylists/smartplaylistsviewcontainer.cpp:72
 #: internet/internetsearchview.cpp:323 internet/internetcollectionview.cpp:319
 msgid "Queue track"
@@ -3887,7 +3879,7 @@ msgstr "Радіо (однакова гучність всіх композиц�
 msgid "Radio Paradise"
 msgstr "Радіо Paradise"
 
-#: core/mainwindow.cpp:374
+#: core/mainwindow.cpp:373
 msgid "Radios"
 msgstr "Радіостанції"
 
@@ -3895,7 +3887,7 @@ msgstr "Радіостанції"
 msgid "Random"
 msgstr "Випадково"
 
-#: playlist/playlist.cpp:1365 ../build/src/ui_edittagdialog.h:859
+#: playlist/playlist.cpp:1385 ../build/src/ui_edittagdialog.h:859
 msgid "Rating"
 msgstr "Рейтинг"
 
@@ -3937,12 +3929,12 @@ msgstr ""
 "Отримана недійсна відповідь з веб-браузера. Спробуйте HTTPS або інший "
 "браузер, наприклад Chromium чи Chrome."
 
-#: tidal/tidalrequest.cpp:1185 qobuz/qobuzrequest.cpp:1247
+#: tidal/tidalrequest.cpp:1191 qobuz/qobuzrequest.cpp:1247
 #, qt-format
 msgid "Receiving album cover for %1 album..."
 msgstr ""
 
-#: tidal/tidalrequest.cpp:1186 qobuz/qobuzrequest.cpp:1248
+#: tidal/tidalrequest.cpp:1192 qobuz/qobuzrequest.cpp:1248
 #, qt-format
 msgid "Receiving album covers for %1 albums..."
 msgstr ""
@@ -4145,7 +4137,7 @@ msgstr "Повторно заповнити"
 msgid "Rescan song(s)"
 msgstr "Сканування композицій"
 
-#: core/mainwindow.cpp:744
+#: core/mainwindow.cpp:743
 msgid "Rescan song(s)..."
 msgstr "Сканувати композиції..."
 
@@ -4153,9 +4145,13 @@ msgstr "Сканувати композиції..."
 msgid "Reset"
 msgstr "Скинути"
 
-#: dialogs/edittagdialog.cpp:1298 ../build/src/ui_edittagdialog.h:840
+#: ../build/src/ui_edittagdialog.h:840
 msgid "Reset play counts"
 msgstr "Скинути лічильник відтворень"
+
+#: dialogs/edittagdialog.cpp:1315
+msgid "Reset song statistics"
+msgstr ""
 
 #: core/commandlineoptions.cpp:190
 msgid "Resize the window"
@@ -4242,7 +4238,7 @@ msgstr "Безпечно відключити пристрій"
 msgid "Safely remove the device after copying"
 msgstr "Безпечно відключити пристрій після копіювання"
 
-#: collection/savedgroupingmanager.cpp:142 playlist/playlist.cpp:1351
+#: collection/savedgroupingmanager.cpp:142 playlist/playlist.cpp:1371
 #: organize/organizedialog.cpp:117 ../build/src/ui_groupbydialog.h:207
 #: ../build/src/ui_groupbydialog.h:229 ../build/src/ui_groupbydialog.h:251
 #: ../build/src/ui_edittagdialog.h:834
@@ -4257,7 +4253,7 @@ msgstr "Частота вибірки"
 msgid "Save &playlist..."
 msgstr "Зберегти &список відтворення..."
 
-#: covermanager/albumcoverchoicecontroller.cpp:246
+#: covermanager/albumcoverchoicecontroller.cpp:247
 msgid "Save album cover"
 msgstr "Зберегти обкладинку альбому"
 
@@ -4273,7 +4269,7 @@ msgstr "Зберегти обкладинки альбому в каталозі
 msgid "Save album covers in cache directory"
 msgstr "Зберегти обкладинки альбому в каталозі кешу"
 
-#: covermanager/albumcoverchoicecontroller.cpp:108
+#: covermanager/albumcoverchoicecontroller.cpp:109
 msgid "Save cover to disk..."
 msgstr "Зберегти обкладинку на диск..."
 
@@ -4343,12 +4339,12 @@ msgstr "Масштабований розмір"
 msgid "Scrobbler"
 msgstr "Скроблер"
 
-#: scrobbler/scrobblingapi20.cpp:1019
+#: scrobbler/scrobblingapi20.cpp:1020
 #, qt-format
 msgid "Scrobbler %1 error: %2"
 msgstr "Помилка скроблера %1: %2"
 
-#: scrobbler/scrobblingapi20.cpp:533
+#: scrobbler/scrobblingapi20.cpp:534
 #, qt-format
 msgid "Scrobbler %1 is not authenticated!"
 msgstr "Помилка автентифікації скроблера %1!"
@@ -4360,7 +4356,7 @@ msgstr "Помилка автентифікації скроблера %1!"
 msgid "Search"
 msgstr "Пошук"
 
-#: covermanager/albumcoverchoicecontroller.cpp:118
+#: covermanager/albumcoverchoicecontroller.cpp:119
 msgid "Search automatically"
 msgstr "Шукати автоматично"
 
@@ -4369,7 +4365,7 @@ msgstr "Шукати автоматично"
 msgid "Search delay"
 msgstr "Затримка пошуку"
 
-#: covermanager/albumcoverchoicecontroller.cpp:110
+#: covermanager/albumcoverchoicecontroller.cpp:111
 msgid "Search for album covers..."
 msgstr "Шукати обкладинки альбомів..."
 
@@ -4424,11 +4420,7 @@ msgstr "Перемотати поточну композицію на абсол
 msgid "Seeking using a keyboard shortcut or mouse wheel"
 msgstr "Позиціювання за допомогою сполучення клавіш або коліщатка миші"
 
-#: ../build/src/ui_appearancesettingspage.h:591
-msgid "Select background color:"
-msgstr "Оберіть колір заднього плану:"
-
-#: settings/appearancesettingspage.cpp:402
+#: settings/appearancesettingspage.cpp:300
 msgid "Select background image"
 msgstr "Вибір фонового зображення"
 
@@ -4444,15 +4436,11 @@ msgstr ""
 msgid "Select directory for the playlists"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:589
-msgid "Select foreground color:"
-msgstr "Оберіть колір переднього плану:"
-
-#: ../build/src/ui_appearancesettingspage.h:634
+#: ../build/src/ui_appearancesettingspage.h:560
 msgid "Select playlist playing song color:"
 msgstr "Виберіть колір відтворюваної композиції у списку:"
 
-#: ../build/src/ui_appearancesettingspage.h:597
+#: ../build/src/ui_appearancesettingspage.h:523
 msgid "Select tabbar color:"
 msgstr "Виберіть колір панелі вкладок:"
 
@@ -4480,7 +4468,7 @@ msgstr "Недійсна адреса сервера."
 msgid "Server-side scrobbling"
 msgstr "Скроблінг на боці сервера"
 
-#: core/mainwindow.cpp:1967
+#: core/mainwindow.cpp:1960
 #, qt-format
 msgid "Set %1 to \"%2\"..."
 msgstr "Встановити %1 у «%2»..."
@@ -4497,7 +4485,7 @@ msgstr "Встановити значення для всіх вибраних �
 msgid "Settings"
 msgstr "Налаштування"
 
-#: ../build/src/ui_appearancesettingspage.h:585
+#: ../build/src/ui_appearancesettingspage.h:518
 msgid "Settings require restart."
 msgstr "Для налаштувань потрібен перезапуск."
 
@@ -4511,7 +4499,7 @@ msgstr "Сполучення клавіш"
 msgid "Shortcut for %1"
 msgstr "Сполучення клавіш для %1"
 
-#: collection/collectionfilterwidget.cpp:113
+#: collection/collectionfilterwidget.cpp:114
 msgid "Show"
 msgstr "Показати"
 
@@ -4567,7 +4555,7 @@ msgstr "Показати обкладинку альбому"
 msgid "Show album cover art in collection"
 msgstr "Показати обкладинку альбому в фонотеці"
 
-#: core/mainwindow.cpp:670
+#: core/mainwindow.cpp:669
 msgid "Show all songs"
 msgstr "Показати всі композиції"
 
@@ -4591,11 +4579,11 @@ msgstr "Показати розділювач"
 msgid "Show engine and device"
 msgstr "Показати обробник та пристрій"
 
-#: covermanager/albumcoverchoicecontroller.cpp:116
+#: covermanager/albumcoverchoicecontroller.cpp:117
 msgid "Show fullsize..."
 msgstr "Показати на повний розмір..."
 
-#: core/mainwindow.cpp:751
+#: core/mainwindow.cpp:750
 msgid "Show in collection..."
 msgstr "Показати у фонотеці..."
 
@@ -4603,7 +4591,7 @@ msgstr "Показати у фонотеці..."
 msgid "Show in file browser"
 msgstr "Показати в оглядачі файлів"
 
-#: core/mainwindow.cpp:752 collection/collectionview.cpp:366
+#: core/mainwindow.cpp:751 collection/collectionview.cpp:366
 #: widgets/fileviewlist.cpp:53
 msgid "Show in file browser..."
 msgstr "Показати в оглядачі файлів..."
@@ -4620,11 +4608,11 @@ msgstr "Показати кнопку «Люблю»"
 msgid "Show moodbar"
 msgstr "Показувати панель настрою"
 
-#: core/mainwindow.cpp:671
+#: core/mainwindow.cpp:670
 msgid "Show only duplicates"
 msgstr "Показати тільки дублікати"
 
-#: core/mainwindow.cpp:672
+#: core/mainwindow.cpp:671
 msgid "Show only untagged"
 msgstr "Показати тільки без тегів"
 
@@ -4713,7 +4701,7 @@ msgstr "Ска"
 msgid "Skip backwards in playlist"
 msgstr "Перескочити назад в списку композицій"
 
-#: playlist/playlist.cpp:1348 ../build/src/ui_edittagdialog.h:829
+#: playlist/playlist.cpp:1368 ../build/src/ui_edittagdialog.h:829
 msgid "Skip count"
 msgstr "Кількість пропусків"
 
@@ -4721,11 +4709,11 @@ msgstr "Кількість пропусків"
 msgid "Skip forwards in playlist"
 msgstr "Перескочити вперед у списку композицій"
 
-#: core/mainwindow.cpp:1940
+#: core/mainwindow.cpp:1933
 msgid "Skip selected tracks"
 msgstr "Пропустити позначені композиції"
 
-#: core/mainwindow.cpp:1939
+#: core/mainwindow.cpp:1932
 msgid "Skip track"
 msgstr "Пропустити композицію"
 
@@ -4741,7 +4729,7 @@ msgstr "Маленька бічна панель"
 msgid "Smart playlist"
 msgstr "Розумний список відтворення"
 
-#: core/mainwindow.cpp:372
+#: core/mainwindow.cpp:371
 msgid "Smart playlists"
 msgstr "Розумні списки відтворення"
 
@@ -4788,6 +4776,10 @@ msgstr ""
 msgid "Songs search limit"
 msgstr "Обмеження пошуку композицій"
 
+#: analyzer/sonogram.cpp:29
+msgid "Sonogram"
+msgstr ""
+
 #: ../build/src/ui_trackselectiondialog.h:203
 msgid "Sorry"
 msgstr "Вибачте"
@@ -4800,7 +4792,7 @@ msgstr "Сортувати композиції за"
 msgid "Sorting"
 msgstr "Сортування"
 
-#: playlist/playlist.cpp:1363
+#: playlist/playlist.cpp:1383
 msgid "Source"
 msgstr "Джерело"
 
@@ -4812,7 +4804,7 @@ msgstr "Speex"
 msgid "Spotify Authentication"
 msgstr "Автентифікація на Spotify"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:198
+#: ../build/src/ui_transcoderoptionsmp3.h:199
 msgid "Standard"
 msgstr "Стандартний"
 
@@ -4845,7 +4837,7 @@ msgstr "Зупинятися після кожної композиції"
 msgid "Stop after every track"
 msgstr "Зупинятися після будь-якої композиції"
 
-#: core/mainwindow.cpp:724 ../build/src/ui_mainwindow.h:630
+#: core/mainwindow.cpp:723 ../build/src/ui_mainwindow.h:630
 msgid "Stop after this track"
 msgstr "Зупинити після цієї композиції"
 
@@ -4938,16 +4930,16 @@ msgstr "Потік"
 msgid "Stream URL method"
 msgstr "Протокол адреси потоку"
 
-#: settings/settingsdialog.cpp:159
+#: settings/settingsdialog.cpp:158
 msgid "Streaming"
 msgstr "Потік"
 
-#: ../build/src/ui_appearancesettingspage.h:617
+#: ../build/src/ui_appearancesettingspage.h:543
 msgid "Stretch image to fill playlist"
 msgstr "Розтягнути зображення, щоб заповнити список відтворення"
 
-#: ../build/src/ui_appearancesettingspage.h:582
-#: ../build/src/ui_appearancesettingspage.h:583
+#: ../build/src/ui_appearancesettingspage.h:515
+#: ../build/src/ui_appearancesettingspage.h:516
 msgid "Style"
 msgstr "Стиль"
 
@@ -4955,7 +4947,7 @@ msgstr "Стиль"
 msgid "Submit scrobbles every"
 msgstr "Надсилати дані скроблінгу кожні"
 
-#: core/mainwindow.cpp:379 ../build/src/ui_scrobblersettingspage.h:419
+#: core/mainwindow.cpp:378 ../build/src/ui_scrobblersettingspage.h:419
 #: ../build/src/ui_subsonicsettingspage.h:243
 msgid "Subsonic"
 msgstr "Subsonic"
@@ -4983,7 +4975,7 @@ msgstr "Пропоновані теги"
 msgid "Summary"
 msgstr "Зведення"
 
-#: analyzer/analyzercontainer.cpp:79
+#: analyzer/analyzercontainer.cpp:80
 #, qt-format
 msgid "Super high (%1 fps)"
 msgstr "Найвища (%1 к/с)"
@@ -4996,19 +4988,19 @@ msgstr "Підтримувані формати"
 msgid "System colors"
 msgstr "Системні кольори"
 
-#: ../build/src/ui_appearancesettingspage.h:632
+#: ../build/src/ui_appearancesettingspage.h:558
 msgid "System highlight color"
 msgstr "Системний колір виділення"
 
-#: ../build/src/ui_appearancesettingspage.h:593
+#: ../build/src/ui_appearancesettingspage.h:519
 msgid "Tabbar colors"
 msgstr "Колір панелі вкладок"
 
-#: ../build/src/ui_appearancesettingspage.h:626
+#: ../build/src/ui_appearancesettingspage.h:552
 msgid "Tabbar large mode"
 msgstr "Велика панель вкладок"
 
-#: ../build/src/ui_appearancesettingspage.h:630
+#: ../build/src/ui_appearancesettingspage.h:556
 msgid "Tabbar small mode"
 msgstr "Мала панель вкладок"
 
@@ -5070,7 +5062,7 @@ msgstr "Дякуємо всім іншим учасникам проектів A
 msgid "The \"%1\" command could not be started."
 msgstr "Команду \"%1\" не вдалось виконати."
 
-#: ../build/src/ui_appearancesettingspage.h:603
+#: ../build/src/ui_appearancesettingspage.h:529
 msgid "The album cover of the currently playing song"
 msgstr ""
 "Обкладинка альбому, до якого увійшла композиція, яка зараз відтворюється"
@@ -5095,7 +5087,7 @@ msgstr "Вказана адреса не існує!"
 msgid "The site you requested is not an image!"
 msgstr "Вказана адреса не є малюнком!"
 
-#: core/mainwindow.cpp:2867
+#: core/mainwindow.cpp:2860
 msgid ""
 "The version of Strawberry you've just updated to requires a full collection "
 "rescan because of the new features listed below:"
@@ -5199,7 +5191,7 @@ msgstr "Цей тип пристрою не підтримується: %1"
 msgid "Thread priority"
 msgstr "Пріоритет потоку"
 
-#: core/mainwindow.cpp:382 ../build/src/ui_scrobblersettingspage.h:421
+#: core/mainwindow.cpp:381 ../build/src/ui_scrobblersettingspage.h:421
 #: ../build/src/ui_tidalsettingspage.h:318
 msgid "Tidal"
 msgstr "Tidal"
@@ -5216,7 +5208,7 @@ msgstr ""
 msgid "Time step"
 msgstr "Крок за часом"
 
-#: playlist/playlist.cpp:1333 organize/organizedialog.cpp:101
+#: playlist/playlist.cpp:1353 organize/organizedialog.cpp:101
 #: ../build/src/ui_contextsettingspage.h:428
 #: ../build/src/ui_edittagdialog.h:850
 #: ../build/src/ui_trackselectiondialog.h:209
@@ -5231,7 +5223,7 @@ msgstr "Сьогодні"
 msgid "Toggle Pretty OSD"
 msgstr ""
 
-#: core/mainwindow.cpp:725 core/mainwindow.cpp:1928
+#: core/mainwindow.cpp:724 core/mainwindow.cpp:1921
 msgid "Toggle queue status"
 msgstr "Перемикнути статус черги"
 
@@ -5239,7 +5231,7 @@ msgstr "Перемикнути статус черги"
 msgid "Toggle scrobbling"
 msgstr "Змінити режим скроблінгу"
 
-#: core/mainwindow.cpp:731 core/mainwindow.cpp:1941
+#: core/mainwindow.cpp:730 core/mainwindow.cpp:1934
 msgid "Toggle skip status"
 msgstr "Змінити стан пропуску"
 
@@ -5267,7 +5259,7 @@ msgstr "Всього передано байт"
 msgid "Total network requests made"
 msgstr "Всього зроблено запитів до мережі"
 
-#: playlist/playlist.cpp:1336 organize/organizedialog.cpp:109
+#: playlist/playlist.cpp:1356 organize/organizedialog.cpp:109
 #: ../build/src/ui_edittagdialog.h:858
 #: ../build/src/ui_trackselectiondialog.h:211
 msgid "Track"
@@ -5302,7 +5294,7 @@ msgstr "Вимкнути"
 msgid "Type"
 msgstr ""
 
-#: device/giolister.cpp:194
+#: device/giolister.cpp:193
 msgid "URI"
 msgstr "Адреса"
 
@@ -5326,10 +5318,10 @@ msgstr ""
 msgid "Uninstall the snap with:"
 msgstr "Видалити snap з:"
 
-#: core/song.cpp:673 collection/collectionmodel.cpp:476
-#: collection/collectionmodel.cpp:481 collection/collectionmodel.cpp:485
-#: collection/collectionmodel.cpp:489 collection/collectionmodel.cpp:493
-#: collection/collectionmodel.cpp:1642 collection/savedgroupingmanager.cpp:152
+#: core/song.cpp:673 collection/collectionmodel.cpp:478
+#: collection/collectionmodel.cpp:483 collection/collectionmodel.cpp:487
+#: collection/collectionmodel.cpp:491 collection/collectionmodel.cpp:495
+#: collection/collectionmodel.cpp:1655 collection/savedgroupingmanager.cpp:152
 #: playlist/playlistdelegates.cpp:360 playlist/playlistmanager.cpp:549
 #: playlist/playlistmanager.cpp:550 dialogs/edittagdialog.cpp:764
 #: dialogs/edittagdialog.cpp:791 ../build/src/ui_scrobblersettingspage.h:428
@@ -5352,15 +5344,15 @@ msgstr ""
 msgid "Unset"
 msgstr "Вилучити"
 
-#: covermanager/albumcoverchoicecontroller.cpp:111
+#: covermanager/albumcoverchoicecontroller.cpp:112
 msgid "Unset cover"
 msgstr "Вилучити обкладинку"
 
-#: core/mainwindow.cpp:1938
+#: core/mainwindow.cpp:1931
 msgid "Unskip selected tracks"
 msgstr "Не пропускати вибрані композиції"
 
-#: core/mainwindow.cpp:1937
+#: core/mainwindow.cpp:1930
 msgid "Unskip track"
 msgstr "Не пропускати композицію"
 
@@ -5373,7 +5365,7 @@ msgstr "Оновлювати фонотеку під час запуску Straw
 msgid "Updating %1"
 msgstr "Оновлення %1"
 
-#: collection/collectionbackend.cpp:694
+#: collection/collectionbackend.cpp:695
 #, qt-format
 msgid "Updating %1 database."
 msgstr "Оновлення бази даних %1."
@@ -5391,11 +5383,11 @@ msgstr "Оновлення фонотеки"
 msgid "Upmix / downmix to"
 msgstr "Знижувальне/збільшувальне мікшування"
 
-#: ../build/src/ui_appearancesettingspage.h:610
+#: ../build/src/ui_appearancesettingspage.h:536
 msgid "Upper Left"
 msgstr "Вгорі ліворуч"
 
-#: ../build/src/ui_appearancesettingspage.h:611
+#: ../build/src/ui_appearancesettingspage.h:537
 msgid "Upper Right"
 msgstr "Вгорі праворуч"
 
@@ -5443,10 +5435,6 @@ msgstr "Використовувати налаштування Tidal для а�
 msgid "Use X11 shortcuts when available"
 msgstr "Використовувати сполучення клавіш X11, якщо можливо"
 
-#: ../build/src/ui_appearancesettingspage.h:588
-msgid "Use a custom color set"
-msgstr "Використати власну палітру кольорів"
-
 #: ../build/src/ui_notificationssettingspage.h:492
 msgid "Use a custom message for notifications"
 msgstr "Використовувати власне повідомлення для сповіщень"
@@ -5463,7 +5451,7 @@ msgstr "Використовувати автентифікацію"
 msgid "Use bitrate management engine"
 msgstr "Використовувати засіб керування бітовою швидкістю"
 
-#: ../build/src/ui_appearancesettingspage.h:595
+#: ../build/src/ui_appearancesettingspage.h:521
 msgid "Use custom color"
 msgstr "Використовувати власний колір"
 
@@ -5471,7 +5459,7 @@ msgstr "Використовувати власний колір"
 msgid "Use dynamic mode"
 msgstr "Використовувати динамічний режим"
 
-#: ../build/src/ui_appearancesettingspage.h:596
+#: ../build/src/ui_appearancesettingspage.h:522
 msgid "Use gradient background"
 msgstr "Використовувати градієнтний фон"
 
@@ -5479,7 +5467,7 @@ msgstr "Використовувати градієнтний фон"
 msgid "Use proxy settings for streaming"
 msgstr "Використовувати налаштування проксі для потокового передавання"
 
-#: ../build/src/ui_appearancesettingspage.h:584
+#: ../build/src/ui_appearancesettingspage.h:517
 msgid "Use system theme icons"
 msgstr "Використовувати системний набір піктограм"
 
@@ -5495,7 +5483,7 @@ msgstr "Використовувати системну"
 msgid "Used"
 msgstr "Використано"
 
-#: settings/settingsdialog.cpp:145
+#: settings/settingsdialog.cpp:144
 msgid "User interface"
 msgstr "Інтерфейс користувача"
 
@@ -5528,7 +5516,7 @@ msgstr "Використання меню для додавання композ
 msgid "Variable bit rate"
 msgstr "Змінна бітова швидкість"
 
-#: collection/collectionmodel.cpp:287 collection/collectionmodel.cpp:288
+#: collection/collectionmodel.cpp:289 collection/collectionmodel.cpp:290
 #: playlist/playlistmanager.cpp:561 covermanager/albumcovermanager.cpp:361
 #: internet/internetsearchmodel.cpp:93 internet/internetsearchmodel.cpp:105
 msgid "Various artists"
@@ -5580,7 +5568,7 @@ msgstr ""
 msgid "WavPack"
 msgstr "WavPack"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:451
+#: smartplaylists/smartplaylistsearchterm.cpp:453
 msgid "Weeks"
 msgstr "Тижні"
 
@@ -5617,11 +5605,11 @@ msgid ""
 msgstr ""
 "Перемістити також й інші композиції з цього альбому до різних виконавців?"
 
-#: core/mainwindow.cpp:2871
+#: core/mainwindow.cpp:2864
 msgid "Would you like to run a full rescan right now?"
 msgstr "Запустити повне сканування фонотеки зараз?"
 
-#: settings/collectionsettingspage.cpp:382
+#: settings/collectionsettingspage.cpp:405
 msgid "Write all playcounts and ratings to files"
 msgstr "Записати кількість відтворювань і рейтинги в файли"
 
@@ -5629,7 +5617,7 @@ msgstr "Записати кількість відтворювань і рейт
 msgid "Write metadata when saving playlists"
 msgstr "Записати метадані під час збереження списків відтворення"
 
-#: collection/savedgroupingmanager.cpp:118 playlist/playlist.cpp:1339
+#: collection/savedgroupingmanager.cpp:118 playlist/playlist.cpp:1359
 #: organize/organizedialog.cpp:111 ../build/src/ui_groupbydialog.h:198
 #: ../build/src/ui_groupbydialog.h:220 ../build/src/ui_groupbydialog.h:242
 #: ../build/src/ui_edittagdialog.h:849
@@ -5647,7 +5635,7 @@ msgstr "Рік – Альбом"
 msgid "Year - Album - Disc"
 msgstr "Рік – Альбом – Диск"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:455
+#: smartplaylists/smartplaylistsearchterm.cpp:457
 msgid "Years"
 msgstr "Роки"
 
@@ -5730,7 +5718,7 @@ msgstr "Після зміни мови потрібно перезапустит
 msgid "Your collection is empty!"
 msgstr "Ваша фонотека порожня!"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:427
+#: smartplaylists/smartplaylistsearchterm.cpp:429
 msgid "Z-A"
 msgstr "Я-А"
 
@@ -5744,7 +5732,7 @@ msgctxt ""
 msgid "add %n songs"
 msgstr "додати %n композицій"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:252
+#: smartplaylists/smartplaylistsearchterm.cpp:254
 msgid "after"
 msgstr "після"
 
@@ -5760,7 +5748,7 @@ msgstr "альбоми"
 msgid "and"
 msgstr "і"
 
-#: collection/collectionfilterwidget.cpp:81
+#: collection/collectionfilterwidget.cpp:82
 msgid "artist"
 msgstr "виконавець"
 
@@ -5772,15 +5760,15 @@ msgstr "виконавці"
 msgid "automatic"
 msgstr "автоматично"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:254
+#: smartplaylists/smartplaylistsearchterm.cpp:256
 msgid "before"
 msgstr "до"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:264
+#: smartplaylists/smartplaylistsearchterm.cpp:266
 msgid "between"
 msgstr "поміж"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:434
+#: smartplaylists/smartplaylistsearchterm.cpp:436
 msgid "biggest first"
 msgstr "спочатку найбільші"
 
@@ -5788,7 +5776,7 @@ msgstr "спочатку найбільші"
 msgid "channels"
 msgstr "канали"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:272
+#: smartplaylists/smartplaylistsearchterm.cpp:274
 msgid "contains"
 msgstr "містить"
 
@@ -5807,23 +5795,23 @@ msgstr "вимкнено"
 msgid "disc %1"
 msgstr "диск %1"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:274
+#: smartplaylists/smartplaylistsearchterm.cpp:276
 msgid "does not contain"
 msgstr "не містить"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:288
+#: smartplaylists/smartplaylistsearchterm.cpp:290
 msgid "empty"
 msgstr "порожній"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:278
+#: smartplaylists/smartplaylistsearchterm.cpp:280
 msgid "ends with"
 msgstr "закінчується на"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:284
+#: smartplaylists/smartplaylistsearchterm.cpp:286
 msgid "equals"
 msgstr "дорівнює"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:280
+#: smartplaylists/smartplaylistsearchterm.cpp:282
 msgid "greater than"
 msgstr "більше ніж"
 
@@ -5831,7 +5819,7 @@ msgstr "більше ніж"
 msgid "hw"
 msgstr "hw"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:260
+#: smartplaylists/smartplaylistsearchterm.cpp:262
 msgid "in the last"
 msgstr "в минулому"
 
@@ -5840,11 +5828,11 @@ msgstr "в минулому"
 msgid "kbps"
 msgstr "кбіт/с"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:282
+#: smartplaylists/smartplaylistsearchterm.cpp:284
 msgid "less than"
 msgstr "менше ніж"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:431
+#: smartplaylists/smartplaylistsearchterm.cpp:433
 msgid "longest first"
 msgstr "спочатку найдовші"
 
@@ -5859,31 +5847,31 @@ msgstr "пересунути %n композицій"
 msgid "ms"
 msgstr "мс"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:429
+#: smartplaylists/smartplaylistsearchterm.cpp:431
 msgid "newest first"
 msgstr "спочатку найновіші"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:290
+#: smartplaylists/smartplaylistsearchterm.cpp:292
 msgid "not empty"
 msgstr "не порожній"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:286
+#: smartplaylists/smartplaylistsearchterm.cpp:288
 msgid "not equals"
 msgstr "не дорівнює"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:262
+#: smartplaylists/smartplaylistsearchterm.cpp:264
 msgid "not in the last"
 msgstr "не в минулому"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:258
+#: smartplaylists/smartplaylistsearchterm.cpp:260
 msgid "not on"
 msgstr "не на"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:429
+#: smartplaylists/smartplaylistsearchterm.cpp:431
 msgid "oldest first"
 msgstr "спочатку настаріші"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:256
+#: smartplaylists/smartplaylistsearchterm.cpp:258
 msgid "on"
 msgstr "на"
 
@@ -5905,11 +5893,11 @@ msgctxt ""
 msgid "remove %n songs"
 msgstr "вилучити %n композицій"
 
-#: collection/collectionfilterwidget.cpp:85
+#: collection/collectionfilterwidget.cpp:86
 msgid "searches the collection for all artists that contain the word"
 msgstr "пошук у фонотеці всіх виконавців, що містять це слово"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:431
+#: smartplaylists/smartplaylistsearchterm.cpp:433
 msgid "shortest first"
 msgstr "спочатку найкоротші"
 
@@ -5917,7 +5905,7 @@ msgstr "спочатку найкоротші"
 msgid "shuffle songs"
 msgstr "перемішати композиції"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:434
+#: smartplaylists/smartplaylistsearchterm.cpp:436
 msgid "smallest first"
 msgstr "спочатку найменші"
 
@@ -5929,7 +5917,7 @@ msgstr "композиції"
 msgid "sort songs"
 msgstr "сортувати композиції"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:276
+#: smartplaylists/smartplaylistsearchterm.cpp:278
 msgid "starts with"
 msgstr "починається з"
 
@@ -5942,6 +5930,6 @@ msgstr "зупинити"
 msgid "track %1"
 msgstr "композиція %1"
 
-#: covermanager/albumcoverchoicecontroller.cpp:241
+#: covermanager/albumcoverchoicecontroller.cpp:242
 msgid "unknown"
 msgstr "невідомо"

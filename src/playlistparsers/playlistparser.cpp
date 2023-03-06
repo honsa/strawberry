@@ -98,7 +98,7 @@ QString PlaylistParser::filters(const Type type) const {
     }
   }
 
-  if (type == Type_Load) {
+  if (type == Type::Load) {
     filters.prepend(tr("All playlists (%1)").arg(all_extensions.join(" ")));
   }
 
@@ -168,7 +168,7 @@ SongList PlaylistParser::LoadFromFile(const QString &filename) const {
   QFileInfo fileinfo(filename);
 
   // Find a parser that supports this file extension
-  ParserBase *parser = ParserForExtension(Type_Load, fileinfo.suffix());
+  ParserBase *parser = ParserForExtension(Type::Load, fileinfo.suffix());
   if (!parser) {
     qLog(Warning) << "Unknown filetype:" << filename;
     return SongList();
@@ -200,19 +200,35 @@ SongList PlaylistParser::LoadFromDevice(QIODevice *device, const QString &path_h
 void PlaylistParser::Save(const SongList &songs, const QString &filename, const PlaylistSettingsPage::PathType path_type) const {
 
   QFileInfo fileinfo(filename);
+  QDir dir(fileinfo.path());
 
-  // Find a parser that supports this file extension
-  ParserBase *parser = ParserForExtension(Type_Save, fileinfo.suffix());
-  if (!parser) {
-    qLog(Warning) << "Unknown filetype:" << filename;
+  if (!dir.exists()) {
+    qLog(Warning) << "Directory does not exist" << dir.path();
     return;
   }
 
-  // Open the file
-  QFile file(path_type == PlaylistSettingsPage::PathType_Absolute ? fileinfo.absoluteFilePath() : fileinfo.canonicalFilePath());
-  if (!file.open(QIODevice::WriteOnly)) return;
+  // Find a parser that supports this file extension
+  ParserBase *parser = ParserForExtension(Type::Save, fileinfo.suffix());
+  if (!parser) {
+    qLog(Warning) << "Unknown filetype" << filename;
+    return;
+  }
 
-  parser->Save(songs, &file, path_type == PlaylistSettingsPage::PathType_Absolute ? fileinfo.absolutePath() : fileinfo.canonicalPath(), path_type);
+  if (path_type == PlaylistSettingsPage::PathType::Absolute && dir.path() != dir.absolutePath()) {
+    dir.setPath(dir.absolutePath());
+  }
+  else if (path_type != PlaylistSettingsPage::PathType::Absolute && !dir.canonicalPath().isEmpty() && dir.path() != dir.canonicalPath()) {
+    dir.setPath(dir.canonicalPath());
+  }
+
+  // Open the file
+  QFile file(fileinfo.absoluteFilePath());
+  if (!file.open(QIODevice::WriteOnly)) {
+    qLog(Warning) << "Failed to open" << filename << "for writing.";
+    return;
+  }
+
+  parser->Save(songs, &file, dir, path_type);
 
   file.close();
 
@@ -220,6 +236,6 @@ void PlaylistParser::Save(const SongList &songs, const QString &filename, const 
 
 bool PlaylistParser::ParserIsSupported(const Type type, ParserBase *parser) const {
 
-  return ((type == Type_Load && parser->load_supported()) || (type == Type_Save && parser->save_supported()));
+  return ((type == Type::Load && parser->load_supported()) || (type == Type::Save && parser->save_supported()));
 
 }

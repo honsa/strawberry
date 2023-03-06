@@ -7,7 +7,6 @@ endif()
 set(SOURCES
   core/mainwindow.cpp
   core/application.cpp
-  core/appearance.cpp
   core/player.cpp
   core/commandlineoptions.cpp
   core/database.cpp
@@ -68,6 +67,7 @@ set(SOURCES
   analyzer/blockanalyzer.cpp
   analyzer/boomanalyzer.cpp
   analyzer/rainbowanalyzer.cpp
+  analyzer/sonogram.cpp
 
   equalizer/equalizer.cpp
   equalizer/equalizerslider.cpp
@@ -83,9 +83,11 @@ set(SOURCES
   collection/collectionitemdelegate.cpp
   collection/collectionviewcontainer.cpp
   collection/collectiondirectorymodel.cpp
+  collection/collectionfilteroptions.cpp
   collection/collectionfilterwidget.cpp
   collection/collectionplaylistitem.cpp
   collection/collectionquery.cpp
+  collection/collectionqueryoptions.cpp
   collection/savedgroupingmanager.cpp
   collection/groupbydialog.cpp
   collection/collectiontask.cpp
@@ -175,6 +177,7 @@ set(SOURCES
   lyrics/geniuslyricsprovider.cpp
   lyrics/musixmatchlyricsprovider.cpp
   lyrics/chartlyricsprovider.cpp
+  lyrics/stands4lyricsprovider.cpp
 
   providers/musixmatchprovider.cpp
 
@@ -219,6 +222,8 @@ set(SOURCES
   widgets/multiloadingindicator.cpp
   widgets/playingwidget.cpp
   widgets/renametablineedit.cpp
+  widgets/sliderslider.cpp
+  widgets/prettyslider.cpp
   widgets/volumeslider.cpp
   widgets/stickyslider.cpp
   widgets/stretchheaderview.cpp
@@ -278,7 +283,6 @@ set(SOURCES
 set(HEADERS
   core/mainwindow.h
   core/application.h
-  core/appearance.h
   core/player.h
   core/database.h
   core/deletefiles.h
@@ -308,6 +312,7 @@ set(HEADERS
   analyzer/blockanalyzer.h
   analyzer/boomanalyzer.h
   analyzer/rainbowanalyzer.h
+  analyzer/sonogram.h
 
   equalizer/equalizer.h
   equalizer/equalizerslider.h
@@ -409,6 +414,7 @@ set(HEADERS
   lyrics/geniuslyricsprovider.h
   lyrics/musixmatchlyricsprovider.h
   lyrics/chartlyricsprovider.h
+  lyrics/stands4lyricsprovider.h
 
   settings/settingsdialog.h
   settings/settingspage.h
@@ -450,6 +456,8 @@ set(HEADERS
   widgets/multiloadingindicator.h
   widgets/playingwidget.h
   widgets/renametablineedit.h
+  widgets/sliderslider.h
+  widgets/prettyslider.h
   widgets/volumeslider.h
   widgets/stickyslider.h
   widgets/stretchheaderview.h

@@ -68,7 +68,7 @@ msgstr ""
 #: ../build/src/ui_transcoderoptionsspeex.h:220
 #: ../build/src/ui_transcoderoptionsspeex.h:223
 #: ../build/src/ui_transcoderoptionsasf.h:76
-#: ../build/src/ui_transcoderoptionsmp3.h:194
+#: ../build/src/ui_transcoderoptionsmp3.h:195
 msgid " kbps"
 msgstr " kb/s"
 
@@ -339,7 +339,7 @@ msgstr ""
 msgid "&Next track"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:601
+#: ../build/src/ui_appearancesettingspage.h:527
 msgid "&No background image"
 msgstr ""
 
@@ -403,12 +403,8 @@ msgstr ""
 msgid "&Update changed collection folders"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:594
+#: ../build/src/ui_appearancesettingspage.h:520
 msgid "&Use the system default color"
-msgstr ""
-
-#: ../build/src/ui_appearancesettingspage.h:587
-msgid "&Use the system default color set"
 msgstr ""
 
 #: ../build/src/ui_networkproxysettingspage.h:171
@@ -435,7 +431,7 @@ msgstr "0"
 msgid "0:00:00"
 msgstr "0:00:00"
 
-#: ../build/src/ui_appearancesettingspage.h:621
+#: ../build/src/ui_appearancesettingspage.h:547
 msgid "0px"
 msgstr "0px"
 
@@ -447,7 +443,7 @@ msgstr "1 dia"
 msgid "1 track"
 msgstr "1 peça"
 
-#: ../build/src/ui_appearancesettingspage.h:623
+#: ../build/src/ui_appearancesettingspage.h:549
 msgid "40%"
 msgstr "40 %"
 
@@ -469,7 +465,7 @@ msgstr ""
 "remplaçament, aquesta secció no es mostrarà si la fitxa de remplaçament es "
 "troba buida.</p>"
 
-#: ../build/src/ui_appearancesettingspage.h:606
+#: ../build/src/ui_appearancesettingspage.h:532
 msgid "A Taste of Strawbs"
 msgstr "A Taste of Strawbs"
 
@@ -489,7 +485,7 @@ msgstr ""
 msgid "A&utomatic"
 msgstr "Automàtic"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:427
+#: smartplaylists/smartplaylistsearchterm.cpp:429
 msgid "A-Z"
 msgstr "A-Z"
 
@@ -561,11 +557,11 @@ msgstr "Afegeix una línia nova si és compatible amb el tipus de notificació"
 msgid "Add all tracks from a directory and all its subdirectories"
 msgstr "Afegeix totes les peces des d’una carpeta y las seves subcarpetes"
 
-#: settings/collectionsettingspage.cpp:124
+#: settings/collectionsettingspage.cpp:135
 msgid "Add directory..."
 msgstr "Afegeix un directori…"
 
-#: core/mainwindow.cpp:2208
+#: core/mainwindow.cpp:2201
 msgid "Add file"
 msgstr "Afegeix un fitxer"
 
@@ -581,7 +577,7 @@ msgstr "Afegeix fitxer(s) al convertidor"
 msgid "Add files to transcode"
 msgstr "Afegeix fitxers per a convertir-los"
 
-#: core/mainwindow.cpp:2234 transcoder/transcodedialog.cpp:424
+#: core/mainwindow.cpp:2227 transcoder/transcodedialog.cpp:424
 msgid "Add folder"
 msgstr "Afegeix una carpeta"
 
@@ -691,7 +687,7 @@ msgstr ""
 msgid "Add to albums"
 msgstr ""
 
-#: core/mainwindow.cpp:2010
+#: core/mainwindow.cpp:2003
 msgid "Add to another playlist"
 msgstr "Afegeix a una altra llista de reproducció"
 
@@ -741,7 +737,7 @@ msgstr "Afegides els últims tres mesos"
 msgid "Advanced"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:325
+#: collection/collectionfilterwidget.cpp:327
 msgid "Advanced grouping..."
 msgstr "Agrupament avançat…"
 
@@ -753,11 +749,11 @@ msgstr ""
 msgid "After copying..."
 msgstr "Després de copiar…"
 
-#: ../build/src/ui_appearancesettingspage.h:605
+#: ../build/src/ui_appearancesettingspage.h:531
 msgid "Albu&m cover"
 msgstr ""
 
-#: collection/savedgroupingmanager.cpp:97 playlist/playlist.cpp:1335
+#: collection/savedgroupingmanager.cpp:97 playlist/playlist.cpp:1355
 #: organize/organizedialog.cpp:102 ../build/src/ui_groupbydialog.h:193
 #: ../build/src/ui_groupbydialog.h:215 ../build/src/ui_groupbydialog.h:237
 #: ../build/src/ui_albumcoversearcher.h:107
@@ -777,7 +773,7 @@ msgstr "Àlbum (volum ideal per a totes les peces)"
 msgid "Album - Disc"
 msgstr ""
 
-#: collection/savedgroupingmanager.cpp:91 playlist/playlist.cpp:1342
+#: collection/savedgroupingmanager.cpp:91 playlist/playlist.cpp:1362
 #: organize/organizedialog.cpp:105 ../build/src/ui_groupbydialog.h:192
 #: ../build/src/ui_groupbydialog.h:214 ../build/src/ui_groupbydialog.h:236
 #: ../build/src/ui_edittagdialog.h:847
@@ -813,7 +809,7 @@ msgstr "Àlbums amb caràtules"
 msgid "Albums without covers"
 msgstr "Àlbums sense caràtules"
 
-#: core/mainwindow.cpp:219
+#: core/mainwindow.cpp:218
 msgid "All Files (*)"
 msgstr "Tots els fitxers (*)"
 
@@ -825,7 +821,7 @@ msgstr "Tots els àlbums"
 msgid "All artists"
 msgstr "Tots els artistes"
 
-#: covermanager/albumcoverchoicecontroller.cpp:78
+#: covermanager/albumcoverchoicecontroller.cpp:79
 msgid "All files (*)"
 msgstr "Tots els fitxers (*)"
 
@@ -859,12 +855,12 @@ msgstr "Comença sempre la reproducció"
 msgid "An error occurred loading the iTunes database"
 msgstr "S’ha produït un error en carregar la base de dades de l’iTunes"
 
-#: dialogs/edittagdialog.cpp:1417
+#: dialogs/edittagdialog.cpp:1430
 #, qt-format
 msgid "An error occurred writing cover art to '%1'"
 msgstr ""
 
-#: playlist/playlist.cpp:419 dialogs/edittagdialog.cpp:1394
+#: playlist/playlist.cpp:419 dialogs/edittagdialog.cpp:1407
 #, qt-format
 msgid "An error occurred writing metadata to '%1'"
 msgstr "S’ha produït un error en escriure les metadades a «%1»"
@@ -881,7 +877,7 @@ msgstr "Id. de l’aplicació"
 msgid "App Secret"
 msgstr "Secret de l’aplicació"
 
-#: ../build/src/ui_appearancesettingspage.h:581
+#: ../build/src/ui_appearancesettingspage.h:514
 msgid "Appearance"
 msgstr "Aparença"
 
@@ -918,12 +914,12 @@ msgstr ""
 msgid "Are you sure you want to delete the \"%1\" preset?"
 msgstr "Esteu segur que voleu suprimir la predefinició «%1»?"
 
-#: dialogs/edittagdialog.cpp:1298
+#: dialogs/edittagdialog.cpp:1315
 msgid "Are you sure you want to reset this song's statistics?"
 msgstr ""
 "Esteu segur que voleu reinicialitzar les estadístiques d’aquesta cançó?"
 
-#: settings/collectionsettingspage.cpp:382
+#: settings/collectionsettingspage.cpp:405
 msgid ""
 "Are you sure you want to write song playcounts and ratings to file for all "
 "songs in your collection?"
@@ -937,7 +933,7 @@ msgstr ""
 msgid "Art Manual"
 msgstr ""
 
-#: collection/savedgroupingmanager.cpp:94 playlist/playlist.cpp:1334
+#: collection/savedgroupingmanager.cpp:94 playlist/playlist.cpp:1354
 #: organize/organizedialog.cpp:103 ../build/src/ui_groupbydialog.h:191
 #: ../build/src/ui_groupbydialog.h:213 ../build/src/ui_groupbydialog.h:235
 #: ../build/src/ui_albumcoversearcher.h:103
@@ -989,7 +985,7 @@ msgid "Authentication"
 msgstr "Autenticació"
 
 #: settings/coverssettingspage.cpp:274 settings/lyricssettingspage.cpp:254
-#: settings/tidalsettingspage.cpp:218 settings/qobuzsettingspage.cpp:176
+#: settings/tidalsettingspage.cpp:213 settings/qobuzsettingspage.cpp:176
 msgid "Authentication failed"
 msgstr "Ha fallat l’autenticació"
 
@@ -1043,7 +1039,7 @@ msgstr ""
 msgid "Available"
 msgstr "Disponible"
 
-#: collection/collectionfilterwidget.cpp:88
+#: collection/collectionfilterwidget.cpp:89
 msgid "Available fields"
 msgstr ""
 
@@ -1063,7 +1059,7 @@ msgstr ""
 msgid "Background color"
 msgstr "Color de fons"
 
-#: ../build/src/ui_appearancesettingspage.h:599
+#: ../build/src/ui_appearancesettingspage.h:525
 msgid "Background image"
 msgstr "Imatge de fons"
 
@@ -1096,7 +1092,7 @@ msgid "Best"
 msgstr "Millor"
 
 #: context/contextview.cpp:211 collection/savedgroupingmanager.cpp:145
-#: playlist/playlist.cpp:1352 organize/organizedialog.cpp:118
+#: playlist/playlist.cpp:1372 organize/organizedialog.cpp:118
 #: ../build/src/ui_groupbydialog.h:208 ../build/src/ui_groupbydialog.h:230
 #: ../build/src/ui_groupbydialog.h:252 ../build/src/ui_edittagdialog.h:826
 msgid "Bit depth"
@@ -1107,13 +1103,13 @@ msgid "Bit rate"
 msgstr "Taxa de bits"
 
 #: context/contextview.cpp:212 collection/savedgroupingmanager.cpp:148
-#: playlist/playlist.cpp:1353 ../build/src/ui_groupbydialog.h:209
+#: playlist/playlist.cpp:1373 ../build/src/ui_groupbydialog.h:209
 #: ../build/src/ui_groupbydialog.h:231 ../build/src/ui_groupbydialog.h:253
 #: ../build/src/ui_transcoderoptionsaac.h:132
 #: ../build/src/ui_transcoderoptionsopus.h:76
 #: ../build/src/ui_transcoderoptionsspeex.h:218
 #: ../build/src/ui_transcoderoptionsasf.h:75
-#: ../build/src/ui_transcoderoptionsmp3.h:193
+#: ../build/src/ui_transcoderoptionsmp3.h:194
 msgid "Bitrate"
 msgstr "Taxa de bits"
 
@@ -1130,7 +1126,7 @@ msgstr "Analitzador de blocs"
 msgid "Block type"
 msgstr "Tipus de bloc"
 
-#: ../build/src/ui_appearancesettingspage.h:620
+#: ../build/src/ui_appearancesettingspage.h:546
 msgid "Blur amount"
 msgstr "Quantitat de difuminació"
 
@@ -1142,15 +1138,15 @@ msgstr "Cos"
 msgid "Boom analyzer"
 msgstr "Analitzador de ressonància"
 
-#: ../build/src/ui_appearancesettingspage.h:613
+#: ../build/src/ui_appearancesettingspage.h:539
 msgid "Bottom Left"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:614
+#: ../build/src/ui_appearancesettingspage.h:540
 msgid "Bottom Right"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:608
+#: ../build/src/ui_appearancesettingspage.h:534
 msgid "Browse..."
 msgstr "Explora…"
 
@@ -1178,7 +1174,7 @@ msgstr ""
 msgid "CDDA"
 msgstr "CDDA"
 
-#: playlist/playlist.cpp:1366
+#: playlist/playlist.cpp:1386
 msgid "CUE"
 msgstr ""
 
@@ -1214,7 +1210,7 @@ msgstr "Canvia la cançó que s’està reproduint ara"
 msgid "Change the language"
 msgstr "Canvia la llengua"
 
-#: core/mainwindow.cpp:804
+#: core/mainwindow.cpp:803
 msgid "Check for updates..."
 msgstr "Comprova si hi ha actualitzacions…"
 
@@ -1259,11 +1255,11 @@ msgstr "Neteja"
 msgid "Clear Disk Cache"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:113
+#: covermanager/albumcoverchoicecontroller.cpp:114
 msgid "Clear cover"
 msgstr ""
 
-#: core/mainwindow.cpp:2299 ../build/src/ui_mainwindow.h:637
+#: core/mainwindow.cpp:2292 ../build/src/ui_mainwindow.h:637
 msgid "Clear playlist"
 msgstr "Neteja la llista de reproducció"
 
@@ -1311,7 +1307,7 @@ msgstr ""
 msgid "Club"
 msgstr "Club"
 
-#: core/mainwindow.cpp:369 ../build/src/ui_collectionsettingspage.h:589
+#: core/mainwindow.cpp:368 ../build/src/ui_collectionsettingspage.h:589
 #: ../build/src/ui_scrobblersettingspage.h:418
 msgid "Collection"
 msgstr "Col·lecció"
@@ -1324,7 +1320,7 @@ msgstr ""
 msgid "Collection advanced grouping"
 msgstr "Agrupació avançada de la col·lecció"
 
-#: core/mainwindow.cpp:2872
+#: core/mainwindow.cpp:2865
 msgid "Collection rescan notice"
 msgstr "Avís de reescaneig de la col·lecció"
 
@@ -1332,15 +1328,11 @@ msgstr "Avís de reescaneig de la col·lecció"
 msgid "Collection search"
 msgstr "Cerca a la col·lecció"
 
-#: ../build/src/ui_appearancesettingspage.h:586
-msgid "Colors"
-msgstr "Colors"
-
 #: core/commandlineoptions.cpp:193
 msgid "Comma separated list of class:level, level is 0-3"
 msgstr "Llista separada per comes de classe:nivell, el nivell és 0-3"
 
-#: playlist/playlist.cpp:1362 smartplaylists/smartplaylistsearchterm.cpp:389
+#: playlist/playlist.cpp:1382 smartplaylists/smartplaylistsearchterm.cpp:391
 #: organize/organizedialog.cpp:114 ../build/src/ui_edittagdialog.h:855
 msgid "Comment"
 msgstr "Comentari"
@@ -1357,16 +1349,16 @@ msgstr "Completa les etiquetes automàticament"
 msgid "Complete tags automatically..."
 msgstr "Completa les etiquetes automàticament…"
 
-#: collection/savedgroupingmanager.cpp:127 playlist/playlist.cpp:1343
+#: collection/savedgroupingmanager.cpp:127 playlist/playlist.cpp:1363
 #: organize/organizedialog.cpp:106 ../build/src/ui_groupbydialog.h:203
 #: ../build/src/ui_groupbydialog.h:225 ../build/src/ui_groupbydialog.h:247
 #: ../build/src/ui_edittagdialog.h:852
 msgid "Composer"
 msgstr "Compositor"
 
-#: settings/subsonicsettingspage.cpp:130 settings/tidalsettingspage.cpp:156
-#: settings/tidalsettingspage.cpp:163 settings/tidalsettingspage.cpp:167
-#: settings/tidalsettingspage.cpp:171 settings/qobuzsettingspage.cpp:130
+#: settings/subsonicsettingspage.cpp:130 settings/tidalsettingspage.cpp:151
+#: settings/tidalsettingspage.cpp:158 settings/tidalsettingspage.cpp:162
+#: settings/tidalsettingspage.cpp:166 settings/qobuzsettingspage.cpp:130
 #: settings/qobuzsettingspage.cpp:134 settings/qobuzsettingspage.cpp:138
 msgid "Configuration incomplete"
 msgstr ""
@@ -1381,11 +1373,11 @@ msgstr ""
 msgid "Configure %1..."
 msgstr "Configura %1…"
 
-#: ../build/src/ui_appearancesettingspage.h:628
+#: ../build/src/ui_appearancesettingspage.h:554
 msgid "Configure buttons"
 msgstr ""
 
-#: core/mainwindow.cpp:681
+#: core/mainwindow.cpp:680
 msgid "Configure collection..."
 msgstr "Configura la col·lecció…"
 
@@ -1397,11 +1389,11 @@ msgstr "Connecta el dispositiu"
 msgid "Console"
 msgstr "Terminal"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:195
+#: ../build/src/ui_transcoderoptionsmp3.h:196
 msgid "Constant bitrate"
 msgstr "Taxa de bits constant"
 
-#: core/mainwindow.cpp:368 ../build/src/ui_contextsettingspage.h:363
+#: core/mainwindow.cpp:367 ../build/src/ui_contextsettingspage.h:363
 msgid "Context"
 msgstr ""
 
@@ -1421,7 +1413,7 @@ msgstr "Converteix tota la música"
 msgid "Convert any music that the device can't play"
 msgstr "Convertir qualsevol música que el dispositiu no pugui reproduir"
 
-#: core/mainwindow.cpp:750
+#: core/mainwindow.cpp:749
 msgid "Copy URL(s)..."
 msgstr ""
 
@@ -1429,7 +1421,7 @@ msgstr ""
 msgid "Copy album cover artwork"
 msgstr ""
 
-#: core/mainwindow.cpp:754 widgets/fileviewlist.cpp:46
+#: core/mainwindow.cpp:753 widgets/fileviewlist.cpp:46
 #: device/deviceview.cpp:246
 msgid "Copy to collection..."
 msgstr "Copia a la col·lecció…"
@@ -1438,7 +1430,7 @@ msgstr "Copia a la col·lecció…"
 msgid "Copy to device"
 msgstr ""
 
-#: core/mainwindow.cpp:757 collection/collectionview.cpp:359
+#: core/mainwindow.cpp:756 collection/collectionview.cpp:359
 #: playlist/playlistlistcontainer.cpp:89 widgets/fileviewlist.cpp:48
 msgid "Copy to device..."
 msgstr "Copia al dispositiu…"
@@ -1449,7 +1441,7 @@ msgid ""
 "avoid losing configuration before you uninstall the snap:"
 msgstr ""
 
-#: transcoder/transcoder.cpp:64
+#: transcoder/transcoder.cpp:67
 #, qt-format
 msgid ""
 "Could not create the GStreamer element \"%1\" - make sure you have all the "
@@ -1542,7 +1534,7 @@ msgstr ""
 msgid "Cover changed: Will set new when saved."
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:188
+#: covermanager/albumcoverchoicecontroller.cpp:189
 #, qt-format
 msgid "Cover file %1 is empty."
 msgstr ""
@@ -1641,11 +1633,11 @@ msgstr ""
 msgid "Custom"
 msgstr "Personalitzat"
 
-#: ../build/src/ui_appearancesettingspage.h:633
+#: ../build/src/ui_appearancesettingspage.h:559
 msgid "Custom color"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:607
+#: ../build/src/ui_appearancesettingspage.h:533
 msgid "Custom image:"
 msgstr "Imatge personalitzada:"
 
@@ -1673,15 +1665,15 @@ msgstr "Dance"
 msgid "Database corruption detected."
 msgstr ""
 
-#: playlist/playlist.cpp:1360 ../build/src/ui_edittagdialog.h:832
+#: playlist/playlist.cpp:1380 ../build/src/ui_edittagdialog.h:832
 msgid "Date created"
 msgstr "Data de creació"
 
-#: playlist/playlist.cpp:1359 ../build/src/ui_edittagdialog.h:830
+#: playlist/playlist.cpp:1379 ../build/src/ui_edittagdialog.h:830
 msgid "Date modified"
 msgstr "Data de modificació"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:449
+#: smartplaylists/smartplaylistsearchterm.cpp:451
 msgid "Days"
 msgstr "Dies"
 
@@ -1697,7 +1689,7 @@ msgstr "Redueix el volum <value> per cent"
 msgid "Decrease volume"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:600
+#: ../build/src/ui_appearancesettingspage.h:526
 msgid "Default bac&kground image"
 msgstr ""
 
@@ -1710,7 +1702,7 @@ msgstr ""
 msgid "Delete"
 msgstr "Eliminar"
 
-#: covermanager/albumcoverchoicecontroller.cpp:112
+#: covermanager/albumcoverchoicecontroller.cpp:113
 msgid "Delete cover"
 msgstr "Suprimeix la coberta"
 
@@ -1722,7 +1714,7 @@ msgstr "Suprimeix els fitxers"
 msgid "Delete from device..."
 msgstr "Suprimeix del dispositiu…"
 
-#: core/mainwindow.cpp:759 collection/collectionview.cpp:361
+#: core/mainwindow.cpp:758 collection/collectionview.cpp:361
 #: widgets/fileviewlist.cpp:49
 msgid "Delete from disk..."
 msgstr "Suprimeix del disc…"
@@ -1748,11 +1740,11 @@ msgstr "Suprimeix els fitxers originals"
 msgid "Deleting files"
 msgstr "S’estan suprimint els fitxers"
 
-#: core/mainwindow.cpp:1925
+#: core/mainwindow.cpp:1918
 msgid "Dequeue selected tracks"
 msgstr "Treu de la cua les peces seleccionades"
 
-#: core/mainwindow.cpp:1924
+#: core/mainwindow.cpp:1917
 msgid "Dequeue track"
 msgstr "Treu de la cua la peça"
 
@@ -1764,7 +1756,7 @@ msgstr "Destí"
 msgid "Details..."
 msgstr "Detalls…"
 
-#: context/contextview.cpp:179 device/giolister.cpp:193
+#: context/contextview.cpp:179 device/giolister.cpp:192
 #: ../build/src/ui_backendsettingspage.h:559
 #: ../build/src/ui_scrobblersettingspage.h:422
 msgid "Device"
@@ -1778,7 +1770,7 @@ msgstr "Propietats del dispositiu"
 msgid "Device properties..."
 msgstr "Propietats del dispositiu…"
 
-#: core/mainwindow.cpp:376
+#: core/mainwindow.cpp:375
 msgid "Devices"
 msgstr "Dispositius"
 
@@ -1807,7 +1799,7 @@ msgctxt "Refers to a disabled notification type in Notification settings."
 msgid "Disabled"
 msgstr "Inhabilitat"
 
-#: collection/savedgroupingmanager.cpp:115 playlist/playlist.cpp:1337
+#: collection/savedgroupingmanager.cpp:115 playlist/playlist.cpp:1357
 #: organize/organizedialog.cpp:110 ../build/src/ui_groupbydialog.h:195
 #: ../build/src/ui_groupbydialog.h:217 ../build/src/ui_groupbydialog.h:239
 #: ../build/src/ui_edittagdialog.h:845
@@ -1822,7 +1814,7 @@ msgstr "Transmissió discontínua"
 msgid "Disk Cache Size"
 msgstr "Mida de la memòria cau al disc"
 
-#: collection/collectionfilterwidget.cpp:129
+#: collection/collectionfilterwidget.cpp:130
 #: ../build/src/ui_collectionsettingspage.h:605
 msgid "Display options"
 msgstr "Opcions de visualització"
@@ -1835,7 +1827,7 @@ msgstr "Mostra la indicació a pantalla"
 msgid "Do not convert any music"
 msgstr "No converteixis cap musica"
 
-#: ../build/src/ui_appearancesettingspage.h:619
+#: ../build/src/ui_appearancesettingspage.h:545
 msgid "Do not cut image"
 msgstr ""
 
@@ -1915,7 +1907,7 @@ msgstr ""
 msgid "Edit smart playlist..."
 msgstr ""
 
-#: core/mainwindow.cpp:1968
+#: core/mainwindow.cpp:1961
 #, qt-format
 msgid "Edit tag \"%1\"..."
 msgstr "Edita l’etiqueta «%1»…"
@@ -2016,7 +2008,7 @@ msgstr ""
 msgid "Encoding complexity"
 msgstr "Complexitat de la codificació"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:196
+#: ../build/src/ui_transcoderoptionsmp3.h:197
 msgid "Encoding engine quality"
 msgstr "Qualitat del motor de codificació"
 
@@ -2086,7 +2078,7 @@ msgstr "Equivalent a --log-levels *:1"
 msgid "Equivalent to --log-levels *:3"
 msgstr "Equivalent a --log-levels *:3"
 
-#: core/mainwindow.cpp:2603 core/mainwindow.cpp:2754
+#: core/mainwindow.cpp:2596 core/mainwindow.cpp:2747
 #: collection/collectionview.cpp:586
 msgid "Error"
 msgstr "Error"
@@ -2221,34 +2213,34 @@ msgstr "Esvaïment"
 msgid "Fading duration"
 msgstr "Durada de l’esvaïment"
 
-#: covermanager/albumcoverchoicecontroller.cpp:406
-#: covermanager/albumcoverchoicecontroller.cpp:423
+#: covermanager/albumcoverchoicecontroller.cpp:407
+#: covermanager/albumcoverchoicecontroller.cpp:424
 #, qt-format
 msgid "Failed to delete cover file %1: %2"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:198
+#: covermanager/albumcoverchoicecontroller.cpp:199
 #, qt-format
 msgid "Failed to open cover file %1 for reading: %2"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:272
-#: covermanager/albumcoverchoicecontroller.cpp:642
+#: covermanager/albumcoverchoicecontroller.cpp:273
+#: covermanager/albumcoverchoicecontroller.cpp:643
 #, qt-format
 msgid "Failed to open cover file %1 for writing: %2"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:636
+#: covermanager/albumcoverchoicecontroller.cpp:637
 #, qt-format
 msgid "Failed to write cover to file %1: %2"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:278
+#: covermanager/albumcoverchoicecontroller.cpp:279
 #, qt-format
 msgid "Failed writing cover to file %1."
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:266
+#: covermanager/albumcoverchoicecontroller.cpp:267
 #, qt-format
 msgid "Failed writing cover to file %1: %2"
 msgstr ""
@@ -2258,7 +2250,7 @@ msgid "Fallback-gain"
 msgstr ""
 
 #: ../build/src/ui_transcoderoptionsflac.h:78
-#: ../build/src/ui_transcoderoptionsmp3.h:197
+#: ../build/src/ui_transcoderoptionsmp3.h:198
 msgid "Fast"
 msgstr "Ràpid"
 
@@ -2305,11 +2297,11 @@ msgstr "Extensió del fitxer"
 msgid "File formats"
 msgstr "Format dels fitxers"
 
-#: playlist/playlist.cpp:1355
+#: playlist/playlist.cpp:1375
 msgid "File name"
 msgstr "Nom del fitxer"
 
-#: playlist/playlist.cpp:1356
+#: playlist/playlist.cpp:1376
 msgid "File name (without path)"
 msgstr "Nom del fitxer (sense camí)"
 
@@ -2317,11 +2309,11 @@ msgstr "Nom del fitxer (sense camí)"
 msgid "File paths"
 msgstr "Camins dels fitxers"
 
-#: playlist/playlist.cpp:1357 ../build/src/ui_edittagdialog.h:838
+#: playlist/playlist.cpp:1377 ../build/src/ui_edittagdialog.h:838
 msgid "File size"
 msgstr "Mida del fitxer"
 
-#: collection/savedgroupingmanager.cpp:136 playlist/playlist.cpp:1358
+#: collection/savedgroupingmanager.cpp:136 playlist/playlist.cpp:1378
 #: ../build/src/ui_groupbydialog.h:206 ../build/src/ui_groupbydialog.h:228
 #: ../build/src/ui_groupbydialog.h:250 ../build/src/ui_edittagdialog.h:825
 msgid "File type"
@@ -2335,7 +2327,7 @@ msgstr "Nom de fitxer"
 msgid "Filename:"
 msgstr ""
 
-#: core/mainwindow.cpp:373
+#: core/mainwindow.cpp:372
 msgid "Files"
 msgstr ""
 
@@ -2343,7 +2335,7 @@ msgstr ""
 msgid "Files to transcode"
 msgstr "Fitxers per convertir"
 
-#: ../build/src/ui_appearancesettingspage.h:629
+#: ../build/src/ui_appearancesettingspage.h:555
 msgid "Files, playlists and queue buttons"
 msgstr ""
 
@@ -2398,7 +2390,7 @@ msgstr ""
 msgid "For a better experience please consider the other options above."
 msgstr ""
 
-#: ../build/src/ui_transcoderoptionsmp3.h:201
+#: ../build/src/ui_transcoderoptionsmp3.h:202
 msgid "Force mono encoding"
 msgstr "Força la codificació mono"
 
@@ -2435,7 +2427,7 @@ msgstr ""
 #: ../build/src/ui_transcoderoptionsopus.h:75
 #: ../build/src/ui_transcoderoptionsspeex.h:216
 #: ../build/src/ui_transcoderoptionsasf.h:74
-#: ../build/src/ui_transcoderoptionsmp3.h:189
+#: ../build/src/ui_transcoderoptionsmp3.h:190
 msgid "Form"
 msgstr "Formulari"
 
@@ -2444,7 +2436,7 @@ msgstr "Formulari"
 msgid "Format"
 msgstr "Format"
 
-#: analyzer/analyzercontainer.cpp:63
+#: analyzer/analyzercontainer.cpp:64
 msgid "Framerate"
 msgstr "Taxa de mostreig"
 
@@ -2468,7 +2460,7 @@ msgstr "Baixos i aguts complets"
 msgid "Full Treble"
 msgstr "Aguts complets"
 
-#: settings/settingsdialog.cpp:132
+#: settings/settingsdialog.cpp:131
 msgid "General"
 msgstr "General"
 
@@ -2480,7 +2472,7 @@ msgstr "Configuració general"
 msgid "Genius Authentication"
 msgstr "Autenticació amb el Genius"
 
-#: collection/savedgroupingmanager.cpp:124 playlist/playlist.cpp:1341
+#: collection/savedgroupingmanager.cpp:124 playlist/playlist.cpp:1361
 #: organize/organizedialog.cpp:113 ../build/src/ui_groupbydialog.h:197
 #: ../build/src/ui_groupbydialog.h:219 ../build/src/ui_groupbydialog.h:241
 #: ../build/src/ui_edittagdialog.h:854
@@ -2527,79 +2519,79 @@ msgstr ""
 msgid "Group Collection by..."
 msgstr "Agrupa la col·lecció per…"
 
-#: collection/collectionfilterwidget.cpp:123
+#: collection/collectionfilterwidget.cpp:124
 #: internet/internetsearchview.cpp:345
 msgid "Group by"
 msgstr "Agrupa per"
 
-#: collection/collectionfilterwidget.cpp:290
+#: collection/collectionfilterwidget.cpp:292
 msgid "Group by Album"
 msgstr "Agrupa per àlbum"
 
-#: collection/collectionfilterwidget.cpp:287
+#: collection/collectionfilterwidget.cpp:289
 msgid "Group by Album Artist"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:274
+#: collection/collectionfilterwidget.cpp:276
 msgid "Group by Album artist/Album"
 msgstr "Agrupa per artista de l'àlbum/àlbum"
 
-#: collection/collectionfilterwidget.cpp:275
+#: collection/collectionfilterwidget.cpp:277
 msgid "Group by Album artist/Album - Disc"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:276
+#: collection/collectionfilterwidget.cpp:278
 msgid "Group by Album artist/Year - Album"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:277
+#: collection/collectionfilterwidget.cpp:279
 msgid "Group by Album artist/Year - Album - Disc"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:288
+#: collection/collectionfilterwidget.cpp:290
 msgid "Group by Artist"
 msgstr "Agrupa per artista"
 
-#: collection/collectionfilterwidget.cpp:279
+#: collection/collectionfilterwidget.cpp:281
 msgid "Group by Artist/Album"
 msgstr "Agrupa per artista/àlbum"
 
-#: collection/collectionfilterwidget.cpp:280
+#: collection/collectionfilterwidget.cpp:282
 msgid "Group by Artist/Album - Disc"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:281
+#: collection/collectionfilterwidget.cpp:283
 msgid "Group by Artist/Year - Album"
 msgstr "Agrupa per artista/any–àlbum"
 
-#: collection/collectionfilterwidget.cpp:282
+#: collection/collectionfilterwidget.cpp:284
 msgid "Group by Artist/Year - Album - Disc"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:291
+#: collection/collectionfilterwidget.cpp:293
 msgid "Group by Genre/Album"
 msgstr "Agrupa per gènere/àlbum"
 
-#: collection/collectionfilterwidget.cpp:284
+#: collection/collectionfilterwidget.cpp:286
 msgid "Group by Genre/Album artist/Album"
 msgstr ""
 
-#: collection/collectionfilterwidget.cpp:285
+#: collection/collectionfilterwidget.cpp:287
 msgid "Group by Genre/Artist/Album"
 msgstr "Agrupa per gènere/artista/àlbum"
 
-#: collection/savedgroupingmanager.cpp:133 playlist/playlist.cpp:1345
+#: collection/savedgroupingmanager.cpp:133 playlist/playlist.cpp:1365
 #: organize/organizedialog.cpp:108 ../build/src/ui_groupbydialog.h:205
 #: ../build/src/ui_groupbydialog.h:227 ../build/src/ui_groupbydialog.h:249
 #: ../build/src/ui_edittagdialog.h:846
 msgid "Grouping"
 msgstr "Agrupació"
 
-#: collection/collectionfilterwidget.cpp:348
+#: collection/collectionfilterwidget.cpp:350
 msgid "Grouping Name"
 msgstr "Nom d’agrupació"
 
-#: collection/collectionfilterwidget.cpp:348
+#: collection/collectionfilterwidget.cpp:350
 msgid "Grouping name:"
 msgstr "Nom d’agrupació:"
 
@@ -2633,11 +2625,11 @@ msgstr ""
 msgid "Hide the main window"
 msgstr ""
 
-#: ../build/src/ui_transcoderoptionsmp3.h:199
+#: ../build/src/ui_transcoderoptionsmp3.h:200
 msgid "High"
 msgstr "Alt"
 
-#: analyzer/analyzercontainer.cpp:78
+#: analyzer/analyzercontainer.cpp:79
 #, qt-format
 msgid "High (%1 fps)"
 msgstr "Alta (%1 fps)"
@@ -2646,7 +2638,7 @@ msgstr "Alta (%1 fps)"
 msgid "High watermark"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:447
+#: smartplaylists/smartplaylistsearchterm.cpp:449
 msgid "Hours"
 msgstr ""
 
@@ -2658,7 +2650,7 @@ msgstr ""
 msgid "Icon"
 msgstr "Icona"
 
-#: ../build/src/ui_appearancesettingspage.h:624
+#: ../build/src/ui_appearancesettingspage.h:550
 msgid "Icon sizes"
 msgstr ""
 
@@ -2692,12 +2684,12 @@ msgid ""
 "donating."
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:76
+#: covermanager/albumcoverchoicecontroller.cpp:77
 msgid "Images (*.png *.jpg *.jpeg *.bmp *.gif *.xpm *.pbm *.pgm *.ppm *.xbm)"
 msgstr ""
 "Imatges (*.png *.jpg *.jpeg *.bmp *.gif *.xpm *.pbm *.pgm *.ppm *.xbm)"
 
-#: covermanager/albumcoverchoicecontroller.cpp:77
+#: covermanager/albumcoverchoicecontroller.cpp:78
 msgid "Images (*.png *.jpg *.jpeg *.bmp *.xpm *.pbm *.ppm *.xbm)"
 msgstr "Imatges (*.png *.jpg *.jpeg *.bmp *.xpm *.pbm *.ppm *.xbm)"
 
@@ -2799,7 +2791,7 @@ msgstr ""
 msgid "Jump to previous song right away"
 msgstr "Vés a la peça anterior"
 
-#: ../build/src/ui_appearancesettingspage.h:618
+#: ../build/src/ui_appearancesettingspage.h:544
 msgid "Keep aspect ratio"
 msgstr ""
 
@@ -2832,7 +2824,7 @@ msgstr "Coberta d’àlbum gran"
 msgid "Large sidebar"
 msgstr "Barra lateral gran"
 
-#: playlist/playlist.cpp:1349 smartplaylists/smartplaylistsmodel.cpp:91
+#: playlist/playlist.cpp:1369 smartplaylists/smartplaylistsmodel.cpp:91
 #: ../build/src/ui_lastfmimportdialog.h:150
 msgid "Last played"
 msgstr "Reproduïdes l’última vegada"
@@ -2859,7 +2851,7 @@ msgstr ""
 msgid "Left"
 msgstr "Esquerra"
 
-#: context/contextview.cpp:209 playlist/playlist.cpp:1338
+#: context/contextview.cpp:209 playlist/playlist.cpp:1358
 #: organize/organizedialog.cpp:115 ../build/src/ui_edittagdialog.h:824
 msgid "Length"
 msgstr "Durada"
@@ -2892,16 +2884,16 @@ msgstr "Carregar"
 msgid "Load cover from URL"
 msgstr "Carrega la coberta des d’un URL"
 
-#: covermanager/albumcoverchoicecontroller.cpp:109
+#: covermanager/albumcoverchoicecontroller.cpp:110
 msgid "Load cover from URL..."
 msgstr "Carrega la coberta des d’un URL…"
 
-#: covermanager/albumcoverchoicecontroller.cpp:177
-#: covermanager/albumcoverchoicecontroller.cpp:209
+#: covermanager/albumcoverchoicecontroller.cpp:178
+#: covermanager/albumcoverchoicecontroller.cpp:210
 msgid "Load cover from disk"
 msgstr "Carrega la portada des del disc dur"
 
-#: covermanager/albumcoverchoicecontroller.cpp:107
+#: covermanager/albumcoverchoicecontroller.cpp:108
 msgid "Load cover from disk..."
 msgstr "Carrega la coberta des d’un disc…"
 
@@ -2921,7 +2913,7 @@ msgstr "S’està carregant la base de dades de l’iPod"
 msgid "Loading smart playlist"
 msgstr ""
 
-#: collection/collectionmodel.cpp:197
+#: collection/collectionmodel.cpp:199
 msgid "Loading songs"
 msgstr "S’estan carregant les cançons"
 
@@ -2933,7 +2925,7 @@ msgstr "S’estan carregant les peces"
 msgid "Loading tracks info"
 msgstr "S’està carregant la informació de les peces"
 
-#: collection/collectionmodel.cpp:190
+#: collection/collectionmodel.cpp:192
 #: ../build/src/ui_smartplaylistsearchpreview.h:103
 #: ../build/src/ui_organizedialog.h:280
 msgid "Loading..."
@@ -2966,7 +2958,7 @@ msgstr "Perfil de predicció a llarg termini (LTP)"
 msgid "Love"
 msgstr ""
 
-#: analyzer/analyzercontainer.cpp:76
+#: analyzer/analyzercontainer.cpp:77
 #, qt-format
 msgid "Low (%1 fps)"
 msgstr "Baixa (%1 fps)"
@@ -3033,7 +3025,7 @@ msgstr ""
 msgid "Match one or more search terms (OR)"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:616
+#: ../build/src/ui_appearancesettingspage.h:542
 msgid "Max cover size"
 msgstr ""
 
@@ -3045,7 +3037,7 @@ msgstr "Màxima taxa de bits"
 msgid "Maximum number of login attempts reached."
 msgstr ""
 
-#: analyzer/analyzercontainer.cpp:77
+#: analyzer/analyzercontainer.cpp:78
 #, qt-format
 msgid "Medium (%1 fps)"
 msgstr "Mitja (%1 fps)"
@@ -3054,7 +3046,7 @@ msgstr "Mitja (%1 fps)"
 msgid "Metadata"
 msgstr "Metadades"
 
-#: ../build/src/ui_appearancesettingspage.h:612
+#: ../build/src/ui_appearancesettingspage.h:538
 msgid "Middle"
 msgstr ""
 
@@ -3062,7 +3054,7 @@ msgstr ""
 msgid "Minimum bitrate"
 msgstr "Taxa de bits mínima"
 
-#: settings/tidalsettingspage.cpp:163
+#: settings/tidalsettingspage.cpp:158
 msgid "Missing API token."
 msgstr ""
 
@@ -3098,7 +3090,7 @@ msgstr ""
 msgid "Missing Tidal API token."
 msgstr ""
 
-#: settings/tidalsettingspage.cpp:156
+#: settings/tidalsettingspage.cpp:151
 msgid "Missing Tidal client ID."
 msgstr ""
 
@@ -3114,7 +3106,7 @@ msgstr ""
 msgid "Missing app id."
 msgstr ""
 
-#: settings/tidalsettingspage.cpp:171 settings/qobuzsettingspage.cpp:138
+#: settings/tidalsettingspage.cpp:166 settings/qobuzsettingspage.cpp:138
 msgid "Missing password."
 msgstr ""
 
@@ -3130,7 +3122,7 @@ msgstr ""
 msgid "Missing username, please login to last.fm first!"
 msgstr ""
 
-#: settings/tidalsettingspage.cpp:167 settings/qobuzsettingspage.cpp:134
+#: settings/tidalsettingspage.cpp:162 settings/qobuzsettingspage.cpp:134
 msgid "Missing username."
 msgstr ""
 
@@ -3142,11 +3134,11 @@ msgstr "Model"
 msgid "Monitor the collection for changes"
 msgstr "Monitoritza els canvis a la col·lecció"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:453
+#: smartplaylists/smartplaylistsearchterm.cpp:455
 msgid "Months"
 msgstr "Mesos"
 
-#: playlist/playlist.cpp:1364
+#: playlist/playlist.cpp:1384
 msgid "Mood"
 msgstr ""
 
@@ -3163,7 +3155,7 @@ msgstr ""
 msgid "Most played"
 msgstr ""
 
-#: device/giolister.cpp:192
+#: device/giolister.cpp:191
 msgid "Mount point"
 msgstr "Punt de muntatge"
 
@@ -3176,7 +3168,7 @@ msgstr "Punts de muntatge"
 msgid "Move down"
 msgstr "Mou cap avall"
 
-#: core/mainwindow.cpp:755 widgets/fileviewlist.cpp:47
+#: core/mainwindow.cpp:754 widgets/fileviewlist.cpp:47
 msgid "Move to collection..."
 msgstr "Mou a la col·lecció…"
 
@@ -3185,7 +3177,7 @@ msgstr "Mou a la col·lecció…"
 msgid "Move up"
 msgstr "Mou cap amunt"
 
-#: core/mainwindow.cpp:2208 transcoder/transcodedialog.cpp:333
+#: core/mainwindow.cpp:2201 transcoder/transcodedialog.cpp:333
 msgid "Music"
 msgstr "Música"
 
@@ -3229,7 +3221,7 @@ msgstr "Mai no comencis a reproduir"
 msgid "New folder"
 msgstr "Carpeta nova"
 
-#: core/mainwindow.cpp:2026
+#: core/mainwindow.cpp:2019
 msgid "New playlist"
 msgstr "Llista de reproducció nova"
 
@@ -3265,7 +3257,7 @@ msgstr ""
 msgid "Next week"
 msgstr "La setmana vinent"
 
-#: analyzer/analyzercontainer.cpp:89
+#: analyzer/analyzercontainer.cpp:91
 msgid "No analyzer"
 msgstr "Sense analitzador"
 
@@ -3277,7 +3269,7 @@ msgstr "No hi ha cap coberta que exportar."
 msgid "No long blocks"
 msgstr "No utilitzis blocs llargs"
 
-#: tidal/tidalrequest.cpp:1352 qobuz/qobuzrequest.cpp:1414
+#: tidal/tidalrequest.cpp:1358 qobuz/qobuzrequest.cpp:1414
 msgid "No match."
 msgstr ""
 
@@ -3306,7 +3298,7 @@ msgstr ""
 msgid "None"
 msgstr "Cap"
 
-#: core/mainwindow.cpp:2603 core/mainwindow.cpp:2754
+#: core/mainwindow.cpp:2596 core/mainwindow.cpp:2747
 #: collection/collectionview.cpp:586
 msgid "None of the selected songs were suitable for copying to a device"
 msgstr ""
@@ -3388,7 +3380,7 @@ msgstr ""
 msgid "Only show the first"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:622
+#: ../build/src/ui_appearancesettingspage.h:548
 msgid "Opacity"
 msgstr "Opacitat"
 
@@ -3426,11 +3418,11 @@ msgstr "Obre en una llista de reproducció nova"
 msgid "Open..."
 msgstr "Obre…"
 
-#: ../build/src/ui_transcoderoptionsmp3.h:192
+#: ../build/src/ui_transcoderoptionsmp3.h:193
 msgid "Opti&mize for bitrate"
 msgstr ""
 
-#: ../build/src/ui_transcoderoptionsmp3.h:190
+#: ../build/src/ui_transcoderoptionsmp3.h:191
 msgid "Optimize for &quality"
 msgstr ""
 
@@ -3450,7 +3442,7 @@ msgstr "Opus"
 msgid "Organize Files"
 msgstr ""
 
-#: core/mainwindow.cpp:753 collection/collectionview.cpp:357
+#: core/mainwindow.cpp:752 collection/collectionview.cpp:357
 msgid "Organize files..."
 msgstr ""
 
@@ -3462,7 +3454,7 @@ msgstr ""
 msgid "Original tags"
 msgstr "Etiquetes originals"
 
-#: collection/savedgroupingmanager.cpp:121 playlist/playlist.cpp:1340
+#: collection/savedgroupingmanager.cpp:121 playlist/playlist.cpp:1360
 #: organize/organizedialog.cpp:112 ../build/src/ui_groupbydialog.h:201
 #: ../build/src/ui_groupbydialog.h:223 ../build/src/ui_groupbydialog.h:245
 msgid "Original year"
@@ -3538,7 +3530,7 @@ msgstr ""
 msgid "Pattern"
 msgstr ""
 
-#: core/mainwindow.cpp:1324 core/mainwindow.cpp:1823
+#: core/mainwindow.cpp:1317 core/mainwindow.cpp:1816
 #: core/qtsystemtrayicon.cpp:144 globalshortcuts/globalshortcutsmanager.cpp:62
 msgid "Pause"
 msgstr "Pausa"
@@ -3551,7 +3543,7 @@ msgstr "Pausa la reproducció"
 msgid "Paused"
 msgstr "En pausa"
 
-#: collection/savedgroupingmanager.cpp:130 playlist/playlist.cpp:1344
+#: collection/savedgroupingmanager.cpp:130 playlist/playlist.cpp:1364
 #: organize/organizedialog.cpp:107 ../build/src/ui_groupbydialog.h:204
 #: ../build/src/ui_groupbydialog.h:226 ../build/src/ui_groupbydialog.h:248
 #: ../build/src/ui_edittagdialog.h:856
@@ -3566,17 +3558,17 @@ msgstr "Píxel"
 msgid "Plain sidebar"
 msgstr "Barra lateral senzilla"
 
-#: core/mainwindow.cpp:722 core/mainwindow.cpp:1281 core/mainwindow.cpp:1308
-#: core/mainwindow.cpp:1827 core/qtsystemtrayicon.cpp:157
+#: core/mainwindow.cpp:721 core/mainwindow.cpp:1274 core/mainwindow.cpp:1301
+#: core/mainwindow.cpp:1820 core/qtsystemtrayicon.cpp:157
 #: core/qtsystemtrayicon.cpp:171 globalshortcuts/globalshortcutsmanager.cpp:61
 msgid "Play"
 msgstr "Reprodueix"
 
-#: ../build/src/ui_appearancesettingspage.h:627
+#: ../build/src/ui_appearancesettingspage.h:553
 msgid "Play control buttons"
 msgstr ""
 
-#: playlist/playlist.cpp:1347 ../build/src/ui_edittagdialog.h:831
+#: playlist/playlist.cpp:1367 ../build/src/ui_edittagdialog.h:831
 msgid "Play count"
 msgstr "Comptador de reproduccions"
 
@@ -3630,7 +3622,7 @@ msgstr "Opcions del reproductor"
 msgid "Playlist"
 msgstr "Llista de reproducció"
 
-#: ../build/src/ui_appearancesettingspage.h:625
+#: ../build/src/ui_appearancesettingspage.h:551
 msgid "Playlist buttons"
 msgstr ""
 
@@ -3638,7 +3630,7 @@ msgstr ""
 msgid "Playlist finished"
 msgstr "Llista de reproducció finalitzada"
 
-#: core/mainwindow.cpp:2299
+#: core/mainwindow.cpp:2292
 #, qt-format
 msgid ""
 "Playlist has %1 songs, too large to undo, are you sure you want to clear the "
@@ -3654,7 +3646,7 @@ msgstr ""
 msgid "Playlist options"
 msgstr "Opcions de la llista de reproducció"
 
-#: ../build/src/ui_appearancesettingspage.h:631
+#: ../build/src/ui_appearancesettingspage.h:557
 msgid "Playlist playing song color"
 msgstr ""
 
@@ -3662,7 +3654,7 @@ msgstr ""
 msgid "Playlist type"
 msgstr ""
 
-#: core/mainwindow.cpp:371
+#: core/mainwindow.cpp:370
 msgid "Playlists"
 msgstr ""
 
@@ -3687,7 +3679,7 @@ msgstr "Duració de la finestra emergent"
 msgid "Port"
 msgstr "Port"
 
-#: ../build/src/ui_appearancesettingspage.h:609
+#: ../build/src/ui_appearancesettingspage.h:535
 msgid "Position"
 msgstr "Posició"
 
@@ -3715,7 +3707,7 @@ msgstr ""
 msgid "Preferred format"
 msgstr "Format preferit"
 
-#: collection/collectionfilterwidget.cpp:78
+#: collection/collectionfilterwidget.cpp:79
 msgid ""
 "Prefix a word with a field name to limit the search to that field, e.g.:"
 msgstr ""
@@ -3787,7 +3779,7 @@ msgstr "Progrés"
 msgid "Put songs in a random order"
 msgstr ""
 
-#: core/mainwindow.cpp:385 ../build/src/ui_scrobblersettingspage.h:423
+#: core/mainwindow.cpp:384 ../build/src/ui_scrobblersettingspage.h:423
 #: ../build/src/ui_qobuzsettingspage.h:276
 msgid "Qobuz"
 msgstr ""
@@ -3801,7 +3793,7 @@ msgstr ""
 #: ../build/src/ui_transcoderoptionsflac.h:77
 #: ../build/src/ui_transcoderoptionsvorbis.h:198
 #: ../build/src/ui_transcoderoptionsspeex.h:217
-#: ../build/src/ui_transcoderoptionsmp3.h:191
+#: ../build/src/ui_transcoderoptionsmp3.h:192
 msgctxt "Sound quality"
 msgid "Quality"
 msgstr "Qualitat"
@@ -3810,24 +3802,24 @@ msgstr "Qualitat"
 msgid "Querying device..."
 msgstr "S’està consultant el dispositiu…"
 
-#: core/mainwindow.cpp:370
+#: core/mainwindow.cpp:369
 msgid "Queue"
 msgstr ""
 
-#: core/mainwindow.cpp:1927
+#: core/mainwindow.cpp:1920
 msgid "Queue selected tracks"
 msgstr "Afegeix les peces seleccionades a la cua"
 
-#: core/mainwindow.cpp:728 core/mainwindow.cpp:1931
+#: core/mainwindow.cpp:727 core/mainwindow.cpp:1924
 msgid "Queue selected tracks to play next"
 msgstr ""
 
-#: core/mainwindow.cpp:1934 collection/collectionview.cpp:354
+#: core/mainwindow.cpp:1927 collection/collectionview.cpp:354
 #: internet/internetcollectionview.cpp:320
 msgid "Queue to play next"
 msgstr ""
 
-#: core/mainwindow.cpp:1926 collection/collectionview.cpp:353
+#: core/mainwindow.cpp:1919 collection/collectionview.cpp:353
 #: smartplaylists/smartplaylistsviewcontainer.cpp:72
 #: internet/internetsearchview.cpp:323 internet/internetcollectionview.cpp:319
 msgid "Queue track"
@@ -3845,7 +3837,7 @@ msgstr "Ràdio (mateix volum per a totes les peces)"
 msgid "Radio Paradise"
 msgstr ""
 
-#: core/mainwindow.cpp:374
+#: core/mainwindow.cpp:373
 msgid "Radios"
 msgstr ""
 
@@ -3853,7 +3845,7 @@ msgstr ""
 msgid "Random"
 msgstr ""
 
-#: playlist/playlist.cpp:1365 ../build/src/ui_edittagdialog.h:859
+#: playlist/playlist.cpp:1385 ../build/src/ui_edittagdialog.h:859
 msgid "Rating"
 msgstr ""
 
@@ -3889,12 +3881,12 @@ msgid ""
 "another browser like Chromium or Chrome."
 msgstr ""
 
-#: tidal/tidalrequest.cpp:1185 qobuz/qobuzrequest.cpp:1247
+#: tidal/tidalrequest.cpp:1191 qobuz/qobuzrequest.cpp:1247
 #, qt-format
 msgid "Receiving album cover for %1 album..."
 msgstr ""
 
-#: tidal/tidalrequest.cpp:1186 qobuz/qobuzrequest.cpp:1248
+#: tidal/tidalrequest.cpp:1192 qobuz/qobuzrequest.cpp:1248
 #, qt-format
 msgid "Receiving album covers for %1 albums..."
 msgstr ""
@@ -4095,7 +4087,7 @@ msgstr ""
 msgid "Rescan song(s)"
 msgstr ""
 
-#: core/mainwindow.cpp:744
+#: core/mainwindow.cpp:743
 msgid "Rescan song(s)..."
 msgstr ""
 
@@ -4103,9 +4095,13 @@ msgstr ""
 msgid "Reset"
 msgstr "Posa a zero"
 
-#: dialogs/edittagdialog.cpp:1298 ../build/src/ui_edittagdialog.h:840
+#: ../build/src/ui_edittagdialog.h:840
 msgid "Reset play counts"
 msgstr "Posa a zero el comptador de reproduccions"
+
+#: dialogs/edittagdialog.cpp:1315
+msgid "Reset song statistics"
+msgstr ""
 
 #: core/commandlineoptions.cpp:190
 msgid "Resize the window"
@@ -4190,7 +4186,7 @@ msgstr "Treure el dispositiu amb seguretat"
 msgid "Safely remove the device after copying"
 msgstr "Treure el dispositiu amb seguretat després de copiar"
 
-#: collection/savedgroupingmanager.cpp:142 playlist/playlist.cpp:1351
+#: collection/savedgroupingmanager.cpp:142 playlist/playlist.cpp:1371
 #: organize/organizedialog.cpp:117 ../build/src/ui_groupbydialog.h:207
 #: ../build/src/ui_groupbydialog.h:229 ../build/src/ui_groupbydialog.h:251
 #: ../build/src/ui_edittagdialog.h:834
@@ -4205,7 +4201,7 @@ msgstr "Freqüència de mostreig"
 msgid "Save &playlist..."
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:246
+#: covermanager/albumcoverchoicecontroller.cpp:247
 msgid "Save album cover"
 msgstr "Desa la coberta de l’àlbum"
 
@@ -4221,7 +4217,7 @@ msgstr ""
 msgid "Save album covers in cache directory"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:108
+#: covermanager/albumcoverchoicecontroller.cpp:109
 msgid "Save cover to disk..."
 msgstr "Desa la coberta al disc dur…"
 
@@ -4291,12 +4287,12 @@ msgstr "Mida de l’escala"
 msgid "Scrobbler"
 msgstr ""
 
-#: scrobbler/scrobblingapi20.cpp:1019
+#: scrobbler/scrobblingapi20.cpp:1020
 #, qt-format
 msgid "Scrobbler %1 error: %2"
 msgstr ""
 
-#: scrobbler/scrobblingapi20.cpp:533
+#: scrobbler/scrobblingapi20.cpp:534
 #, qt-format
 msgid "Scrobbler %1 is not authenticated!"
 msgstr ""
@@ -4308,7 +4304,7 @@ msgstr ""
 msgid "Search"
 msgstr "Cerca"
 
-#: covermanager/albumcoverchoicecontroller.cpp:118
+#: covermanager/albumcoverchoicecontroller.cpp:119
 msgid "Search automatically"
 msgstr "Cerca automàticament"
 
@@ -4317,7 +4313,7 @@ msgstr "Cerca automàticament"
 msgid "Search delay"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:110
+#: covermanager/albumcoverchoicecontroller.cpp:111
 msgid "Search for album covers..."
 msgstr "Cerca cobertes dels àlbums…"
 
@@ -4372,11 +4368,7 @@ msgstr "Mou-te per la peça en reproducció a una posició absoluta"
 msgid "Seeking using a keyboard shortcut or mouse wheel"
 msgstr "Moure's dins la peça amb una tecla de drecera o la roda del ratolí"
 
-#: ../build/src/ui_appearancesettingspage.h:591
-msgid "Select background color:"
-msgstr "Seleccioneu el color de fons:"
-
-#: settings/appearancesettingspage.cpp:402
+#: settings/appearancesettingspage.cpp:300
 msgid "Select background image"
 msgstr "Seleccioneu la imatge de fons"
 
@@ -4392,15 +4384,11 @@ msgstr ""
 msgid "Select directory for the playlists"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:589
-msgid "Select foreground color:"
-msgstr "Seleccioneu el color de primer pla:"
-
-#: ../build/src/ui_appearancesettingspage.h:634
+#: ../build/src/ui_appearancesettingspage.h:560
 msgid "Select playlist playing song color:"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:597
+#: ../build/src/ui_appearancesettingspage.h:523
 msgid "Select tabbar color:"
 msgstr ""
 
@@ -4428,7 +4416,7 @@ msgstr ""
 msgid "Server-side scrobbling"
 msgstr ""
 
-#: core/mainwindow.cpp:1967
+#: core/mainwindow.cpp:1960
 #, qt-format
 msgid "Set %1 to \"%2\"..."
 msgstr "Estableix %1 a «%2»…"
@@ -4445,7 +4433,7 @@ msgstr "Estableix valor per a totes les peces seleccionades…"
 msgid "Settings"
 msgstr "Paràmetres"
 
-#: ../build/src/ui_appearancesettingspage.h:585
+#: ../build/src/ui_appearancesettingspage.h:518
 msgid "Settings require restart."
 msgstr ""
 
@@ -4459,7 +4447,7 @@ msgstr "Drecera"
 msgid "Shortcut for %1"
 msgstr "Drecera per a «%1»"
 
-#: collection/collectionfilterwidget.cpp:113
+#: collection/collectionfilterwidget.cpp:114
 msgid "Show"
 msgstr "Mostrar"
 
@@ -4517,7 +4505,7 @@ msgstr ""
 msgid "Show album cover art in collection"
 msgstr ""
 
-#: core/mainwindow.cpp:670
+#: core/mainwindow.cpp:669
 msgid "Show all songs"
 msgstr "Mostra totes les cançons"
 
@@ -4541,11 +4529,11 @@ msgstr "Mostra els separadors"
 msgid "Show engine and device"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:116
+#: covermanager/albumcoverchoicecontroller.cpp:117
 msgid "Show fullsize..."
 msgstr "Mostra a mida completa..."
 
-#: core/mainwindow.cpp:751
+#: core/mainwindow.cpp:750
 msgid "Show in collection..."
 msgstr "Mostra a la col·lecció…"
 
@@ -4553,7 +4541,7 @@ msgstr "Mostra a la col·lecció…"
 msgid "Show in file browser"
 msgstr ""
 
-#: core/mainwindow.cpp:752 collection/collectionview.cpp:366
+#: core/mainwindow.cpp:751 collection/collectionview.cpp:366
 #: widgets/fileviewlist.cpp:53
 msgid "Show in file browser..."
 msgstr "Mostra al gestor de fitxers"
@@ -4570,11 +4558,11 @@ msgstr ""
 msgid "Show moodbar"
 msgstr ""
 
-#: core/mainwindow.cpp:671
+#: core/mainwindow.cpp:670
 msgid "Show only duplicates"
 msgstr "Mostra només els duplicats"
 
-#: core/mainwindow.cpp:672
+#: core/mainwindow.cpp:671
 msgid "Show only untagged"
 msgstr "Mostra només les peces sense etiquetar"
 
@@ -4663,7 +4651,7 @@ msgstr "Ska"
 msgid "Skip backwards in playlist"
 msgstr "Salta enrere en la llista de reproducció"
 
-#: playlist/playlist.cpp:1348 ../build/src/ui_edittagdialog.h:829
+#: playlist/playlist.cpp:1368 ../build/src/ui_edittagdialog.h:829
 msgid "Skip count"
 msgstr "Comptador d’omissions"
 
@@ -4671,11 +4659,11 @@ msgstr "Comptador d’omissions"
 msgid "Skip forwards in playlist"
 msgstr "Salta endavant en la llista de reproducció"
 
-#: core/mainwindow.cpp:1940
+#: core/mainwindow.cpp:1933
 msgid "Skip selected tracks"
 msgstr "Omet les peces seleccionades"
 
-#: core/mainwindow.cpp:1939
+#: core/mainwindow.cpp:1932
 msgid "Skip track"
 msgstr "Omet la peça"
 
@@ -4691,7 +4679,7 @@ msgstr "Barra lateral petita"
 msgid "Smart playlist"
 msgstr ""
 
-#: core/mainwindow.cpp:372
+#: core/mainwindow.cpp:371
 msgid "Smart playlists"
 msgstr ""
 
@@ -4735,6 +4723,10 @@ msgstr ""
 msgid "Songs search limit"
 msgstr ""
 
+#: analyzer/sonogram.cpp:29
+msgid "Sonogram"
+msgstr ""
+
 #: ../build/src/ui_trackselectiondialog.h:203
 msgid "Sorry"
 msgstr "Ho lamentem"
@@ -4747,7 +4739,7 @@ msgstr ""
 msgid "Sorting"
 msgstr ""
 
-#: playlist/playlist.cpp:1363
+#: playlist/playlist.cpp:1383
 msgid "Source"
 msgstr "Font"
 
@@ -4759,7 +4751,7 @@ msgstr "Speex"
 msgid "Spotify Authentication"
 msgstr ""
 
-#: ../build/src/ui_transcoderoptionsmp3.h:198
+#: ../build/src/ui_transcoderoptionsmp3.h:199
 msgid "Standard"
 msgstr "Estàndard"
 
@@ -4792,7 +4784,7 @@ msgstr "Atura després de cada peça"
 msgid "Stop after every track"
 msgstr "Atura després de cada peça"
 
-#: core/mainwindow.cpp:724 ../build/src/ui_mainwindow.h:630
+#: core/mainwindow.cpp:723 ../build/src/ui_mainwindow.h:630
 msgid "Stop after this track"
 msgstr "Atura després d’aquesta peça"
 
@@ -4881,16 +4873,16 @@ msgstr "Flux de dades"
 msgid "Stream URL method"
 msgstr ""
 
-#: settings/settingsdialog.cpp:159
+#: settings/settingsdialog.cpp:158
 msgid "Streaming"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:617
+#: ../build/src/ui_appearancesettingspage.h:543
 msgid "Stretch image to fill playlist"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:582
-#: ../build/src/ui_appearancesettingspage.h:583
+#: ../build/src/ui_appearancesettingspage.h:515
+#: ../build/src/ui_appearancesettingspage.h:516
 msgid "Style"
 msgstr "Estil"
 
@@ -4898,7 +4890,7 @@ msgstr "Estil"
 msgid "Submit scrobbles every"
 msgstr ""
 
-#: core/mainwindow.cpp:379 ../build/src/ui_scrobblersettingspage.h:419
+#: core/mainwindow.cpp:378 ../build/src/ui_scrobblersettingspage.h:419
 #: ../build/src/ui_subsonicsettingspage.h:243
 msgid "Subsonic"
 msgstr "Subsonic"
@@ -4926,7 +4918,7 @@ msgstr "Etiquetes suggerides"
 msgid "Summary"
 msgstr "Resum"
 
-#: analyzer/analyzercontainer.cpp:79
+#: analyzer/analyzercontainer.cpp:80
 #, qt-format
 msgid "Super high (%1 fps)"
 msgstr "Molt alta (%1 fps)"
@@ -4939,19 +4931,19 @@ msgstr "Formats compatibles"
 msgid "System colors"
 msgstr "Colors del sistema"
 
-#: ../build/src/ui_appearancesettingspage.h:632
+#: ../build/src/ui_appearancesettingspage.h:558
 msgid "System highlight color"
 msgstr "Color de realçament del sistema"
 
-#: ../build/src/ui_appearancesettingspage.h:593
+#: ../build/src/ui_appearancesettingspage.h:519
 msgid "Tabbar colors"
 msgstr "Colors de la barra de pestanyes"
 
-#: ../build/src/ui_appearancesettingspage.h:626
+#: ../build/src/ui_appearancesettingspage.h:552
 msgid "Tabbar large mode"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:630
+#: ../build/src/ui_appearancesettingspage.h:556
 msgid "Tabbar small mode"
 msgstr ""
 
@@ -5013,7 +5005,7 @@ msgstr ""
 msgid "The \"%1\" command could not be started."
 msgstr "No s’ha pogut iniciar l’ordre «%1»."
 
-#: ../build/src/ui_appearancesettingspage.h:603
+#: ../build/src/ui_appearancesettingspage.h:529
 msgid "The album cover of the currently playing song"
 msgstr "La coberta de l’àlbum de la cançó en reproducció"
 
@@ -5037,7 +5029,7 @@ msgstr "L’adreça que heu sol·licitat no existeix."
 msgid "The site you requested is not an image!"
 msgstr "L’adreça que heu sol·licitat no conté cap imatge."
 
-#: core/mainwindow.cpp:2867
+#: core/mainwindow.cpp:2860
 msgid ""
 "The version of Strawberry you've just updated to requires a full collection "
 "rescan because of the new features listed below:"
@@ -5150,7 +5142,7 @@ msgstr "Aquest tipus de dispositiu no és compatible: %1"
 msgid "Thread priority"
 msgstr ""
 
-#: core/mainwindow.cpp:382 ../build/src/ui_scrobblersettingspage.h:421
+#: core/mainwindow.cpp:381 ../build/src/ui_scrobblersettingspage.h:421
 #: ../build/src/ui_tidalsettingspage.h:318
 msgid "Tidal"
 msgstr ""
@@ -5165,7 +5157,7 @@ msgstr ""
 msgid "Time step"
 msgstr "Salt en el temps"
 
-#: playlist/playlist.cpp:1333 organize/organizedialog.cpp:101
+#: playlist/playlist.cpp:1353 organize/organizedialog.cpp:101
 #: ../build/src/ui_contextsettingspage.h:428
 #: ../build/src/ui_edittagdialog.h:850
 #: ../build/src/ui_trackselectiondialog.h:209
@@ -5180,7 +5172,7 @@ msgstr "Avui"
 msgid "Toggle Pretty OSD"
 msgstr ""
 
-#: core/mainwindow.cpp:725 core/mainwindow.cpp:1928
+#: core/mainwindow.cpp:724 core/mainwindow.cpp:1921
 msgid "Toggle queue status"
 msgstr "Commuta l’estat de la cua"
 
@@ -5188,7 +5180,7 @@ msgstr "Commuta l’estat de la cua"
 msgid "Toggle scrobbling"
 msgstr "Commuta l’«scrobbling»"
 
-#: core/mainwindow.cpp:731 core/mainwindow.cpp:1941
+#: core/mainwindow.cpp:730 core/mainwindow.cpp:1934
 msgid "Toggle skip status"
 msgstr ""
 
@@ -5216,7 +5208,7 @@ msgstr "Bytes totals transferits"
 msgid "Total network requests made"
 msgstr "Total de sol·licituds de xarxa fetes"
 
-#: playlist/playlist.cpp:1336 organize/organizedialog.cpp:109
+#: playlist/playlist.cpp:1356 organize/organizedialog.cpp:109
 #: ../build/src/ui_edittagdialog.h:858
 #: ../build/src/ui_trackselectiondialog.h:211
 msgid "Track"
@@ -5251,7 +5243,7 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: device/giolister.cpp:194
+#: device/giolister.cpp:193
 msgid "URI"
 msgstr "URI"
 
@@ -5275,10 +5267,10 @@ msgstr ""
 msgid "Uninstall the snap with:"
 msgstr ""
 
-#: core/song.cpp:673 collection/collectionmodel.cpp:476
-#: collection/collectionmodel.cpp:481 collection/collectionmodel.cpp:485
-#: collection/collectionmodel.cpp:489 collection/collectionmodel.cpp:493
-#: collection/collectionmodel.cpp:1642 collection/savedgroupingmanager.cpp:152
+#: core/song.cpp:673 collection/collectionmodel.cpp:478
+#: collection/collectionmodel.cpp:483 collection/collectionmodel.cpp:487
+#: collection/collectionmodel.cpp:491 collection/collectionmodel.cpp:495
+#: collection/collectionmodel.cpp:1655 collection/savedgroupingmanager.cpp:152
 #: playlist/playlistdelegates.cpp:360 playlist/playlistmanager.cpp:549
 #: playlist/playlistmanager.cpp:550 dialogs/edittagdialog.cpp:764
 #: dialogs/edittagdialog.cpp:791 ../build/src/ui_scrobblersettingspage.h:428
@@ -5301,15 +5293,15 @@ msgstr ""
 msgid "Unset"
 msgstr ""
 
-#: covermanager/albumcoverchoicecontroller.cpp:111
+#: covermanager/albumcoverchoicecontroller.cpp:112
 msgid "Unset cover"
 msgstr "Esborra’n la coberta"
 
-#: core/mainwindow.cpp:1938
+#: core/mainwindow.cpp:1931
 msgid "Unskip selected tracks"
 msgstr "No ometis les peces seleccionades"
 
-#: core/mainwindow.cpp:1937
+#: core/mainwindow.cpp:1930
 msgid "Unskip track"
 msgstr "No ometis la peça"
 
@@ -5322,7 +5314,7 @@ msgstr "Actualitza la col·lecció quan l’Strawberry s’iniciï"
 msgid "Updating %1"
 msgstr "S’està actualitzant %1"
 
-#: collection/collectionbackend.cpp:694
+#: collection/collectionbackend.cpp:695
 #, qt-format
 msgid "Updating %1 database."
 msgstr ""
@@ -5340,11 +5332,11 @@ msgstr "S’està actualitzant la col·lecció"
 msgid "Upmix / downmix to"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:610
+#: ../build/src/ui_appearancesettingspage.h:536
 msgid "Upper Left"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:611
+#: ../build/src/ui_appearancesettingspage.h:537
 msgid "Upper Right"
 msgstr ""
 
@@ -5392,10 +5384,6 @@ msgstr ""
 msgid "Use X11 shortcuts when available"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:588
-msgid "Use a custom color set"
-msgstr "Empra un conjunt de colors personalitzat"
-
 #: ../build/src/ui_notificationssettingspage.h:492
 msgid "Use a custom message for notifications"
 msgstr "Utilitza un missatge personalitzat per les notificacions"
@@ -5412,7 +5400,7 @@ msgstr "Empra autentificació"
 msgid "Use bitrate management engine"
 msgstr "Usa el motor de gestió de flux de bits"
 
-#: ../build/src/ui_appearancesettingspage.h:595
+#: ../build/src/ui_appearancesettingspage.h:521
 msgid "Use custom color"
 msgstr ""
 
@@ -5420,7 +5408,7 @@ msgstr ""
 msgid "Use dynamic mode"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:596
+#: ../build/src/ui_appearancesettingspage.h:522
 msgid "Use gradient background"
 msgstr ""
 
@@ -5428,7 +5416,7 @@ msgstr ""
 msgid "Use proxy settings for streaming"
 msgstr ""
 
-#: ../build/src/ui_appearancesettingspage.h:584
+#: ../build/src/ui_appearancesettingspage.h:517
 msgid "Use system theme icons"
 msgstr ""
 
@@ -5444,7 +5432,7 @@ msgstr "Utilitza el valor per defecte del sistema"
 msgid "Used"
 msgstr "Usat"
 
-#: settings/settingsdialog.cpp:145
+#: settings/settingsdialog.cpp:144
 msgid "User interface"
 msgstr "Interfície d’usuari"
 
@@ -5475,7 +5463,7 @@ msgstr "En emprar el menú per a afegir una cançó…"
 msgid "Variable bit rate"
 msgstr "Taxa de bits variable"
 
-#: collection/collectionmodel.cpp:287 collection/collectionmodel.cpp:288
+#: collection/collectionmodel.cpp:289 collection/collectionmodel.cpp:290
 #: playlist/playlistmanager.cpp:561 covermanager/albumcovermanager.cpp:361
 #: internet/internetsearchmodel.cpp:93 internet/internetsearchmodel.cpp:105
 msgid "Various artists"
@@ -5523,7 +5511,7 @@ msgstr ""
 msgid "WavPack"
 msgstr "WavPack"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:451
+#: smartplaylists/smartplaylistsearchterm.cpp:453
 msgid "Weeks"
 msgstr ""
 
@@ -5560,11 +5548,11 @@ msgid ""
 "well?"
 msgstr ""
 
-#: core/mainwindow.cpp:2871
+#: core/mainwindow.cpp:2864
 msgid "Would you like to run a full rescan right now?"
 msgstr "Voleu fer de nou un escaneig complet ara?"
 
-#: settings/collectionsettingspage.cpp:382
+#: settings/collectionsettingspage.cpp:405
 msgid "Write all playcounts and ratings to files"
 msgstr ""
 
@@ -5572,7 +5560,7 @@ msgstr ""
 msgid "Write metadata when saving playlists"
 msgstr ""
 
-#: collection/savedgroupingmanager.cpp:118 playlist/playlist.cpp:1339
+#: collection/savedgroupingmanager.cpp:118 playlist/playlist.cpp:1359
 #: organize/organizedialog.cpp:111 ../build/src/ui_groupbydialog.h:198
 #: ../build/src/ui_groupbydialog.h:220 ../build/src/ui_groupbydialog.h:242
 #: ../build/src/ui_edittagdialog.h:849
@@ -5590,7 +5578,7 @@ msgstr "Any - Àlbum"
 msgid "Year - Album - Disc"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:455
+#: smartplaylists/smartplaylistsearchterm.cpp:457
 msgid "Years"
 msgstr "Anys"
 
@@ -5670,7 +5658,7 @@ msgstr "Si canvieu la llengua haureu de reiniciar l’Strawberry."
 msgid "Your collection is empty!"
 msgstr "La vostra col·lecció està buida."
 
-#: smartplaylists/smartplaylistsearchterm.cpp:427
+#: smartplaylists/smartplaylistsearchterm.cpp:429
 msgid "Z-A"
 msgstr "Z-A"
 
@@ -5684,7 +5672,7 @@ msgctxt ""
 msgid "add %n songs"
 msgstr "afegeix %n cançons"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:252
+#: smartplaylists/smartplaylistsearchterm.cpp:254
 msgid "after"
 msgstr ""
 
@@ -5700,7 +5688,7 @@ msgstr "àlbums"
 msgid "and"
 msgstr "i"
 
-#: collection/collectionfilterwidget.cpp:81
+#: collection/collectionfilterwidget.cpp:82
 msgid "artist"
 msgstr "artista"
 
@@ -5712,15 +5700,15 @@ msgstr "artistes"
 msgid "automatic"
 msgstr "automàtic"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:254
+#: smartplaylists/smartplaylistsearchterm.cpp:256
 msgid "before"
 msgstr "abans"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:264
+#: smartplaylists/smartplaylistsearchterm.cpp:266
 msgid "between"
 msgstr "entre"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:434
+#: smartplaylists/smartplaylistsearchterm.cpp:436
 msgid "biggest first"
 msgstr ""
 
@@ -5728,7 +5716,7 @@ msgstr ""
 msgid "channels"
 msgstr "canals"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:272
+#: smartplaylists/smartplaylistsearchterm.cpp:274
 msgid "contains"
 msgstr "conté"
 
@@ -5747,23 +5735,23 @@ msgstr "deshabilitat"
 msgid "disc %1"
 msgstr "disc %1"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:274
+#: smartplaylists/smartplaylistsearchterm.cpp:276
 msgid "does not contain"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:288
+#: smartplaylists/smartplaylistsearchterm.cpp:290
 msgid "empty"
 msgstr "buit"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:278
+#: smartplaylists/smartplaylistsearchterm.cpp:280
 msgid "ends with"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:284
+#: smartplaylists/smartplaylistsearchterm.cpp:286
 msgid "equals"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:280
+#: smartplaylists/smartplaylistsearchterm.cpp:282
 msgid "greater than"
 msgstr ""
 
@@ -5771,7 +5759,7 @@ msgstr ""
 msgid "hw"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:260
+#: smartplaylists/smartplaylistsearchterm.cpp:262
 msgid "in the last"
 msgstr ""
 
@@ -5780,11 +5768,11 @@ msgstr ""
 msgid "kbps"
 msgstr "kb/s"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:282
+#: smartplaylists/smartplaylistsearchterm.cpp:284
 msgid "less than"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:431
+#: smartplaylists/smartplaylistsearchterm.cpp:433
 msgid "longest first"
 msgstr ""
 
@@ -5799,31 +5787,31 @@ msgstr "mou %n cançons"
 msgid "ms"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:429
+#: smartplaylists/smartplaylistsearchterm.cpp:431
 msgid "newest first"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:290
+#: smartplaylists/smartplaylistsearchterm.cpp:292
 msgid "not empty"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:286
+#: smartplaylists/smartplaylistsearchterm.cpp:288
 msgid "not equals"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:262
+#: smartplaylists/smartplaylistsearchterm.cpp:264
 msgid "not in the last"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:258
+#: smartplaylists/smartplaylistsearchterm.cpp:260
 msgid "not on"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:429
+#: smartplaylists/smartplaylistsearchterm.cpp:431
 msgid "oldest first"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:256
+#: smartplaylists/smartplaylistsearchterm.cpp:258
 msgid "on"
 msgstr ""
 
@@ -5845,11 +5833,11 @@ msgctxt ""
 msgid "remove %n songs"
 msgstr "elimina %n cançons"
 
-#: collection/collectionfilterwidget.cpp:85
+#: collection/collectionfilterwidget.cpp:86
 msgid "searches the collection for all artists that contain the word"
 msgstr ""
 
-#: smartplaylists/smartplaylistsearchterm.cpp:431
+#: smartplaylists/smartplaylistsearchterm.cpp:433
 msgid "shortest first"
 msgstr ""
 
@@ -5857,7 +5845,7 @@ msgstr ""
 msgid "shuffle songs"
 msgstr "mescla les cançons"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:434
+#: smartplaylists/smartplaylistsearchterm.cpp:436
 msgid "smallest first"
 msgstr ""
 
@@ -5869,7 +5857,7 @@ msgstr "cançons"
 msgid "sort songs"
 msgstr "ordena les cançons"
 
-#: smartplaylists/smartplaylistsearchterm.cpp:276
+#: smartplaylists/smartplaylistsearchterm.cpp:278
 msgid "starts with"
 msgstr ""
 
@@ -5882,6 +5870,6 @@ msgstr "atura"
 msgid "track %1"
 msgstr "peça %1"
 
-#: covermanager/albumcoverchoicecontroller.cpp:241
+#: covermanager/albumcoverchoicecontroller.cpp:242
 msgid "unknown"
 msgstr "desconegut"

@@ -2,6 +2,53 @@ Strawberry Music Player
 =======================
 ChangeLog
 
+Version 1.0.15 (2023.03.04):
+
+  Bugfixes:
+    * Fixed playlist column showing invalid last played date for streams.
+    * Fixed crash when the audio bin failed to initialize (#1123, #1133).
+    * Fixed duplicated filename when organizing files using dot in the filename (#1136).
+    * Fixed tag inline editing for streams (#1130).
+    * Fixed resetting play statistics using tag edit dialog (#1124).
+    * Fixed compilation songs not showing if group by was set to other than (Album) Artist / Album (#1140).
+
+  Enhancements:
+    * Added lyrics from stands4 (lyrics.com).
+    * Added Sonogram analyzer.
+    * Use GStreamer playbin3 with GStreamer 1.22.0 and higher.
+
+  Code improvements:
+    * Made use of C++11 enum class where possible.
+    * Use new QNativeIpcKey based QSharedMemory constructor with Qt 6.6 and higher.
+
+Version 1.0.14 (2023.01.13):
+
+  Bugfixes:
+    * Fix initial volume not set when using Auto as output (#1104).
+    * Fix saving moodbar if the URL contains host, ie.: UNC paths for SMB (#1101).
+    * Fix CollectionBackendTest compile error (#1100).
+    * Remove explicitly enabling debug messages (#1106).
+
+Version 1.0.13 (2023.01.09):
+
+  Bugfixes:
+    * Fixed volume synchronization leading to infinite loop resulting in crash when adjusting volume while playing (#1089).
+    * Fixed incorrect volume.
+    * Fixed collection organizing incorrectly handling slashes inside {} brackets for variables (#1091).
+    * Fixed saving relative playlists to non-existing playlist files (#1092).
+    * Fixed intermittent crash on collection model query (#1095).
+    * Require system icons for fancy tabbar and settings sidebar to be larger than 22x22 (#1084).
+
+Version 1.0.12 (2023.01.02):
+
+  Bugfixes:
+    * Fixed crash when adjusting volume with mouse wheel (#1089).
+    * Fixed playback stopping in certain cases where the next track was unavailable (#958).
+    * (Windows) Apply patch for fonts too large on High DPI screen (QTBUG-108593).
+
+  Removed features:
+    * Removed appearance settings for changing palette colors, it was never properly implemented.
+
 Version 1.0.11 (2022.12.30):
 
   Bugfixes:
