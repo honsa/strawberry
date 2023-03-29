@@ -407,7 +407,7 @@ void ContextView::SearchLyrics() {
   if (lyrics_.isEmpty() && action_show_lyrics_->isChecked() && action_search_lyrics_->isChecked() && !song_playing_.artist().isEmpty() && !song_playing_.title().isEmpty() && !lyrics_tried_ && lyrics_id_ == -1) {
     lyrics_fetcher_->Clear();
     lyrics_tried_ = true;
-    lyrics_id_ = static_cast<qint64>(lyrics_fetcher_->Search(song_playing_.effective_albumartist(), song_playing_.album(), song_playing_.title()));
+    lyrics_id_ = static_cast<qint64>(lyrics_fetcher_->Search(song_playing_.effective_albumartist(), song_playing_.artist(), song_playing_.album(), song_playing_.title()));
   }
 
 }
@@ -435,7 +435,7 @@ void ContextView::NoSong() {
     widget_album_->show();
   }
 
-  textedit_top_->setFont(QFont(font_headline_, font_size_headline_ * 1.6));
+  textedit_top_->setFont(QFont(font_headline_, static_cast<int>(font_size_headline_ * 1.6)));
   textedit_top_->SetText(tr("No song playing"));
 
   QString html;
@@ -451,14 +451,14 @@ void ContextView::NoSong() {
   else html += tr("%1 albums").arg(collectionview_->TotalAlbums());
   html += "<br />";
 
-  label_stop_summary_->setFont(QFont(font_normal_, font_size_normal_));
+  label_stop_summary_->setFont(QFont(font_normal_, static_cast<int>(font_size_normal_)));
   label_stop_summary_->setText(html);
 
 }
 
 void ContextView::UpdateFonts() {
 
-  QFont font(font_normal_, font_size_normal_);
+  QFont font(font_normal_, static_cast<int>(font_size_normal_));
   font.setBold(false);
   for (QLabel *l : labels_play_all_) {
     l->setFont(font);
@@ -471,7 +471,7 @@ void ContextView::UpdateFonts() {
 
 void ContextView::SetSong() {
 
-  textedit_top_->setFont(QFont(font_headline_, font_size_headline_));
+  textedit_top_->setFont(QFont(font_headline_, static_cast<int>(font_size_headline_)));
   textedit_top_->SetText(QString("<b>%1</b><br />%2").arg(Utilities::ReplaceMessage(title_fmt_, song_playing_, "<br />", true), Utilities::ReplaceMessage(summary_fmt_, song_playing_, "<br />", true)));
 
   label_stop_summary_->clear();

@@ -55,6 +55,7 @@ set(SOURCES
   utilities/transliterate.cpp
   utilities/xmlutils.cpp
   utilities/filemanagerutils.cpp
+  utilities/coverutils.cpp
 
   engine/enginetype.cpp
   engine/enginebase.cpp
@@ -168,6 +169,8 @@ set(SOURCES
 
   lyrics/lyricsproviders.cpp
   lyrics/lyricsprovider.cpp
+  lyrics/lyricssearchrequest.h
+  lyrics/lyricssearchresult.h
   lyrics/lyricsfetcher.cpp
   lyrics/lyricsfetchersearch.cpp
   lyrics/jsonlyricsprovider.cpp
@@ -177,7 +180,7 @@ set(SOURCES
   lyrics/geniuslyricsprovider.cpp
   lyrics/musixmatchlyricsprovider.cpp
   lyrics/chartlyricsprovider.cpp
-  lyrics/stands4lyricsprovider.cpp
+  lyrics/lyricscomlyricsprovider.cpp
 
   providers/musixmatchprovider.cpp
 
@@ -267,6 +270,7 @@ set(SOURCES
   scrobbler/scrobblerservice.cpp
   scrobbler/scrobblercache.cpp
   scrobbler/scrobblercacheitem.cpp
+  scrobbler/scrobblemetadata.cpp
   scrobbler/scrobblingapi20.cpp
   scrobbler/lastfmscrobbler.cpp
   scrobbler/librefmscrobbler.cpp
@@ -414,7 +418,7 @@ set(HEADERS
   lyrics/geniuslyricsprovider.h
   lyrics/musixmatchlyricsprovider.h
   lyrics/chartlyricsprovider.h
-  lyrics/stands4lyricsprovider.h
+  lyrics/lyricscomlyricsprovider.h
 
   settings/settingsdialog.h
   settings/settingspage.h
@@ -499,7 +503,6 @@ set(HEADERS
   scrobbler/scrobblerservices.h
   scrobbler/scrobblerservice.h
   scrobbler/scrobblercache.h
-  scrobbler/scrobblercacheitem.h
   scrobbler/scrobblingapi20.h
   scrobbler/lastfmscrobbler.h
   scrobbler/librefmscrobbler.h
@@ -966,6 +969,7 @@ link_directories(
   ${GOBJECT_LIBRARY_DIRS}
   ${GNUTLS_LIBRARY_DIRS}
   ${SQLITE_LIBRARY_DIRS}
+  ${PROTOBUF_LIBRARY_DIRS}
   ${SINGLEAPPLICATION_LIBRARY_DIRS}
   ${SINGLECOREAPPLICATION_LIBRARY_DIRS}
 )
@@ -1085,6 +1089,7 @@ target_link_libraries(strawberry_lib PUBLIC
   ${GNUTLS_LIBRARIES}
   ${SQLITE_LIBRARIES}
   ${QT_LIBRARIES}
+  ${Protobuf_LIBRARIES}
   ${SINGLEAPPLICATION_LIBRARIES}
   ${SINGLECOREAPPLICATION_LIBRARIES}
   libstrawberry-common

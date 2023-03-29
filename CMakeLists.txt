@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.7)
 
 project(strawberry)
 
-cmake_policy(SET CMP0054 NEW)
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+if(POLICY CMP0054)
+  cmake_policy(SET CMP0054 NEW)
+endif()
+if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif()
 
@@ -379,12 +381,12 @@ optional_component(VLC ON "Engine: VLC backend"
 
 optional_component(SONGFINGERPRINTING ON "Song fingerprinting and tracking"
   DEPENDS "chromaprint" CHROMAPRINT_FOUND
-  DEPENDS "gstreamer" GSTREAMER_FOUND
+  DEPENDS "gstreamer" HAVE_GSTREAMER
 )
 
 optional_component(MUSICBRAINZ ON "MusicBrainz integration"
   DEPENDS "chromaprint" CHROMAPRINT_FOUND
-  DEPENDS "gstreamer" GSTREAMER_FOUND
+  DEPENDS "gstreamer" HAVE_GSTREAMER
 )
 
 if(X11_FOUND OR HAVE_DBUS OR APPLE OR WIN32)
@@ -409,7 +411,7 @@ endif()
 
 optional_component(AUDIOCD ON "Devices: Audio CD support"
   DEPENDS "libcdio" LIBCDIO_FOUND
-  DEPENDS "gstreamer" GSTREAMER_FOUND
+  DEPENDS "gstreamer" HAVE_GSTREAMER
 )
 
 optional_component(UDISKS2 ON "Devices: UDisks2 backend"
