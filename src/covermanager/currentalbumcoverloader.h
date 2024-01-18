@@ -24,14 +24,13 @@
 
 #include "config.h"
 
-#include <memory>
-
 #include <QtGlobal>
 #include <QObject>
 #include <QString>
 #include <QImage>
 #include <QTemporaryFile>
 
+#include "core/scoped_ptr.h"
 #include "core/song.h"
 #include "albumcoverloaderoptions.h"
 #include "albumcoverloaderresult.h"
@@ -48,15 +47,18 @@ class CurrentAlbumCoverLoader : public QObject {
   const AlbumCoverLoaderOptions &options() const { return options_; }
   const Song &last_song() const { return last_song_; }
 
+  void ReloadSettingsAsync();
+
  public slots:
+  void ReloadSettings();
   void LoadAlbumCover(const Song &song);
 
  signals:
-  void AlbumCoverLoaded(Song song, AlbumCoverLoaderResult result);
-  void ThumbnailLoaded(Song song, QUrl thumbnail_uri, QImage image);
+  void AlbumCoverLoaded(const Song &song, const AlbumCoverLoaderResult &result);
+  void ThumbnailLoaded(const Song &song, const QUrl &thumbnail_uri, const QImage &image);
 
  private slots:
-  void TempAlbumCoverLoaded(const quint64 id, AlbumCoverLoaderResult result);
+  void AlbumCoverReady(const quint64 id, AlbumCoverLoaderResult result);
 
  private:
   Application *app_;
@@ -64,12 +66,11 @@ class CurrentAlbumCoverLoader : public QObject {
 
   QString temp_file_pattern_;
 
-  std::unique_ptr<QTemporaryFile> temp_cover_;
-  std::unique_ptr<QTemporaryFile> temp_cover_thumbnail_;
+  ScopedPtr<QTemporaryFile> temp_cover_;
+  ScopedPtr<QTemporaryFile> temp_cover_thumbnail_;
   quint64 id_;
 
   Song last_song_;
-
 };
 
 #endif  // CURRENTALBUMCOVERLOADER_H

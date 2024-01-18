@@ -34,6 +34,7 @@
 
 #include "playlist.h"
 #include "playlistfilterparser.h"
+#include "utilities/searchparserutils.h"
 
 class SearchTermComparator {
  public:
@@ -115,6 +116,67 @@ class LexicalLeComparator : public SearchTermComparator {
   }
  private:
   QString search_term_;
+};
+
+// Float Comparators are for the rating
+class FloatEqComparator : public SearchTermComparator {
+ public:
+  explicit FloatEqComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return search_term_ == element.toFloat();
+  }
+ private:
+  float search_term_;
+};
+
+class FloatNeComparator : public SearchTermComparator {
+ public:
+  explicit FloatNeComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return search_term_ != element.toFloat();
+  }
+ private:
+  float search_term_;
+};
+
+class FloatGtComparator : public SearchTermComparator {
+ public:
+  explicit FloatGtComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return element.toFloat() > search_term_;
+  }
+ private:
+  float search_term_;
+};
+
+class FloatGeComparator : public SearchTermComparator {
+ public:
+  explicit FloatGeComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return element.toFloat() >= search_term_;
+  }
+ private:
+  float search_term_;
+};
+
+class FloatLtComparator : public SearchTermComparator {
+ public:
+  explicit FloatLtComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return element.toFloat() < search_term_;
+  }
+ private:
+  float search_term_;
+};
+
+class FloatLeComparator : public SearchTermComparator {
+ public:
+  explicit FloatLeComparator(const float value) : search_term_(value) {}
+  bool Matches(const QString &element) const override {
+    return element.toFloat() <= search_term_;
+  }
+ private:
+  float search_term_;
 };
 
 class GtComparator : public SearchTermComparator {
@@ -454,14 +516,41 @@ FilterTree *FilterParser::createSearchTermTreeNode(const QString &col, const QSt
   // here comes a mess :/
   // well, not that much of a mess, but so many options -_-
   SearchTermComparator *cmp = nullptr;
-  if (prefix == "!=" || prefix == "<>") {
+
+  // Handle the float based Rating Column
+  if (columns_[col] == Playlist::Column_Rating) {
+    float parsed_search = Utilities::ParseSearchRating(search);
+
+    if (prefix == "=") {
+      cmp = new FloatEqComparator(parsed_search);
+    }
+    else if (prefix == "!=" || prefix == "<>") {
+      cmp = new FloatNeComparator(parsed_search);
+    }
+    else if (prefix == ">") {
+      cmp = new FloatGtComparator(parsed_search);
+    }
+    else if (prefix == ">=") {
+      cmp = new FloatGeComparator(parsed_search);
+    }
+    else if (prefix == "<") {
+      cmp = new FloatLtComparator(parsed_search);
+    }
+    else if (prefix == "<=") {
+      cmp = new FloatLeComparator(parsed_search);
+    }
+    else {
+      cmp = new FloatEqComparator(parsed_search);
+    }
+  }
+  else if (prefix == "!=" || prefix == "<>") {
     cmp = new NeComparator(search);
   }
   else if (!col.isEmpty() && columns_.contains(col) && numerical_columns_.contains(columns_[col])) {
     // the length column contains the time in seconds (nanoseconds, actually - the "nano" part is handled by the DropTailComparatorDecorator,  though).
     int search_value = 0;
     if (columns_[col] == Playlist::Column_Length) {
-      search_value = parseTime(search);
+      search_value = Utilities::ParseSearchTime(search);
     }
     else {
       search_value = search.toInt();
@@ -504,6 +593,7 @@ FilterTree *FilterParser::createSearchTermTreeNode(const QString &col, const QSt
       cmp = new DefaultComparator(search);
     }
   }
+
   if (columns_.contains(col)) {
     if (columns_[col] == Playlist::Column_Length) {
       cmp = new DropTailComparatorDecorator(cmp);
@@ -513,42 +603,5 @@ FilterTree *FilterParser::createSearchTermTreeNode(const QString &col, const QSt
   else {
     return new FilterTerm(cmp, columns_.values());
   }
-}
 
-// Try and parse the string as '[[h:]m:]s' (ignoring all spaces),
-// and return the number of seconds if it parses correctly.
-// If not, the original string is returned.
-// The 'h', 'm' and 's' components can have any length (including 0).
-//
-// A few examples:
-//  "::"       is parsed to "0"
-//  "1::"      is parsed to "3600"
-//  "3:45"     is parsed to "225"
-//  "1:165"    is parsed to "225"
-//  "225"      is parsed to "225" (srsly! ^.^)
-//  "2:3:4:5"  is parsed to "2:3:4:5"
-//  "25m"      is parsed to "25m"
-int FilterParser::parseTime(const QString &time_str) {
-
-  int seconds = 0;
-  int accum = 0;
-  int colon_count = 0;
-  for (const QChar &c : time_str) {
-    if (c.isDigit()) {
-      accum = accum * 10 + c.digitValue();
-    }
-    else if (c == ':') {
-      seconds = seconds * 60 + accum;
-      accum = 0;
-      ++colon_count;
-      if (colon_count > 2) {
-        return 0;
-      }
-    }
-    else if (!c.isSpace()) {
-      return 0;
-    }
-  }
-  seconds = seconds * 60 + accum;
-  return seconds;
 }

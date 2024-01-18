@@ -28,6 +28,7 @@
 #include <QString>
 
 #include "qobuzbaserequest.h"
+#include "core/shared_ptr.h"
 #include "core/song.h"
 
 class QNetworkReply;
@@ -38,7 +39,7 @@ class QobuzFavoriteRequest : public QobuzBaseRequest {
   Q_OBJECT
 
  public:
-  explicit QobuzFavoriteRequest(QobuzService *service, NetworkAccessManager *network, QObject *parent = nullptr);
+  explicit QobuzFavoriteRequest(QobuzService *service, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~QobuzFavoriteRequest();
 
  private:
@@ -49,12 +50,12 @@ class QobuzFavoriteRequest : public QobuzBaseRequest {
   };
 
  signals:
-  void ArtistsAdded(SongList);
-  void AlbumsAdded(SongList);
-  void SongsAdded(SongList);
-  void ArtistsRemoved(SongList);
-  void AlbumsRemoved(SongList);
-  void SongsRemoved(SongList);
+  void ArtistsAdded(const SongList &songs);
+  void AlbumsAdded(const SongList &songs);
+  void SongsAdded(const SongList &songs);
+  void ArtistsRemoved(const SongList &songs);
+  void AlbumsRemoved(const SongList &songs);
+  void SongsRemoved(const SongList &songs);
 
  private slots:
   void AddFavoritesReply(QNetworkReply *reply, const QobuzFavoriteRequest::FavoriteType type, const SongList &songs);
@@ -80,9 +81,8 @@ class QobuzFavoriteRequest : public QobuzBaseRequest {
   void RemoveFavoritesRequest(const FavoriteType type, const QStringList &ids_list, const SongList &songs);
 
   QobuzService *service_;
-  NetworkAccessManager *network_;
+  SharedPtr<NetworkAccessManager> network_;
   QList<QNetworkReply*> replies_;
-
 };
 
 #endif  // QOBUZFAVORITEREQUEST_H

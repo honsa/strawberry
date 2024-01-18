@@ -31,15 +31,14 @@
 #include <QMutex>
 #include <QLocalServer>
 #include <QProcess>
+#include <QDir>
 #include <QFile>
 #include <QList>
 #include <QQueue>
 #include <QString>
 #include <QStringList>
 #include <QAtomicInt>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-#  include <QRandomGenerator>
-#endif
+#include <QRandomGenerator>
 
 #include "core/logging.h"
 
@@ -228,7 +227,7 @@ void WorkerPool<HandlerType>::SetExecutableName(const QString &executable_name) 
 
 template<typename HandlerType>
 void WorkerPool<HandlerType>::Start() {
-  QMetaObject::invokeMethod(this, "DoStart");
+  QMetaObject::invokeMethod(this, &WorkerPool<HandlerType>::DoStart);
 }
 
 template<typename HandlerType>
@@ -247,8 +246,8 @@ void WorkerPool<HandlerType>::DoStart() {
   search_path << "/usr/libexec";
   search_path << "/usr/local/libexec";
 #endif
-#if defined(Q_OS_MACOS) && defined(USE_BUNDLE)
-  search_path << QCoreApplication::applicationDirPath() + "/" + USE_BUNDLE_DIR;
+#if defined(Q_OS_MACOS)
+  search_path << QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../PlugIns");
 #endif
 
   for (const QString &path_prefix : search_path) {
@@ -294,11 +293,7 @@ void WorkerPool<HandlerType>::StartOneWorker(Worker *worker) {
 
   // Create a server, find an unused name and start listening
   forever {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     const quint32 unique_number = QRandomGenerator::global()->bounded(static_cast<quint32>(quint64(this) & 0xFFFFFFFF));
-#else
-    const quint32 unique_number = qrand() ^ (static_cast<quint32>(quint64(this) & 0xFFFFFFFF));
-#endif
     const QString name = QString("%1_%2").arg(local_server_name_).arg(unique_number);
 
     if (worker->local_server_->listen(name)) {
@@ -423,7 +418,7 @@ WorkerPool<HandlerType>::SendMessageWithReply(MessageType *message) {
   }
 
   // Wake up the main thread
-  QMetaObject::invokeMethod(this, "SendQueuedMessages", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &WorkerPool<HandlerType>::SendQueuedMessages, Qt::QueuedConnection);
 
   return reply;
 

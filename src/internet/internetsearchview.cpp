@@ -83,6 +83,8 @@
 #include "ui_internetsearchview.h"
 #include "settings/appearancesettingspage.h"
 
+using std::make_unique;
+
 const int InternetSearchView::kSwapModelsTimeoutMsec = 250;
 const int InternetSearchView::kDelayedSearchTimeoutMs = 200;
 const int InternetSearchView::kArtHeight = 32;
@@ -139,15 +141,11 @@ InternetSearchView::InternetSearchView(QWidget *parent)
   ui_->progressbar->hide();
   ui_->progressbar->reset();
 
-  cover_loader_options_.desired_height_ = kArtHeight;
-  cover_loader_options_.pad_output_image_ = true;
-  cover_loader_options_.scale_output_image_ = true;
-
 }
 
 InternetSearchView::~InternetSearchView() { delete ui_; }
 
-void InternetSearchView::Init(Application *app, InternetService *service) {
+void InternetSearchView::Init(Application *app, InternetServicePtr service) {
 
   app_ = app;
   service_ = service;
@@ -195,13 +193,13 @@ void InternetSearchView::Init(Application *app, InternetService *service) {
   QObject::connect(ui_->results, &AutoExpandingTreeView::AddToPlaylistSignal, this, &InternetSearchView::AddToPlaylist);
   QObject::connect(ui_->results, &AutoExpandingTreeView::FocusOnFilterSignal, this, &InternetSearchView::FocusOnFilter);
 
-  QObject::connect(service_, &InternetService::SearchUpdateStatus, this, &InternetSearchView::UpdateStatus);
-  QObject::connect(service_, &InternetService::SearchProgressSetMaximum, this, &InternetSearchView::ProgressSetMaximum);
-  QObject::connect(service_, &InternetService::SearchUpdateProgress, this, &InternetSearchView::UpdateProgress);
-  QObject::connect(service_, &InternetService::SearchResults, this, &InternetSearchView::SearchDone);
+  QObject::connect(&*service_, &InternetService::SearchUpdateStatus, this, &InternetSearchView::UpdateStatus);
+  QObject::connect(&*service_, &InternetService::SearchProgressSetMaximum, this, &InternetSearchView::ProgressSetMaximum);
+  QObject::connect(&*service_, &InternetService::SearchUpdateProgress, this, &InternetSearchView::UpdateProgress);
+  QObject::connect(&*service_, &InternetService::SearchResults, this, &InternetSearchView::SearchDone);
 
   QObject::connect(app_, &Application::SettingsChanged, this, &InternetSearchView::ReloadSettings);
-  QObject::connect(app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &InternetSearchView::AlbumCoverLoaded);
+  QObject::connect(&*app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &InternetSearchView::AlbumCoverLoaded);
 
   QObject::connect(ui_->settings, &QToolButton::clicked, ui_->settings, &QToolButton::showMenu);
 
@@ -683,8 +681,8 @@ void InternetSearchView::GroupByClicked(QAction *action) {
 
   if (action->property("group_by").isNull()) {
     if (!group_by_dialog_) {
-      group_by_dialog_ = std::make_unique<GroupByDialog>();
-      QObject::connect(group_by_dialog_.get(), &GroupByDialog::Accepted, this, &InternetSearchView::SetGroupBy);
+      group_by_dialog_ = make_unique<GroupByDialog>();
+      QObject::connect(&*group_by_dialog_, &GroupByDialog::Accepted, this, &InternetSearchView::SetGroupBy);
     }
 
     group_by_dialog_->show();
@@ -851,7 +849,9 @@ void InternetSearchView::LazyLoadAlbumCover(const QModelIndex &proxy_index) {
     item_album->setData(cached_pixmap, Qt::DecorationRole);
   }
   else {
-    quint64 loader_id = app_->album_cover_loader()->LoadImageAsync(cover_loader_options_, result.metadata_);
+    AlbumCoverLoaderOptions cover_loader_options(AlbumCoverLoaderOptions::Option::ScaledImage | AlbumCoverLoaderOptions::Option::PadScaledImage);
+    cover_loader_options.desired_scaled_size = QSize(kArtHeight, kArtHeight);
+    quint64 loader_id = app_->album_cover_loader()->LoadImageAsync(cover_loader_options, result.metadata_);
     cover_loader_tasks_[loader_id] = qMakePair(source_index, result.pixmap_cache_key_);
   }
 

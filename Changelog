@@ -2,6 +2,126 @@ Strawberry Music Player
 =======================
 ChangeLog
 
+Version 1.0.23 (2024.01.11):
+
+  Bugfixes:
+    * Fixed possible duplication of song entries after organizing (#1341).
+    * Fixed possible crash when connecting devices (#1313).
+    * Fixed playlist sorting of original year (#1349).
+    * (macOS) Fixed crash when adding collection directory (QTBUG-120469) (#1350).
+
+  Enhancements:
+    * Treat all stream errors as non-fatal (#1347).
+    * Require KDSingleApplication 1.1.0.
+    * Fix logging of restored unavailable songs.
+
+Version 1.0.22 (2023.12.09):
+
+  Bugfixes:
+    * Fixed KDSingleApplication cmake version check.
+    * Fixed KDSingleApplication Qt 5 detection (#1299).
+    * Fixed timer started in wrong thread (#1302).
+    * Fixed erratic seeking behaviour if buffer duration is set to zero (#1302).
+    * Fixed SCollection related crash on exit with Qt 5 (#1316).
+    * Fixed track about to end related crash on playback failure (#1332).
+    * Fixed playlist column widths not remembered if stretch mode is off with Qt 6.6.1 and higher (#1328).
+    * (Windows) Properly handle silent uninstall (#1323).
+
+  Enhancements:
+    * Increase thread priority for playback threads.
+    * Allow drag and drop of songs to favorite playlists.
+
+Version 1.0.21 (2023.10.21):
+
+  Bugfixes:
+    * Fixed seekbar position resetting to zero before showing actual position when seeking.
+    * Fixed compressed files showing up in collection (#1274).
+    * Fixed connecting devices (#1288).
+    * Fixed device schema missing ebur128 fields.
+    * Fixed collection search by tag not working with space between colon and search term (#1290).
+    * Fixed seeking when 5 seconds is remaining of the song resetting position to beginning (#1258).
+    * Fixed intermittent crash when seeking with Auto as output (#1123).
+    * (Windows) Fixed playlist header colors in dark mode (#1275).
+
+  Enhancements:
+    * Support using system KDSingleApplication when available.
+    * Improved lyrics matching.
+    * (macOS) Fully codesign binaries and DMG.
+
+Version 1.0.20 (2023.09.24):
+
+  Bugfixes:
+    * Fixed appdata validation.
+
+Version 1.0.19 (2023.09.24):
+
+  Bugfixes:
+    * Use shared pointers for objects to fix potential crashes on exit (#1239).
+    * Fixed smart playlist search not matching unrated songs (#1244).
+    * Fixed reading FMPS_Playcount for MP3 ID3v2 tags (#1248).
+    * Always stop playing after 100 errors to prevent flooding the error dialog (#1220).
+    * Fixed volume going to 100% when decreasing volume beyond zero (#1262).
+    * Fixed error dialog sometimes showing empty.
+    * (Windows) Removed broken volume sync (#1220).
+    * (Windows) Fixed shuttering / choppy audio (#1227).
+    * (macOS) Fixed missing search bars (#1221).
+
+  Enhancements:
+    * Add Mpris2 property to read/write rating (#1246).
+    * Capitalize playlist column names (#1264).
+    * Added lyrics from songlyrics.com, azlyrics.com, elyrics.net and lyricsmode.com.
+    * (Windows) Add gst-play-1.0.exe for debugging purposes.
+
+  New features
+    * Support performing song loudness analysis using `libebur128` (#1216).
+    * Support song playback loudness normalization, as per EBU R 128 (#1216).
+
+  Other:
+    * Removed last.fm HTTPS workaround and GnuTLS dependency
+    * Removed broken lyrics.com lyrics provider.
+    * (Windows) Use DirectSound as default sink.
+    * (Windows) Remove WASPI2 plugin because of GStreamer bug.
+
+Version 1.0.18 (2023.07.02):
+
+  Bugfixes:
+    * Fixed reading disc from QObuz songs (#1168).
+    * Fixed volume being reset on playback with PulseAudio (#1174).
+    * Fixed <br> tags in SQL query error message.
+    * Fixed compile with Qt 6 without XCB (QX11Application).
+    * Fixed smart playlist editor not properly loading search terms (#1172).
+    * Fixed use of fixed icon for playlist favorite star icon (#1178).
+    * Possible fix for collection thumbnails using disk cache having identical covers for albums with hashtag (#) in the album title (#1183).
+    * Fixed listenbrainz scrobbling for songs with multiple artist mbids.
+    * Fixed listenbrainz scrobbling for songs without duration.
+    * Fixed gapless playback sometimes not working.
+    * Fixed writing PNG images as embedded covers (#1209).
+    * Fixed greyscale album covers not working in OSD D-Bus (#1205).
+    * Fixed collection thumbnail disk cache with Qt 6.5.1 and newer.
+    * Fixed moodbar disk cache with Qt 6.5.1 and newer.
+    * Fixed playlist edit tag F2 shortcut only working for title tag (#1210).
+    * Append number to filename if the destination file already exist when transcoding audio (#1200).
+    * Fixed abseil linking issues with protobuf 1.22.0 and newer.
+    * (macOS) Fixed "Show this message" checkbox having no affect on Rosetta warning dialog (#1180).
+    * (macOS) Disable unused D-Bus.
+    * (Windows) Fixed command line options not working with diacritics (#1191).
+    * (Windows) Fixed issue with saving album covers in album directory being saved in temp directory instead.
+    * (Windows) Fixed crash when trying a play a song which doesn't exist, gstreamer issue #1683 (#1214).
+
+  Enhancements:
+    * Reduce memory overhead with album cover handling (#1046).
+    * Improved listenbrainz error handling.
+    * Show error dialog for listenbrainz errors similar to last.fm/libre.fm.
+    * Reduce NetworkAccessManager instances.
+    * Replace SingleApplication with KDSingleApplication.
+    * Require Qt 5.12 or higher.
+    * Add new database fields for art_embedded and art_unset.
+    * Rewrite album cover loader.
+    * Move cover filename settings from collection to covers settings.
+    * Add setting to set priorities for album cover types.
+    * Add rating filtering to playlist search (#1212).
+    * (Windows|MSVC) Add WSAPI2 plugin.
+
 Version 1.0.17 (2023.03.29):
 
   Bugfixes:

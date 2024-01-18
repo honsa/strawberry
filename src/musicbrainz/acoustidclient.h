@@ -29,6 +29,8 @@
 #include <QString>
 #include <QStringList>
 
+#include "core/shared_ptr.h"
+
 class QNetworkReply;
 class NetworkAccessManager;
 class NetworkTimeouts;
@@ -43,7 +45,7 @@ class AcoustidClient : public QObject {
   // IDs are provided by the caller when a request is started and included in the Finished signal - they have no meaning to AcoustidClient.
 
  public:
-  explicit AcoustidClient(QObject *parent = nullptr);
+  explicit AcoustidClient(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~AcoustidClient() override;
 
   // Network requests will be aborted after this interval.
@@ -59,7 +61,7 @@ class AcoustidClient : public QObject {
   void CancelAll();
 
  signals:
-  void Finished(int id, QStringList mbid_list, QString error = QString());
+  void Finished(const int id, const QStringList &mbid_list, const QString &error = QString());
 
  private slots:
   void RequestFinished(QNetworkReply *reply, const int id);
@@ -69,10 +71,9 @@ class AcoustidClient : public QObject {
   static const char *kUrl;
   static const int kDefaultTimeout;
 
-  NetworkAccessManager *network_;
+  SharedPtr<NetworkAccessManager> network_;
   NetworkTimeouts *timeouts_;
   QMap<int, QNetworkReply*> requests_;
-
 };
 
 #endif  // ACOUSTIDCLIENT_H

@@ -22,7 +22,6 @@
 #include "config.h"
 
 #include <sqlite3.h>
-#include <boost/scope_exit.hpp>
 
 #include <QObject>
 #include <QThread>
@@ -39,6 +38,7 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QStandardPaths>
+#include <QScopeGuard>
 
 #include "core/logging.h"
 #include "taskmanager.h"
@@ -48,7 +48,7 @@
 #include "scopedtransaction.h"
 
 const char *Database::kDatabaseFilename = "strawberry.db";
-const int Database::kSchemaVersion = 16;
+const int Database::kSchemaVersion = 18;
 const int Database::kMinSupportedSchemaVersion = 10;
 const char *Database::kMagicAllSongsTables = "%allsongstables";
 
@@ -84,14 +84,14 @@ Database::~Database() {
 
   QMutexLocker l(&connect_mutex_);
 
-  for (QString &connection_id : QSqlDatabase::connectionNames()) {
+  for (const QString &connection_id : QSqlDatabase::connectionNames()) {
     qLog(Error) << "Connection" << connection_id << "is still open!";
   }
 
 }
 
 void Database::ExitAsync() {
-  QMetaObject::invokeMethod(this, "Exit", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &Database::Exit, Qt::QueuedConnection);
 }
 
 void Database::Exit() {
@@ -472,12 +472,10 @@ void Database::ReportErrors(const SqlQuery &query) {
 
   const QSqlError sql_error = query.lastError();
   if (sql_error.isValid()) {
-    qLog(Error) << "Unable to execute SQL query: " << sql_error;
-    qLog(Error) << "Failed query: " << query.LastQuery();
-    QString error;
-    error += "Unable to execute SQL query: " + sql_error.text() + "<br />";
-    error += "Failed query: " + query.LastQuery();
-    emit Error(error);
+    qLog(Error) << "Unable to execute SQL query:" << sql_error;
+    qLog(Error) << "Failed SQL query:" << query.LastQuery();
+    emit Error(tr("Unable to execute SQL query: %1").arg(sql_error.text()));
+    emit Error(tr("Failed SQL query: %1").arg(query.LastQuery()));
   }
 
 }
@@ -488,11 +486,11 @@ bool Database::IntegrityCheck(const QSqlDatabase &db) {
   const int task_id = app_->task_manager()->StartTask(tr("Integrity check"));
 
   bool ok = false;
-  bool error_reported = false;
   // Ask for 10 error messages at most.
   SqlQuery q(db);
   q.prepare("PRAGMA integrity_check(10)");
   if (q.Exec()) {
+    bool error_reported = false;
     while (q.next()) {
       QString message = q.value(0).toString();
 
@@ -561,13 +559,15 @@ void Database::BackupFile(const QString &filename) {
   sqlite3 *source_connection = nullptr;
   sqlite3 *dest_connection = nullptr;
 
-  BOOST_SCOPE_EXIT((&source_connection)(&dest_connection)(task_id)(app_)) {  // clazy:exclude=rule-of-three NOLINT(google-explicit-constructor)
-    // Harmless to call sqlite3_close() with a nullptr pointer.
-    sqlite3_close(source_connection);
-    sqlite3_close(dest_connection);
+  const QScopeGuard db_backup_finish = qScopeGuard([this, task_id, &source_connection, &dest_connection]() {
+    if (source_connection) {
+      sqlite3_close(source_connection);
+    }
+    if (dest_connection) {
+      sqlite3_close(dest_connection);
+    }
     app_->task_manager()->SetTaskFinished(task_id);
-  }
-  BOOST_SCOPE_EXIT_END
+  });
 
   bool success = OpenDatabase(filename, &source_connection);
   if (!success) {

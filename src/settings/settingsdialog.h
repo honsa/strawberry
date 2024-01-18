@@ -34,7 +34,8 @@
 #include <QString>
 #include <QSettings>
 
-#include "engine/engine_fwd.h"
+#include "core/shared_ptr.h"
+#include "engine/enginebase.h"
 #include "osd/osdbase.h"
 
 class QMainWindow;
@@ -55,7 +56,6 @@ class GlobalShortcutsManager;
 class SettingsPage;
 
 class Ui_SettingsDialog;
-
 
 class SettingsItemDelegate : public QStyledItemDelegate {
   Q_OBJECT
@@ -105,8 +105,8 @@ class SettingsDialog : public QDialog {
 
   Application *app() const { return app_; }
   OSDBase *osd() const { return osd_; }
-  Player *player() const { return player_; }
-  EngineBase *engine() const { return engine_; }
+  SharedPtr<Player> player() const { return player_; }
+  SharedPtr<EngineBase> engine() const { return engine_; }
   CollectionDirectoryModel *collection_directory_model() const { return model_; }
   GlobalShortcutsManager *global_shortcuts_manager() const { return manager_; }
 
@@ -139,7 +139,7 @@ class SettingsDialog : public QDialog {
 
  signals:
   void ReloadSettings();
-  void NotificationPreview(OSDBase::Behaviour, QString, QString);
+  void NotificationPreview(const OSDBase::Behaviour, const QString&, const QString&);
 
  private slots:
   void CurrentItemChanged(QTreeWidgetItem *item);
@@ -151,8 +151,8 @@ class SettingsDialog : public QDialog {
   QMainWindow *mainwindow_;
   Application *app_;
   OSDBase *osd_;
-  Player *player_;
-  EngineBase *engine_;
+  SharedPtr<Player> player_;
+  SharedPtr<EngineBase> engine_;
   CollectionDirectoryModel *model_;
   GlobalShortcutsManager *manager_;
 

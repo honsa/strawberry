@@ -24,7 +24,6 @@
 
 #include "config.h"
 
-#include <memory>
 #include <glib.h>
 #include <glib-object.h>
 #include <glib/gtypes.h>
@@ -44,12 +43,11 @@
 #include <QString>
 #include <QUrl>
 
+#include "core/shared_ptr.h"
+#include "enginemetadata.h"
+
 class QTimerEvent;
 class GstBufferConsumer;
-
-namespace Engine {
-struct SimpleMetaBundle;
-}  // namespace Engine
 struct GstPlayBin;
 
 class GstEnginePipeline : public QObject {
@@ -68,6 +66,7 @@ class GstEnginePipeline : public QObject {
   void set_stereo_balancer_enabled(const bool enabled);
   void set_equalizer_enabled(const bool enabled);
   void set_replaygain(const bool enabled, const int mode, const double preamp, const double fallbackgain, const bool compression);
+  void set_ebur128_loudness_normalization(const bool enabled);
   void set_buffer_duration_nanosec(const quint64 duration_nanosec);
   void set_buffer_low_watermark(const double value);
   void set_buffer_high_watermark(const double value);
@@ -78,7 +77,7 @@ class GstEnginePipeline : public QObject {
   void set_fading_enabled(const bool enabled);
 
   // Creates the pipeline, returns false on error
-  bool InitFromUrl(const QByteArray &stream_url, const QUrl &original_url, const qint64 end_nanosec, QString &error);
+  bool InitFromUrl(const QUrl &media_url, const QUrl &stream_url, const QByteArray &gst_url, const qint64 end_nanosec, const double ebur128_loudness_normalizing_gain_db, QString &error);
 
   // GstBufferConsumers get fed audio data.  Thread-safe.
   void AddBufferConsumer(GstBufferConsumer *consumer);
@@ -86,8 +85,12 @@ class GstEnginePipeline : public QObject {
   void RemoveAllBufferConsumers();
 
   // Control the music playback
-  QFuture<GstStateChangeReturn> SetState(const GstState state);
+  Q_INVOKABLE QFuture<GstStateChangeReturn> SetState(const GstState state);
+  void SetStateDelayed(const GstState state);
   Q_INVOKABLE bool Seek(const qint64 nanosec);
+  void SeekQueued(const qint64 nanosec);
+  void SeekDelayed(const qint64 nanosec);
+  void SetEBUR128LoudnessNormalizingGain_dB(const double ebur128_loudness_normalizing_gain_db);
   void SetVolume(const uint volume_percent);
   void SetStereoBalance(const float value);
   void SetEqualizerParams(const int preamp, const QList<int> &band_gains);
@@ -95,16 +98,20 @@ class GstEnginePipeline : public QObject {
   void StartFader(const qint64 duration_nanosec, const QTimeLine::Direction direction = QTimeLine::Forward, const QEasingCurve::Type shape = QEasingCurve::Linear, const bool use_fudge_timer = true);
 
   // If this is set then it will be loaded automatically when playback finishes for gapless playback
-  void SetNextUrl(const QByteArray &stream_url, const QUrl &original_url, qint64 beginning_nanosec, qint64 end_nanosec);
-  bool has_next_valid_url() const { return !next_stream_url_.isEmpty(); }
+  void PrepareNextUrl(const QUrl &media_url, const QUrl &stream_url, const QByteArray &gst_url, const qint64 beginning_nanosec, const qint64 end_nanosec);
+  void SetNextUrl();
+  bool has_next_valid_url() const { return next_stream_url_.isValid(); }
 
   void SetSourceDevice(const QString &device) { source_device_ = device; }
 
   // Get information about the music playback
-  QByteArray stream_url() const { return stream_url_; }
-  QByteArray next_stream_url() const { return next_stream_url_; }
-  QUrl original_url() const { return original_url_; }
-  QUrl next_original_url() const { return next_original_url_; }
+  QUrl media_url() const { return media_url_; }
+  QUrl stream_url() const { return stream_url_; }
+  double ebur128_loudness_normalizing_gain_db() const { return ebur128_loudness_normalizing_gain_db_; }
+  QByteArray gst_url() const { return gst_url_; }
+  QUrl next_media_url() const { return next_media_url_; }
+  QUrl next_stream_url() const { return next_stream_url_; }
+  QByteArray next_gst_url() const { return next_gst_url_; }
   bool is_valid() const { return valid_; }
 
   // Please note that this method (unlike GstEngine's.position()) is multiple-section media unaware.
@@ -126,22 +133,25 @@ class GstEnginePipeline : public QObject {
   void SetFaderVolume(const qreal volume);
 
  signals:
-  void Error(int pipeline_id, int domain, int error_code, QString message, QString debug);
+  void Error(const int pipeline_id, const int domain, const int error_code, const QString &message, const QString &debug);
 
-  void EndOfStreamReached(int pipeline_id, bool has_next_track);
-  void MetadataFound(int pipeline_id, const Engine::SimpleMetaBundle &bundle);
+  void EndOfStreamReached(const int pipeline_id, const bool has_next_track);
+  void MetadataFound(const int pipeline_id, const EngineMetadata &bundle);
 
-  void VolumeChanged(uint volume);
+  void VolumeChanged(const uint volume);
   void FaderFinished();
 
   void BufferingStarted();
-  void BufferingProgress(int percent);
+  void BufferingProgress(const int percent);
   void BufferingFinished();
+
+  void AboutToFinish();
 
  protected:
   void timerEvent(QTimerEvent*) override;
 
  private:
+  static QString GstStateText(const GstState state);
   GstElement *CreateElement(const QString &factory_name, const QString &name, GstElement *bin, QString &error) const;
   bool InitAudioBin(QString &error);
   void SetupVolume(GstElement *element);
@@ -170,6 +180,7 @@ class GstEnginePipeline : public QObject {
   static QString ParseStrTag(GstTagList *list, const char *tag);
   static guint ParseUIntTag(GstTagList *list, const char *tag);
 
+  void UpdateEBUR128LoudnessNormalizingGaindB();
   void UpdateStereoBalance();
   void UpdateEqualizer();
 
@@ -212,6 +223,9 @@ class GstEnginePipeline : public QObject {
   double rg_fallbackgain_;
   bool rg_compression_;
 
+  // EBU R 128 Loudness Normalization
+  bool ebur128_loudness_normalization_;
+
   // Buffering
   quint64 buffer_duration_nanosec_;
   double buffer_low_watermark_;
@@ -239,10 +253,12 @@ class GstEnginePipeline : public QObject {
   bool segment_start_received_;
 
   // The URL that is currently playing, and the URL that is to be preloaded when the current track is close to finishing.
-  QByteArray stream_url_;
-  QUrl original_url_;
-  QByteArray next_stream_url_;
-  QUrl next_original_url_;
+  QUrl media_url_;
+  QUrl stream_url_;
+  QByteArray gst_url_;
+  QUrl next_media_url_;
+  QUrl next_stream_url_;
+  QByteArray next_gst_url_;
 
   // If this is > 0 then the pipeline will be forced to stop when playback goes past this position.
   qint64 end_offset_nanosec_;
@@ -265,7 +281,7 @@ class GstEnginePipeline : public QObject {
 
   // Seeking while the pipeline is in the READY state doesn't work, so we have to wait until it goes to PAUSED or PLAYING.
   // Also, we have to wait for the playbin to be connected.
-  bool pipeline_is_initialized_;
+  bool pipeline_is_active_;
   bool pipeline_is_connected_;
   qint64 pending_seek_nanosec_;
 
@@ -276,11 +292,14 @@ class GstEnginePipeline : public QObject {
 
   // Complete the transition to the next song when it starts playing
   bool next_uri_set_;
+  bool next_uri_reset_;
 
+  double ebur128_loudness_normalizing_gain_db_;
+  bool volume_set_;
   gdouble volume_internal_;
   uint volume_percent_;
 
-  std::shared_ptr<QTimeLine> fader_;
+  SharedPtr<QTimeLine> fader_;
   QBasicTimer fader_fudge_timer_;
   bool use_fudge_timer_;
 
@@ -292,6 +311,7 @@ class GstEnginePipeline : public QObject {
   GstElement *volume_;
   GstElement *volume_sw_;
   GstElement *volume_fading_;
+  GstElement *volume_ebur128_;
   GstElement *audiopanorama_;
   GstElement *equalizer_;
   GstElement *equalizer_preamp_;
@@ -311,6 +331,8 @@ class GstEnginePipeline : public QObject {
   GstSegment last_playbin_segment_{};
 
   bool logged_unsupported_analyzer_format_;
+
+  bool about_to_finish_;
 
 };
 

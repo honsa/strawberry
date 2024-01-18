@@ -27,7 +27,7 @@
 #include <QMap>
 #include <QString>
 
-#include "lyricsfetcher.h"
+#include "core/shared_ptr.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
 
@@ -40,12 +40,12 @@ class LyricsFetcherSearch : public QObject {
  public:
   explicit LyricsFetcherSearch(const quint64 id, const LyricsSearchRequest &request, QObject *parent);
 
-  void Start(LyricsProviders *lyrics_providers);
+  void Start(SharedPtr<LyricsProviders> lyrics_providers);
   void Cancel();
 
  signals:
-  void SearchFinished(quint64, LyricsSearchResults results);
-  void LyricsFetched(quint64, QString provider, QString lyrics);
+  void SearchFinished(const quint64 id, const LyricsSearchResults &results);
+  void LyricsFetched(const quint64 id, const QString &provider, const QString &lyrics);
 
  private slots:
   void ProviderSearchFinished(const int id, const LyricsSearchResults &results);
@@ -66,7 +66,6 @@ class LyricsFetcherSearch : public QObject {
   LyricsSearchResults results_;
   QMap<int, LyricsProvider*> pending_requests_;
   bool cancel_requested_;
-
 };
 
 #endif  // LYRICSFETCHERSEARCH_H

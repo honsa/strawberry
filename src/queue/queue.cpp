@@ -158,7 +158,7 @@ QVariant Queue::data(const QModelIndex &proxy_index, int role) const {
       const QString title = source_index.sibling(source_index.row(), Playlist::Column_Title).data().toString();
 
       if (artist.isEmpty()) return title;
-      return QString(artist + " - " + title);
+      return QString("%1 - %2").arg(artist, title);
     }
 
     default:
@@ -249,7 +249,7 @@ void Queue::UpdateSummaryText() {
   int tracks = ItemCount();
   quint64 nanoseconds = GetTotalLength();
 
-  summary += tracks == 1 ? tr("1 track") : tr("%1 tracks").arg(tracks);
+  summary += tr("%n track(s)", "", tracks);
 
   if (nanoseconds > 0) {
     summary += " - [ " + Utilities::WordyTimeNanosec(nanoseconds) + " ]";

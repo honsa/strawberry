@@ -2,7 +2,7 @@
  * Strawberry Music Player
  * This file was part of Clementine.
  * Copyright 2010, David Sansome <me@davidsansome.com>
- * Copyright 2018-2021, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2018-2023, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,8 +55,12 @@
 #include "collectionwatcher.h"
 #include "playlistparsers/cueparser.h"
 #include "settings/collectionsettingspage.h"
+#include "engine/ebur128measures.h"
 #ifdef HAVE_SONGFINGERPRINTING
 #  include "engine/chromaprinter.h"
+#endif
+#ifdef HAVE_EBUR128
+#  include "engine/ebur128analysis.h"
 #endif
 
 // This is defined by one of the windows headers that is included by taglib.
@@ -67,6 +71,7 @@
 using namespace std::chrono_literals;
 
 QStringList CollectionWatcher::sValidImages = QStringList() << "jpg" << "png" << "gif" << "jpeg";
+QStringList CollectionWatcher::kIgnoredExtensions = QStringList() << "tmp" << "tar" << "gz" << "bz2" << "xz" << "tbz" << "tgz" << "z" << "zip" << "rar";
 
 CollectionWatcher::CollectionWatcher(Song::Source source, QObject *parent)
     : QObject(parent),
@@ -78,6 +83,7 @@ CollectionWatcher::CollectionWatcher(Song::Source source, QObject *parent)
       scan_on_startup_(true),
       monitor_(true),
       song_tracking_(false),
+      song_ebur128_loudness_analysis_(false),
       mark_songs_unavailable_(source_ == Song::Source::Collection),
       expire_unavailable_songs_days_(60),
       overwrite_playcount_(false),
@@ -108,13 +114,20 @@ CollectionWatcher::CollectionWatcher(Song::Source source, QObject *parent)
 
   ReloadSettings();
 
+  QObject::connect(fs_watcher_, &FileSystemWatcherInterface::PathChanged, this, &CollectionWatcher::DirectoryChanged, Qt::UniqueConnection);
   QObject::connect(rescan_timer_, &QTimer::timeout, this, &CollectionWatcher::RescanPathsNow);
   QObject::connect(periodic_scan_timer_, &QTimer::timeout, this, &CollectionWatcher::IncrementalScanCheck);
 
 }
 
+CollectionWatcher::~CollectionWatcher() {
+
+  qLog(Debug) << "Collection watcher" << this << "for" << Song::TextForSource(source_) << "deleted.";
+
+}
+
 void CollectionWatcher::ExitAsync() {
-  QMetaObject::invokeMethod(this, "Exit", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &CollectionWatcher::Exit, Qt::QueuedConnection);
 }
 
 void CollectionWatcher::Exit() {
@@ -130,7 +143,7 @@ void CollectionWatcher::Exit() {
 
 void CollectionWatcher::ReloadSettingsAsync() {
 
-  QMetaObject::invokeMethod(this, "ReloadSettings", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &CollectionWatcher::ReloadSettings, Qt::QueuedConnection);
 
 }
 
@@ -144,10 +157,12 @@ void CollectionWatcher::ReloadSettings() {
   QStringList filters = s.value("cover_art_patterns", QStringList() << "front" << "cover").toStringList();
   if (source_ == Song::Source::Collection) {
     song_tracking_ = s.value("song_tracking", false).toBool();
+    song_ebur128_loudness_analysis_ = s.value("song_ebur128_loudness_analysis", false).toBool();
     mark_songs_unavailable_ = song_tracking_ ? true : s.value("mark_songs_unavailable", true).toBool();
   }
   else {
     song_tracking_ = false;
+    song_ebur128_loudness_analysis_ = false;
     mark_songs_unavailable_ = false;
   }
   expire_unavailable_songs_days_ = s.value("expire_unavailable_songs", 60).toInt();
@@ -155,10 +170,10 @@ void CollectionWatcher::ReloadSettings() {
   overwrite_rating_ = s.value("overwrite_rating", false).toBool();
   s.endGroup();
 
-  best_image_filters_.clear();
+  best_art_filters_.clear();
   for (const QString &filter : filters) {
     QString str = filter.trimmed();
-    if (!str.isEmpty()) best_image_filters_ << str;
+    if (!str.isEmpty()) best_art_filters_ << str;
   }
 
   if (!monitor_ && was_monitoring_before) {
@@ -194,6 +209,7 @@ CollectionWatcher::ScanTransaction::ScanTransaction(CollectionWatcher *watcher, 
       watcher_(watcher),
       cached_songs_dirty_(true),
       cached_songs_missing_fingerprint_dirty_(true),
+      cached_songs_missing_loudness_characteristics_dirty_(true),
       known_subdirs_dirty_(true) {
 
   QString description;
@@ -328,6 +344,21 @@ bool CollectionWatcher::ScanTransaction::HasSongsWithMissingFingerprint(const QS
 
 }
 
+bool CollectionWatcher::ScanTransaction::HasSongsWithMissingLoudnessCharacteristics(const QString &path) {
+
+  if (cached_songs_missing_loudness_characteristics_dirty_) {
+    const SongList songs = watcher_->backend_->SongsWithMissingLoudnessCharacteristics(dir_);
+    for (const Song &song : songs) {
+      const QString p = song.url().toLocalFile().section('/', 0, -2);
+      cached_songs_missing_loudness_characteristics_.insert(p, song);
+    }
+    cached_songs_missing_loudness_characteristics_dirty_ = false;
+  }
+
+  return cached_songs_missing_loudness_characteristics_.contains(path);
+
+}
+
 void CollectionWatcher::ScanTransaction::SetKnownSubdirs(const CollectionSubdirectoryList &subdirs) {
 
   known_subdirs_ = subdirs;
@@ -425,13 +456,19 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
   }
 
   bool songs_missing_fingerprint = false;
+  bool songs_missing_loudness_characteristics = false;
 #ifdef HAVE_SONGFINGERPRINTING
   if (song_tracking_) {
     songs_missing_fingerprint = t->HasSongsWithMissingFingerprint(path);
   }
 #endif
+#ifdef HAVE_EBUR128
+  if (song_ebur128_loudness_analysis_) {
+    songs_missing_loudness_characteristics = t->HasSongsWithMissingLoudnessCharacteristics(path);
+  }
+#endif
 
-  if (!t->ignores_mtime() && !force_noincremental && t->is_incremental() && subdir.mtime == path_info.lastModified().toSecsSinceEpoch() && !songs_missing_fingerprint) {
+  if (!t->ignores_mtime() && !force_noincremental && t->is_incremental() && subdir.mtime == path_info.lastModified().toSecsSinceEpoch() && !songs_missing_fingerprint && !songs_missing_loudness_characteristics) {
     // The directory hasn't changed since last time
     t->AddToProgress(files_count);
     return;
@@ -473,7 +510,7 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
     else {
       QString ext_part(ExtensionPart(child));
       QString dir_part(DirectoryPart(child));
-      if (child_info.suffix() == "tmp" || child_info.baseName() == "qt_temp") {
+      if (kIgnoredExtensions.contains(child_info.suffix(), Qt::CaseInsensitive) || child_info.baseName() == "qt_temp") {
         t->AddToProgress(1);
       }
       else if (sValidImages.contains(ext_part)) {
@@ -538,15 +575,21 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
       bool changed = (matching_song.mtime() != qMax(fileinfo.lastModified().toSecsSinceEpoch(), matching_song_cue_mtime)) || cue_deleted || cue_added || cue_changed;
 
       // Also want to look to see whether the album art has changed
-      QUrl image = ImageForSong(file, album_art);
-      if ((matching_song.art_automatic().isEmpty() && !image.isEmpty()) || (!matching_song.art_automatic().isEmpty() && !matching_song.has_embedded_cover() && !QFile::exists(matching_song.art_automatic().toLocalFile()))) {
+      const QUrl art_automatic = ArtForSong(file, album_art);
+      if (matching_song.art_automatic() != art_automatic || (!matching_song.art_automatic().isEmpty() && !matching_song.art_automatic_is_valid())) {
         changed = true;
       }
 
       bool missing_fingerprint = false;
+      bool missing_loudness_characteristics = false;
 #ifdef HAVE_SONGFINGERPRINTING
       if (song_tracking_ && matching_song.fingerprint().isEmpty()) {
         missing_fingerprint = true;
+      }
+#endif
+#ifdef HAVE_EBUR128
+      if (song_ebur128_loudness_analysis_ && (!matching_song.ebur128_integrated_loudness_lufs() || !matching_song.ebur128_loudness_range_lu())) {
+        missing_loudness_characteristics = true;
       }
 #endif
 
@@ -556,9 +599,12 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
       else if (missing_fingerprint) {
         qLog(Debug) << file << "is missing fingerprint.";
       }
+      else if (missing_loudness_characteristics) {
+        qLog(Debug) << file << "is missing EBU R 128 loudness characteristics.";
+      }
 
       // The song's changed or missing fingerprint - create fingerprint and reread the metadata from file.
-      if (t->ignores_mtime() || changed || missing_fingerprint) {
+      if (t->ignores_mtime() || changed || missing_fingerprint || missing_loudness_characteristics) {
 
         QString fingerprint;
 #ifdef HAVE_SONGFINGERPRINTING
@@ -572,16 +618,16 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
 #endif
 
         if (new_cue.isEmpty() || new_cue_mtime == 0) {  // If no CUE or it's about to lose it.
-          UpdateNonCueAssociatedSong(file, fingerprint, matching_songs, image, cue_deleted, t);
+          UpdateNonCueAssociatedSong(file, fingerprint, matching_songs, art_automatic, cue_deleted, t);
         }
         else {  // If CUE associated.
-          UpdateCueAssociatedSongs(file, path, fingerprint, new_cue, image, matching_songs, t);
+          UpdateCueAssociatedSongs(file, path, fingerprint, new_cue, art_automatic, matching_songs, t);
         }
-
       }
 
       // Nothing has changed - mark the song available without re-scanning
-      else if (matching_song.is_unavailable()) {
+      else if (matching_song.unavailable()) {
+        qLog(Debug) << "Unavailable song" << file << "restored.";
         t->readded_songs << matching_songs;
       }
 
@@ -632,13 +678,13 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
         }
 
         // Get new album art
-        QUrl image = ImageForSong(file, album_art);
+        const QUrl art_automatic = ArtForSong(file, album_art);
 
         if (new_cue.isEmpty() || new_cue_mtime == 0) {  // If no CUE or it's about to lose it.
-          UpdateNonCueAssociatedSong(file, fingerprint, matching_songs, image, matching_songs_has_cue && new_cue_mtime == 0, t);
+          UpdateNonCueAssociatedSong(file, fingerprint, matching_songs, art_automatic, matching_songs_has_cue && new_cue_mtime == 0, t);
         }
         else {  // If CUE associated.
-          UpdateCueAssociatedSongs(file, path, fingerprint, new_cue, image, matching_songs, t);
+          UpdateCueAssociatedSongs(file, path, fingerprint, new_cue, art_automatic, matching_songs, t);
         }
 
       }
@@ -652,12 +698,12 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
 
         qLog(Debug) << file << "is new.";
 
-        // Choose an image for the song(s)
-        QUrl image = ImageForSong(file, album_art);
+        // Choose art for the song(s)
+        const QUrl art_automatic = ArtForSong(file, album_art);
 
         for (Song song : songs) {
           song.set_directory_id(t->dir());
-          if (song.art_automatic().isEmpty()) song.set_art_automatic(image);
+          if (song.art_automatic().isEmpty()) song.set_art_automatic(art_automatic);
           t->new_songs << song;
         }
       }
@@ -668,7 +714,7 @@ void CollectionWatcher::ScanSubdirectory(const QString &path, const CollectionSu
   // Look for deleted songs
   for (const Song &song : songs_in_db) {
     QString file = song.url().toLocalFile();
-    if (!song.is_unavailable() && !files_on_disk.contains(file) && !t->files_changed_path_.contains(file)) {
+    if (!song.unavailable() && !files_on_disk.contains(file) && !t->files_changed_path_.contains(file)) {
       qLog(Debug) << "Song deleted from disk:" << file;
       t->deleted_songs << song;
     }
@@ -703,7 +749,7 @@ void CollectionWatcher::UpdateCueAssociatedSongs(const QString &file,
                                                  const QString &path,
                                                  const QString &fingerprint,
                                                  const QString &matching_cue,
-                                                 const QUrl &image,
+                                                 const QUrl &art_automatic,
                                                  const SongList &old_cue_songs,
                                                  ScanTransaction *t) {
 
@@ -727,12 +773,13 @@ void CollectionWatcher::UpdateCueAssociatedSongs(const QString &file,
   for (Song new_cue_song : songs) {
     new_cue_song.set_source(source_);
     new_cue_song.set_directory_id(t->dir());
+    PerformEBUR128Analysis(new_cue_song);
     new_cue_song.set_fingerprint(fingerprint);
 
     if (sections_map.contains(new_cue_song.beginning_nanosec())) {  // Changed section
       const Song matching_cue_song = sections_map[new_cue_song.beginning_nanosec()];
       new_cue_song.set_id(matching_cue_song.id());
-      if (!new_cue_song.has_embedded_cover()) new_cue_song.set_art_automatic(image);
+      new_cue_song.set_art_automatic(art_automatic);
       new_cue_song.MergeUserSetData(matching_cue_song, true, true);
       AddChangedSong(file, matching_cue_song, new_cue_song, t);
       used_ids.insert(matching_cue_song.id());
@@ -748,13 +795,12 @@ void CollectionWatcher::UpdateCueAssociatedSongs(const QString &file,
       t->deleted_songs << old_cue;
     }
   }
-
 }
 
 void CollectionWatcher::UpdateNonCueAssociatedSong(const QString &file,
                                                    const QString &fingerprint,
                                                    const SongList &matching_songs,
-                                                   const QUrl &image,
+                                                   const QUrl &art_automatic,
                                                    const bool cue_deleted,
                                                    ScanTransaction *t) {
 
@@ -774,8 +820,9 @@ void CollectionWatcher::UpdateNonCueAssociatedSong(const QString &file,
     song_on_disk.set_source(source_);
     song_on_disk.set_directory_id(t->dir());
     song_on_disk.set_id(matching_song.id());
+    PerformEBUR128Analysis(song_on_disk);
     song_on_disk.set_fingerprint(fingerprint);
-    if (!song_on_disk.has_embedded_cover()) song_on_disk.set_art_automatic(image);
+    song_on_disk.set_art_automatic(art_automatic);
     song_on_disk.MergeUserSetData(matching_song, !overwrite_playcount_, !overwrite_rating_);
     AddChangedSong(file, matching_song, song_on_disk, t);
   }
@@ -809,6 +856,7 @@ SongList CollectionWatcher::ScanNewFile(const QString &file, const QString &path
     songs.reserve(cue_congs.count());
     for (Song &cue_song : cue_congs) {
       cue_song.set_source(source_);
+      PerformEBUR128Analysis(cue_song);
       cue_song.set_fingerprint(fingerprint);
       if (cue_song.url().toLocalFile().normalized(QString::NormalizationForm_D) == file_nfd) {
         songs << cue_song;
@@ -823,6 +871,7 @@ SongList CollectionWatcher::ScanNewFile(const QString &file, const QString &path
     TagReaderClient::Instance()->ReadFileBlocking(file, &song);
     if (song.is_valid()) {
       song.set_source(source_);
+      PerformEBUR128Analysis(song);
       song.set_fingerprint(fingerprint);
       songs << song;
     }
@@ -837,8 +886,8 @@ void CollectionWatcher::AddChangedSong(const QString &file, const Song &matching
   bool notify_new = false;
   QStringList changes;
 
-  if (matching_song.is_unavailable()) {
-    qLog(Debug) << "unavailable song" << file << "restored.";
+  if (matching_song.unavailable()) {
+    qLog(Debug) << "Unavailable song" << file << "restored.";
     notify_new = true;
   }
   else {
@@ -874,6 +923,10 @@ void CollectionWatcher::AddChangedSong(const QString &file, const Song &matching
       changes << "musicbrainz";
       notify_new = true;
     }
+    if (!matching_song.IsEBUR128Equal(new_song)) {
+      changes << "ebur128 loudness characteristics";
+      notify_new = true;
+    }
     if (matching_song.mtime() != new_song.mtime()) {
       changes << "mtime";
     }
@@ -893,6 +946,20 @@ void CollectionWatcher::AddChangedSong(const QString &file, const Song &matching
   else {
     t->touched_songs << new_song;
   }
+
+}
+
+void CollectionWatcher::PerformEBUR128Analysis(Song &song) const {
+
+  if (!song_ebur128_loudness_analysis_) return;
+
+#ifdef HAVE_EBUR128
+  std::optional<EBUR128Measures> loudness_characteristics = EBUR128Analysis::Compute(song);
+  if (loudness_characteristics) {
+    song.set_ebur128_integrated_loudness_lufs(loudness_characteristics->loudness_lufs);
+    song.set_ebur128_loudness_range_lu(loudness_characteristics->range_lu);
+  }
+#endif
 
 }
 
@@ -916,7 +983,6 @@ void CollectionWatcher::AddWatch(const CollectionDirectory &dir, const QString &
 
   if (!QFile::exists(path)) return;
 
-  QObject::connect(fs_watcher_, &FileSystemWatcherInterface::PathChanged, this, &CollectionWatcher::DirectoryChanged, Qt::UniqueConnection);
   fs_watcher_->AddPath(path);
   subdir_mapping_[path] = dir;
 
@@ -1039,20 +1105,20 @@ void CollectionWatcher::RescanPathsNow() {
 
 }
 
-QString CollectionWatcher::PickBestImage(const QStringList &images) {
+QString CollectionWatcher::PickBestArt(const QStringList &art_automatic_list) {
 
   // This is used when there is more than one image in a directory.
   // Pick the biggest image that matches the most important filter
 
   QStringList filtered;
 
-  for (const QString &filter_text : best_image_filters_) {
+  for (const QString &filter_text : best_art_filters_) {
     // The images in the images list are represented by a full path, so we need to isolate just the filename
-    for (const QString &image : images) {
-      QFileInfo fileinfo(image);
+    for (const QString &art_automatic : art_automatic_list) {
+      QFileInfo fileinfo(art_automatic);
       QString filename(fileinfo.fileName());
       if (filename.contains(filter_text, Qt::CaseInsensitive))
-        filtered << image;
+        filtered << art_automatic;
     }
 
     // We assume the filters are give in the order best to worst, so if we've got a result, we go with it.
@@ -1062,7 +1128,7 @@ QString CollectionWatcher::PickBestImage(const QStringList &images) {
 
   if (filtered.isEmpty()) {
     // The filter was too restrictive, just use the original list
-    filtered = images;
+    filtered = art_automatic_list;
   }
 
   int biggest_size = 0;
@@ -1085,20 +1151,21 @@ QString CollectionWatcher::PickBestImage(const QStringList &images) {
 
 }
 
-QUrl CollectionWatcher::ImageForSong(const QString &path, QMap<QString, QStringList> &album_art) {
+QUrl CollectionWatcher::ArtForSong(const QString &path, QMap<QString, QStringList> &art_automatic_list) {
 
   QString dir(DirectoryPart(path));
 
-  if (album_art.contains(dir)) {
-    if (album_art[dir].count() == 1) {
-      return QUrl::fromLocalFile(album_art[dir][0]);
+  if (art_automatic_list.contains(dir)) {
+    if (art_automatic_list[dir].count() == 1) {
+      return QUrl::fromLocalFile(art_automatic_list[dir][0]);
     }
     else {
-      QString best_image = PickBestImage(album_art[dir]);
-      album_art[dir] = QStringList() << best_image;
-      return QUrl::fromLocalFile(best_image);
+      const QString best_art = PickBestArt(art_automatic_list[dir]);
+      art_automatic_list[dir] = QStringList() << best_art;
+      return QUrl::fromLocalFile(best_art);
     }
   }
+
   return QUrl();
 
 }
@@ -1118,13 +1185,13 @@ void CollectionWatcher::SetRescanPaused(bool pause) {
 
 void CollectionWatcher::IncrementalScanAsync() {
 
-  QMetaObject::invokeMethod(this, "IncrementalScanNow", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &CollectionWatcher::IncrementalScanNow, Qt::QueuedConnection);
 
 }
 
 void CollectionWatcher::FullScanAsync() {
 
-  QMetaObject::invokeMethod(this, "FullScanNow", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &CollectionWatcher::FullScanNow, Qt::QueuedConnection);
 
 }
 

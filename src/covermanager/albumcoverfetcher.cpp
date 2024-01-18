@@ -28,6 +28,7 @@
 #include <QTimer>
 #include <QString>
 
+#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "albumcoverfetcher.h"
@@ -37,10 +38,10 @@ using namespace std::chrono_literals;
 
 const int AlbumCoverFetcher::kMaxConcurrentRequests = 5;
 
-AlbumCoverFetcher::AlbumCoverFetcher(CoverProviders *cover_providers, QObject *parent, NetworkAccessManager *network)
+AlbumCoverFetcher::AlbumCoverFetcher(SharedPtr<CoverProviders> cover_providers, SharedPtr<NetworkAccessManager> network, QObject *parent)
     : QObject(parent),
       cover_providers_(cover_providers),
-      network_(network ? network : new NetworkAccessManager(this)),
+      network_(network),
       next_id_(0),
       request_starter_(new QTimer(this)) {
 

@@ -26,6 +26,8 @@
 #include <QObject>
 #include <QString>
 
+#include "core/shared_ptr.h"
+
 #include "playlist/playlist.h"
 #include "playlist/playlistitem.h"
 
@@ -39,7 +41,7 @@ class PlaylistGeneratorInserter : public QObject {
   Q_OBJECT
 
  public:
-  explicit PlaylistGeneratorInserter(TaskManager *task_manager, CollectionBackend *collection, QObject *parent);
+  explicit PlaylistGeneratorInserter(SharedPtr<TaskManager> task_manager, SharedPtr<CollectionBackend> collection_backend, QObject *parent);
 
   void Load(Playlist *destination, const int row, const bool play_now, const bool enqueue, const bool enqueue_next, PlaylistGeneratorPtr generator, const int dynamic_count = 0);
 
@@ -47,15 +49,15 @@ class PlaylistGeneratorInserter : public QObject {
   static PlaylistItemPtrList Generate(PlaylistGeneratorPtr generator, const int dynamic_count);
 
  signals:
-  void Error(QString message);
-  void PlayRequested(QModelIndex idx, Playlist::AutoScroll autoscroll);
+  void Error(const QString &message);
+  void PlayRequested(const QModelIndex idx, const Playlist::AutoScroll autoscroll);
 
  private slots:
   void Finished();
 
  private:
-  TaskManager *task_manager_;
-  CollectionBackend *collection_;
+  SharedPtr<TaskManager> task_manager_;
+  SharedPtr<CollectionBackend> collection_backend_;
   int task_id_;
 
   Playlist *destination_;

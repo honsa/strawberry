@@ -35,6 +35,7 @@
 #include <QTimer>
 
 #include "core/logging.h"
+#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "core/application.h"
@@ -54,7 +55,7 @@ constexpr int QobuzRequest::kMaxConcurrentAlbumSongsRequests = 3;
 constexpr int QobuzRequest::kMaxConcurrentAlbumCoverRequests = 1;
 constexpr int QobuzRequest::kFlushRequestsDelay = 200;
 
-QobuzRequest::QobuzRequest(QobuzService *service, QobuzUrlHandler *url_handler, Application *app, NetworkAccessManager *network, const QueryType query_type, QObject *parent)
+QobuzRequest::QobuzRequest(QobuzService *service, QobuzUrlHandler *url_handler, Application *app, SharedPtr<NetworkAccessManager> network, const QueryType query_type, QObject *parent)
     : QobuzBaseRequest(service, network, parent),
       service_(service),
       url_handler_(url_handler),
@@ -1079,11 +1080,16 @@ void QobuzRequest::ParseSong(Song &song, const QJsonObject &json_obj, const Arti
 
   QString title = json_obj["title"].toString();
   int track = json_obj["track_number"].toInt();
+  int disc = 0;
   QString copyright = json_obj["copyright"].toString();
   qint64 duration = json_obj["duration"].toInt() * kNsecPerSec;
   //bool streamable = json_obj["streamable"].toBool();
   QString composer;
   QString performer;
+
+  if (json_obj.contains("media_number")) {
+    disc = json_obj["media_number"].toInt();
+  }
 
   Artist song_artist = album_artist;
   Album song_album = album;
@@ -1193,6 +1199,7 @@ void QobuzRequest::ParseSong(Song &song, const QJsonObject &json_obj, const Arti
   song.set_artist_id(song_artist.artist_id);
   song.set_album(song_album.album);
   song.set_artist(song_artist.artist);
+  song.set_disc(disc);
   if (!album_artist.artist.isEmpty() && album_artist.artist != song_artist.artist) {
     song.set_albumartist(album_artist.artist);
   }
@@ -1352,7 +1359,7 @@ void QobuzRequest::AlbumCoverReceived(QNetworkReply *reply, const QUrl &cover_ur
     return;
   }
 
-  QByteArrayList format_list = ImageUtils::ImageFormatsForMimeType(mimetype.toUtf8());
+  QByteArrayList format_list = QImageReader::imageFormatsForMimeType(mimetype.toUtf8());
   char *format = nullptr;
   if (!format_list.isEmpty()) {
     format = format_list.first().data();

@@ -38,7 +38,7 @@
 #include <qdbusextratypes.h>
 #include <QJsonObject>
 
-#include "engine/engine_fwd.h"
+#include "engine/enginebase.h"
 #include "covermanager/albumcoverloaderresult.h"
 
 class Application;
@@ -117,6 +117,9 @@ class Mpris2 : public QObject {
   Q_PROPERTY(QStringList Orderings READ Orderings)
   Q_PROPERTY(MaybePlaylist ActivePlaylist READ ActivePlaylist)
 
+  // strawberry specific additional property to extend MPRIS Player interface
+  Q_PROPERTY(double Rating READ Rating WRITE SetRating)
+
   // Root Properties
   bool CanQuit() const;
   bool CanRaise() const;
@@ -144,6 +147,8 @@ class Mpris2 : public QObject {
   bool Shuffle() const;
   void SetShuffle(bool enable);
   QVariantMap Metadata() const;
+  double Rating() const;
+  void SetRating(double rating);
   double Volume() const;
   void SetVolume(const double volume);
   qint64 Position() const;
@@ -188,22 +193,22 @@ class Mpris2 : public QObject {
 
  signals:
   // Player
-  void Seeked(qint64 position);
+  void Seeked(const qint64 position);
 
   // TrackList
-  void TrackListReplaced(Track_Ids Tracks, QDBusObjectPath CurrentTrack);
-  void TrackAdded(TrackMetadata Metadata, QDBusObjectPath AfterTrack);
-  void TrackRemoved(QDBusObjectPath trackId);
-  void TrackMetadataChanged(QDBusObjectPath trackId, TrackMetadata metadata);
+  void TrackListReplaced(const Track_Ids &tracks, const QDBusObjectPath &current_track);
+  void TrackAdded(const TrackMetadata &metadata, const QDBusObjectPath &after_track);
+  void TrackRemoved(const QDBusObjectPath &track_id);
+  void TrackMetadataChanged(const QDBusObjectPath &track_id, const TrackMetadata &metadata);
 
   void RaiseMainWindow();
 
   // Playlist
-  void PlaylistChanged(MprisPlaylist playlist);
+  void PlaylistChanged(const MprisPlaylist &playlist);
 
  private slots:
   void AlbumCoverLoaded(const Song &song, const AlbumCoverLoaderResult &result = AlbumCoverLoaderResult());
-  void EngineStateChanged(Engine::State newState);
+  void EngineStateChanged(EngineBase::State newState);
   void VolumeChanged();
 
   void PlaylistManagerInitialized();
@@ -218,11 +223,11 @@ class Mpris2 : public QObject {
   void EmitNotification(const QString &name, const QVariant &value);
   void EmitNotification(const QString &name, const QVariant &value, const QString &mprisEntity);
 
-  QString PlaybackStatus(Engine::State state) const;
+  QString PlaybackStatus(EngineBase::State state) const;
 
   QString current_track_id() const;
 
-  bool CanSeek(Engine::State state) const;
+  bool CanSeek(EngineBase::State state) const;
 
   QString DesktopEntryAbsolutePath() const;
 
@@ -234,9 +239,7 @@ class Mpris2 : public QObject {
   Application *app_;
 
   QString app_name_;
-  QStringList data_dirs_;
-  QStringList desktop_files_;
-  QString desktop_file_;
+  QString desktopfilepath_;
   QVariantMap last_metadata_;
 
 };

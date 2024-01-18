@@ -30,12 +30,13 @@
 #include <QString>
 #include <QSqlDatabase>
 
+#include "core/shared_ptr.h"
 #include "core/database.h"
 #include "core/sqlquery.h"
 #include "core/scopedtransaction.h"
 #include "devicedatabasebackend.h"
 
-const int DeviceDatabaseBackend::kDeviceSchemaVersion = 3;
+const int DeviceDatabaseBackend::kDeviceSchemaVersion = 5;
 
 DeviceDatabaseBackend::DeviceDatabaseBackend(QObject *parent)
     : QObject(parent),
@@ -46,7 +47,7 @@ DeviceDatabaseBackend::DeviceDatabaseBackend(QObject *parent)
 
 }
 
-void DeviceDatabaseBackend::Init(Database *db) { db_ = db; }
+void DeviceDatabaseBackend::Init(SharedPtr<Database> db) { db_ = db; }
 
 void DeviceDatabaseBackend::Close() {
 
@@ -58,7 +59,7 @@ void DeviceDatabaseBackend::Close() {
 }
 
 void DeviceDatabaseBackend::ExitAsync() {
-  QMetaObject::invokeMethod(this, "Exit", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &DeviceDatabaseBackend::Exit, Qt::QueuedConnection);
 }
 
 void DeviceDatabaseBackend::Exit() {

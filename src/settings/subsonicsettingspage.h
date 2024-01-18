@@ -26,6 +26,7 @@
 #include <QString>
 #include <QUrl>
 
+#include "core/shared_ptr.h"
 #include "settings/settingspage.h"
 
 class QEvent;
@@ -53,7 +54,7 @@ class SubsonicSettingsPage : public SettingsPage {
   bool eventFilter(QObject *object, QEvent *event) override;
 
  signals:
-  void Test(QUrl url, QString username, QString password, SubsonicSettingsPage::AuthMethod auth_method, bool redirect = false);
+  void Test(const QUrl &url, const QString &username, const QString &password, const SubsonicSettingsPage::AuthMethod auth_method, const bool redirect = false);
 
  private slots:
   void TestClicked();
@@ -62,7 +63,7 @@ class SubsonicSettingsPage : public SettingsPage {
 
  private:
   Ui_SubsonicSettingsPage *ui_;
-  SubsonicService *service_;
+  SharedPtr<SubsonicService> service_;
 };
 
 #endif  // SUBSONICSETTINGSPAGE_H

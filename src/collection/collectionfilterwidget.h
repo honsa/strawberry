@@ -31,8 +31,6 @@
 #include <QHash>
 #include <QString>
 
-#include "collectionquery.h"
-#include "collectionqueryoptions.h"
 #include "collectionmodel.h"
 
 class QTimer;
@@ -96,7 +94,7 @@ class CollectionFilterWidget : public QWidget {
   void UpPressed();
   void DownPressed();
   void ReturnPressed();
-  void Filter(QString text);
+  void Filter(const QString &text);
 
  protected:
   void keyReleaseEvent(QKeyEvent *e) override;
@@ -135,7 +133,6 @@ class CollectionFilterWidget : public QWidget {
   QString settings_group_;
   QString saved_groupings_settings_group_;
   QString settings_prefix_;
-
 };
 
 #endif  // COLLECTIONFILTERWIDGET_H

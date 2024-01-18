@@ -17,10 +17,13 @@
  *
  */
 
+#include <memory>
+
 #include <QObject>
 #include <QSortFilterProxyModel>
 
 #include "core/logging.h"
+#include "core/shared_ptr.h"
 #include "core/application.h"
 #include "core/database.h"
 #include "core/networkaccessmanager.h"
@@ -32,18 +35,20 @@
 #include "somafmservice.h"
 #include "radioparadiseservice.h"
 
+using std::make_shared;
+
 RadioServices::RadioServices(Application *app, QObject *parent)
     : QObject(parent),
-      network_(new NetworkAccessManager(this)),
+      network_(app->network()),
       backend_(nullptr),
       model_(new RadioModel(app, this)),
       sort_model_(new QSortFilterProxyModel(this)),
       channels_refresh_(false) {
 
-  backend_ = new RadioBackend(app->database());
-  app->MoveToThread(backend_, app->database()->thread());
+  backend_ = make_shared<RadioBackend>(app->database());
+  app->MoveToThread(&*backend_, app->database()->thread());
 
-  QObject::connect(backend_, &RadioBackend::NewChannels, this, &RadioServices::GotChannelsFromBackend);
+  QObject::connect(&*backend_, &RadioBackend::NewChannels, this, &RadioServices::GotChannelsFromBackend);
 
   sort_model_->setSourceModel(model_);
   sort_model_->setSortRole(RadioModel::Role_SortText);
@@ -53,12 +58,6 @@ RadioServices::RadioServices(Application *app, QObject *parent)
 
   AddService(new SomaFMService(app, network_, this));
   AddService(new RadioParadiseService(app, network_, this));
-
-}
-
-RadioServices::~RadioServices() {
-
-  backend_->deleteLater();
 
 }
 

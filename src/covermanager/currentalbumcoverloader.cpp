@@ -36,23 +36,22 @@
 #include "albumcoverloaderresult.h"
 #include "currentalbumcoverloader.h"
 
+using std::make_unique;
+
 CurrentAlbumCoverLoader::CurrentAlbumCoverLoader(Application *app, QObject *parent)
     : QObject(parent),
       app_(app),
       temp_file_pattern_(QDir::tempPath() + "/strawberry-cover-XXXXXX.jpg"),
       id_(0) {
 
-  options_.get_image_data_ = true;
-  options_.get_image_ = true;
-  options_.scale_output_image_ = false;
-  options_.pad_output_image_ = false;
-  options_.create_thumbnail_ = true;
-  options_.thumbnail_size_ = QSize(120, 120);
-  options_.default_output_image_ = QImage(":/pictures/cdcase.png");
-  options_.default_thumbnail_image_ = options_.default_output_image_.scaledToHeight(120, Qt::SmoothTransformation);
+  options_.options = AlbumCoverLoaderOptions::Option::RawImageData | AlbumCoverLoaderOptions::Option::OriginalImage | AlbumCoverLoaderOptions::Option::ScaledImage;
+  options_.desired_scaled_size = QSize(120, 120);
+  options_.default_cover = ":/pictures/cdcase.png";
 
-  QObject::connect(app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &CurrentAlbumCoverLoader::TempAlbumCoverLoaded);
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &CurrentAlbumCoverLoader::LoadAlbumCover);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &CurrentAlbumCoverLoader::LoadAlbumCover);
+  QObject::connect(&*app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &CurrentAlbumCoverLoader::AlbumCoverReady);
+
+  ReloadSettingsAsync();
 
 }
 
@@ -63,6 +62,18 @@ CurrentAlbumCoverLoader::~CurrentAlbumCoverLoader() {
 
 }
 
+void CurrentAlbumCoverLoader::ReloadSettingsAsync() {
+
+  QMetaObject::invokeMethod(this, &CurrentAlbumCoverLoader::ReloadSettings);
+
+}
+
+void CurrentAlbumCoverLoader::ReloadSettings() {
+
+  options_.types = AlbumCoverLoaderOptions::LoadTypes();
+
+}
+
 void CurrentAlbumCoverLoader::LoadAlbumCover(const Song &song) {
 
   last_song_ = song;
@@ -70,13 +81,13 @@ void CurrentAlbumCoverLoader::LoadAlbumCover(const Song &song) {
 
 }
 
-void CurrentAlbumCoverLoader::TempAlbumCoverLoaded(const quint64 id, AlbumCoverLoaderResult result) {
+void CurrentAlbumCoverLoader::AlbumCoverReady(const quint64 id, AlbumCoverLoaderResult result) {
 
   if (id != id_) return;
   id_ = 0;
 
   if (!result.album_cover.image.isNull()) {
-    temp_cover_ = std::make_unique<QTemporaryFile>(temp_file_pattern_);
+    temp_cover_ = make_unique<QTemporaryFile>(temp_file_pattern_);
     temp_cover_->setAutoRemove(true);
     if (temp_cover_->open()) {
       if (result.album_cover.image.save(temp_cover_->fileName(), "JPEG")) {
@@ -92,11 +103,11 @@ void CurrentAlbumCoverLoader::TempAlbumCoverLoaded(const quint64 id, AlbumCoverL
   }
 
   QUrl thumbnail_url;
-  if (!result.image_thumbnail.isNull()) {
-    temp_cover_thumbnail_ = std::make_unique<QTemporaryFile>(temp_file_pattern_);
+  if (!result.image_scaled.isNull()) {
+    temp_cover_thumbnail_ = make_unique<QTemporaryFile>(temp_file_pattern_);
     temp_cover_thumbnail_->setAutoRemove(true);
     if (temp_cover_thumbnail_->open()) {
-      if (result.image_thumbnail.save(temp_cover_thumbnail_->fileName(), "JPEG")) {
+      if (result.image_scaled.save(temp_cover_thumbnail_->fileName(), "JPEG")) {
         thumbnail_url = QUrl::fromLocalFile(temp_cover_thumbnail_->fileName());
       }
       else {
@@ -108,11 +119,14 @@ void CurrentAlbumCoverLoader::TempAlbumCoverLoaded(const quint64 id, AlbumCoverL
     }
   }
 
-  if (result.updated) {
-    last_song_.set_art_manual(result.album_cover.cover_url);
+  if (result.art_manual_updated.isValid()) {
+    last_song_.set_art_manual(result.art_manual_updated);
+  }
+  if (result.art_automatic_updated.isValid()) {
+    last_song_.set_art_automatic(result.art_automatic_updated);
   }
 
   emit AlbumCoverLoaded(last_song_, result);
-  emit ThumbnailLoaded(last_song_, thumbnail_url, result.image_thumbnail);
+  emit ThumbnailLoaded(last_song_, thumbnail_url, result.image_scaled);
 
 }

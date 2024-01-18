@@ -32,13 +32,14 @@
 #include <QNetworkReply>
 
 #include "core/logging.h"
+#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "tidalservice.h"
 #include "tidalbaserequest.h"
 #include "tidalfavoriterequest.h"
 
-TidalFavoriteRequest::TidalFavoriteRequest(TidalService *service, NetworkAccessManager *network, QObject *parent)
+TidalFavoriteRequest::TidalFavoriteRequest(TidalService *service, SharedPtr<NetworkAccessManager> network, QObject *parent)
     : TidalBaseRequest(service, network, parent),
       service_(service),
       network_(network),
@@ -253,11 +254,7 @@ void TidalFavoriteRequest::RemoveFavoritesRequest(const FavoriteType type, const
   QUrl url(QString(TidalService::kApiUrl) + QString("/") + "users/" + QString::number(service_->user_id()) + "/favorites/" + FavoriteText(type) + QString("/") + id);
   url.setQuery(url_query);
   QNetworkRequest req(url);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-#else
-  req.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-#endif
   req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
   if (oauth() && !access_token().isEmpty()) req.setRawHeader("authorization", "Bearer " + access_token().toUtf8());
   else if (!session_id().isEmpty()) req.setRawHeader("X-Tidal-SessionId", session_id().toUtf8());

@@ -34,6 +34,7 @@
 #  include <QStringConverter>
 #endif
 
+#include "core/shared_ptr.h"
 #include "core/logging.h"
 #include "utilities/timeconstants.h"
 #include "settings/playlistsettingspage.h"
@@ -48,6 +49,8 @@ const char *CueParser::kIndexRegExp = "(\\d{1,3}):(\\d{2}):(\\d{2})";
 const char *CueParser::kPerformer = "performer";
 const char *CueParser::kTitle = "title";
 const char *CueParser::kSongWriter = "songwriter";
+// composer may be in cue file and is synonym for songwriter
+const char *CueParser::kComposer = "composer";
 const char *CueParser::kFile = "file";
 const char *CueParser::kTrack = "track";
 const char *CueParser::kIndex = "index";
@@ -57,8 +60,8 @@ const char *CueParser::kGenre = "genre";
 const char *CueParser::kDate = "date";
 const char *CueParser::kDisc = "discnumber";
 
-CueParser::CueParser(CollectionBackendInterface *collection, QObject *parent)
-    : ParserBase(collection, parent) {}
+CueParser::CueParser(SharedPtr<CollectionBackendInterface> collection_backend, QObject *parent)
+    : ParserBase(collection_backend, parent) {}
 
 SongList CueParser::Load(QIODevice *device, const QString &playlist_path, const QDir &dir, const bool collection_search) const {
 
@@ -110,6 +113,9 @@ SongList CueParser::Load(QIODevice *device, const QString &playlist_path, const 
         album = line_value;
       }
       else if (line_name.compare(kSongWriter, Qt::CaseInsensitive) == 0) {
+        album_composer = line_value;
+      }
+      else if (line_name.compare(kComposer, Qt::CaseInsensitive) == 0) {
         album_composer = line_value;
       }
       else if (line_name.compare(kFile, Qt::CaseInsensitive) == 0) {
@@ -208,8 +214,11 @@ SongList CueParser::Load(QIODevice *device, const QString &playlist_path, const 
       }
       else if (line_name.compare(kSongWriter, Qt::CaseInsensitive) == 0) {
         composer = line_value;
-        // End of track's for the current file -> parse next one
       }
+      else if (line_name.compare(kComposer, Qt::CaseInsensitive) == 0) {
+        composer = line_value;
+      }
+      // End of tracks for the current file -> parse next one
       else if (line_name.compare(kRem, Qt::CaseInsensitive) == 0 && splitted.size() >= 3) {
         if (line_value.compare(kGenre, Qt::CaseInsensitive) == 0) {
           genre = splitted[2];

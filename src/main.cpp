@@ -24,10 +24,9 @@
 
 #include <QtGlobal>
 
-#include <glib.h>
 #include <cstdlib>
-#include <memory>
 #include <ctime>
+#include <memory>
 
 #ifdef Q_OS_UNIX
 #  include <unistd.h>
@@ -42,6 +41,8 @@
 #  include <windows.h>
 #  include <iostream>
 #endif  // Q_OS_WIN32
+
+#include <glib.h>
 
 #include <QObject>
 #include <QApplication>
@@ -66,8 +67,12 @@
 
 #include "core/logging.h"
 
-#include <singleapplication.h>
-#include <singlecoreapplication.h>
+#include "core/scoped_ptr.h"
+#include "core/shared_ptr.h"
+
+#include "utilities/envutils.h"
+
+#include <kdsingleapplication.h>
 
 #ifdef HAVE_QTSPARKLE
 #  if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -110,6 +115,8 @@
 #  include "osd/osdbase.h"
 #endif
 
+using std::make_shared;
+
 int main(int argc, char *argv[]) {
 
 #ifdef Q_OS_MACOS
@@ -148,15 +155,16 @@ int main(int argc, char *argv[]) {
   {
     // Only start a core application now, so we can check if there's another instance without requiring an X server.
     // This MUST be done before parsing the commandline options so QTextCodec gets the right system locale for filenames.
-    SingleCoreApplication core_app(argc, argv, true, SingleCoreApplication::Mode::User | SingleCoreApplication::Mode::ExcludeAppVersion | SingleCoreApplication::Mode::ExcludeAppPath);
+    QCoreApplication core_app(argc, argv);
+    KDSingleApplication single_app(QCoreApplication::applicationName(), KDSingleApplication::Option::IncludeUsernameInSocketName);
     // Parse commandline options - need to do this before starting the full QApplication, so it works without an X server
     if (!options.Parse()) return 1;
     logging::SetLevels(options.log_levels());
-    if (core_app.isSecondary()) {
+    if (!single_app.isPrimaryInstance()) {
       if (options.is_empty()) {
         qLog(Info) << "Strawberry is already running - activating existing window (1)";
       }
-      if (!core_app.sendMessage(options.Serialize(), 5000)) {
+      if (!single_app.sendMessage(options.Serialize())) {
         qLog(Error) << "Could not send message to primary instance.";
       }
       return 0;
@@ -165,7 +173,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef Q_OS_MACOS
   // Must happen after QCoreApplication::setOrganizationName().
-  setenv("XDG_CONFIG_HOME", QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation).toLocal8Bit().constData(), 1);
+  Utilities::SetEnv("XDG_CONFIG_HOME", QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
 #endif
 
   // Output the version, so when people attach log output to bug reports they don't have to tell us which version they're using.
@@ -175,24 +183,22 @@ int main(int argc, char *argv[]) {
   // Seed the random number generators.
   time_t t = time(nullptr);
   srand(t);
-#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  qsrand(t);
-#endif
 
 #ifdef Q_OS_MACOS
   Utilities::IncreaseFDLimit();
 #endif
 
+  QGuiApplication::setApplicationDisplayName("Strawberry Music Player");
+  QGuiApplication::setDesktopFileName("org.strawberrymusicplayer.strawberry");
   QGuiApplication::setQuitOnLastWindowClosed(false);
 
-  // important: Do not remove this.
-  // This must also be done as a SingleApplication, in case SingleCoreApplication was compiled with a different appdata.
-  SingleApplication a(argc, argv, true, SingleApplication::Mode::User | SingleApplication::Mode::ExcludeAppVersion | SingleApplication::Mode::ExcludeAppPath);
-  if (a.isSecondary()) {
+  QApplication a(argc, argv);
+  KDSingleApplication single_app(QCoreApplication::applicationName(), KDSingleApplication::Option::IncludeUsernameInSocketName);
+  if (!single_app.isPrimaryInstance()) {
     if (options.is_empty()) {
       qLog(Info) << "Strawberry is already running - activating existing window (2)";
     }
-    if (!a.sendMessage(options.Serialize(), 5000)) {
+    if (!single_app.sendMessage(options.Serialize())) {
       qLog(Error) << "Could not send message to primary instance.";
     }
     return 0;
@@ -201,19 +207,7 @@ int main(int argc, char *argv[]) {
   QGuiApplication::setWindowIcon(IconLoader::Load("strawberry"));
 
 #if defined(USE_BUNDLE)
-  {
-    QStringList library_paths;
-#ifdef Q_OS_MACOS
-    library_paths.append(QCoreApplication::applicationDirPath() + "/../Frameworks");
-#endif
-#if defined(Q_OS_LINUX) || defined(Q_OS_MACOS)
-    library_paths.append(QCoreApplication::applicationDirPath() + "/" + USE_BUNDLE_DIR);
-#endif
-    if (!library_paths.isEmpty()) {
-      qLog(Debug) << "Looking for resources in" << library_paths;
-      QCoreApplication::setLibraryPaths(library_paths);
-    }
-  }
+  qLog(Debug) << "Looking for resources in" << QCoreApplication::libraryPaths();
 #endif
 
   // Gnome on Ubuntu has menu icons disabled by default.  I think that's a bad idea, and makes some menus in Strawberry look confusing.
@@ -274,7 +268,7 @@ int main(int argc, char *argv[]) {
 
   const QString language = override_language.isEmpty() ? system_language : override_language;
 
-  std::unique_ptr<Translations> translations(new Translations);
+  ScopedPtr<Translations> translations(new Translations);
 
 #  if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   translations->LoadTranslation("qt", QLibraryInfo::path(QLibraryInfo::TranslationsPath), language);
@@ -298,7 +292,7 @@ int main(int argc, char *argv[]) {
   QNetworkProxyFactory::setApplicationProxyFactory(NetworkProxyFactory::Instance());
 
   // Create the tray icon and OSD
-  std::shared_ptr<SystemTrayIcon> tray_icon = std::make_shared<SystemTrayIcon>();
+  SharedPtr<SystemTrayIcon> tray_icon = make_shared<SystemTrayIcon>();
 
 #if defined(Q_OS_MACOS)
   OSDMac osd(tray_icon, &app);
@@ -322,9 +316,10 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_DBUS
   QObject::connect(&mpris2, &mpris::Mpris2::RaiseMainWindow, &w, &MainWindow::Raise);
 #endif
-  QObject::connect(&a, &SingleApplication::receivedMessage, &w, QOverload<quint32, const QByteArray&>::of(&MainWindow::CommandlineOptionsReceived));
+  QObject::connect(&single_app, &KDSingleApplication::messageReceived, &w, QOverload<const QByteArray&>::of(&MainWindow::CommandlineOptionsReceived));
 
   int ret = QCoreApplication::exec();
 
   return ret;
+
 }

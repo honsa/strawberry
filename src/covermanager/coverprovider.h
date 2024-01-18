@@ -30,6 +30,7 @@
 #include <QString>
 #include <QStringList>
 
+#include "core/shared_ptr.h"
 #include "albumcoverfetcher.h"
 
 class Application;
@@ -41,7 +42,7 @@ class CoverProvider : public QObject {
   Q_OBJECT
 
  public:
-  explicit CoverProvider(const QString &name, const bool enabled, const bool authentication_required, const float quality, const bool batch, const bool allow_missing_album, Application *app, NetworkAccessManager *network, QObject *parent);
+  explicit CoverProvider(const QString &name, const bool enabled, const bool authentication_required, const float quality, const bool batch, const bool allow_missing_album, Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent);
 
   // A name (very short description) of this provider, like "last.fm".
   QString name() const { return name_; }
@@ -68,18 +69,18 @@ class CoverProvider : public QObject {
   virtual void Error(const QString &error, const QVariant &debug = QVariant()) = 0;
 
  signals:
-  void AuthenticationComplete(bool, QStringList = QStringList());
+  void AuthenticationComplete(const bool success, const QStringList &errors = QStringList());
   void AuthenticationSuccess();
-  void AuthenticationFailure(QStringList);
-  void SearchResults(int, CoverProviderSearchResults);
-  void SearchFinished(int, CoverProviderSearchResults);
+  void AuthenticationFailure(const QStringList &errors);
+  void SearchResults(const int id, const CoverProviderSearchResults &results);
+  void SearchFinished(const int id, const CoverProviderSearchResults &results);
 
  protected:
   using Param = QPair<QString, QString>;
   using ParamList = QList<Param>;
 
   Application *app_;
-  NetworkAccessManager *network_;
+  SharedPtr<NetworkAccessManager> network_;
   QString name_;
   bool enabled_;
   int order_;
@@ -87,7 +88,6 @@ class CoverProvider : public QObject {
   float quality_;
   bool batch_;
   bool allow_missing_album_;
-
 };
 
 #endif  // COVERPROVIDER_H

@@ -24,12 +24,11 @@
 
 #include "config.h"
 
-#include <memory>
-
 #include <QDialog>
 #include <QObject>
 #include <QString>
 
+#include "core/scoped_ptr.h"
 #include "collectionmodel.h"
 #include "ui_groupbydialog.h"
 
@@ -49,14 +48,14 @@ class GroupByDialog : public QDialog {
   void accept() override;
 
  signals:
-  void Accepted(CollectionModel::Grouping g, bool separate_albums_by_grouping);
+  void Accepted(const CollectionModel::Grouping g, const bool separate_albums_by_grouping);
 
  private slots:
   void Reset();
 
  private:
-  std::unique_ptr<Ui_GroupByDialog> ui_;
-  std::unique_ptr<GroupByDialogPrivate> p_;
+  ScopedPtr<Ui_GroupByDialog> ui_;
+  ScopedPtr<GroupByDialogPrivate> p_;
 };
 
 #endif  // GROUPBYDIALOG_H

@@ -21,8 +21,10 @@
 
 #include <QObject>
 
-#include "core/application.h"
+#include "core/shared_ptr.h"
+#include "core/networkaccessmanager.h"
 
+#include "scrobblersettings.h"
 #include "scrobblingapi20.h"
 #include "librefmscrobbler.h"
 
@@ -32,5 +34,5 @@ const char *LibreFMScrobbler::kAuthUrl = "https://www.libre.fm/api/auth/";
 const char *LibreFMScrobbler::kApiUrl = "https://libre.fm/2.0/";
 const char *LibreFMScrobbler::kCacheFile = "librefmscrobbler.cache";
 
-LibreFMScrobbler::LibreFMScrobbler(Application *app, QObject *parent)
-    : ScrobblingAPI20(kName, kSettingsGroup, kAuthUrl, kApiUrl, false, kCacheFile, app, parent) {}
+LibreFMScrobbler::LibreFMScrobbler(SharedPtr<ScrobblerSettings> settings, SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : ScrobblingAPI20(kName, kSettingsGroup, kAuthUrl, kApiUrl, false, kCacheFile, settings, network, parent) {}

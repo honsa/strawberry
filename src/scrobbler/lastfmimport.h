@@ -31,6 +31,8 @@
 #include <QQueue>
 #include <QDateTime>
 
+#include "core/shared_ptr.h"
+
 class QTimer;
 class QNetworkReply;
 
@@ -40,7 +42,7 @@ class LastFMImport : public QObject {
   Q_OBJECT
 
  public:
-  explicit LastFMImport(QObject *parent = nullptr);
+  explicit LastFMImport(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~LastFMImport() override;
 
   void ReloadSettings();
@@ -79,12 +81,12 @@ class LastFMImport : public QObject {
   void FinishCheck();
 
  signals:
-  void UpdatePlayCount(QString, QString, int, bool = false);
-  void UpdateLastPlayed(QString, QString, QString, qint64);
-  void UpdateTotal(int, int);
-  void UpdateProgress(int, int);
+  void UpdatePlayCount(const QString&, const QString&, const int, const bool = false);
+  void UpdateLastPlayed(const QString&, const QString&, const QString&, const qint64);
+  void UpdateTotal(const int, const int);
+  void UpdateProgress(const int, const int);
   void Finished();
-  void FinishedWithError(QString);
+  void FinishedWithError(const QString&);
 
  private slots:
   void FlushRequests();
@@ -94,7 +96,7 @@ class LastFMImport : public QObject {
  private:
   static const int kRequestsDelay;
 
-  NetworkAccessManager *network_;
+  SharedPtr<NetworkAccessManager> network_;
   QTimer *timer_flush_requests_;
 
   QString username_;
@@ -107,7 +109,6 @@ class LastFMImport : public QObject {
   QQueue<GetRecentTracksRequest> recent_tracks_requests_;
   QQueue<GetTopTracksRequest> top_tracks_requests_;
   QList<QNetworkReply*> replies_;
-
 };
 
 #endif  // LASTFMIMPORT_H

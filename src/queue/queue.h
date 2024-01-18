@@ -83,9 +83,9 @@ class Queue : public QAbstractProxyModel {
   void UpdateSummaryText();
 
  signals:
-  void TotalLengthChanged(quint64 length);
-  void ItemCountChanged(int count);
-  void SummaryTextChanged(QString message);
+  void TotalLengthChanged(const quint64 length);
+  void ItemCountChanged(const int count);
+  void SummaryTextChanged(const QString &message);
 
  private slots:
   void SourceDataChanged(const QModelIndex &top_left, const QModelIndex &bottom_right);
@@ -97,7 +97,6 @@ class Queue : public QAbstractProxyModel {
   const Playlist *playlist_;
   quint64 total_length_ns_;
   QMetaObject::Connection signal_item_count_changed_;
-
 };
 
 #endif  // QUEUE_H

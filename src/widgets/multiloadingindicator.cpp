@@ -29,6 +29,7 @@
 #include <QSizePolicy>
 #include <QPaintEvent>
 
+#include "core/shared_ptr.h"
 #include "core/taskmanager.h"
 #include "multiloadingindicator.h"
 #include "widgets/busyindicator.h"
@@ -49,21 +50,17 @@ MultiLoadingIndicator::MultiLoadingIndicator(QWidget *parent)
 
 QSize MultiLoadingIndicator::sizeHint() const {
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
   const int width = kHorizontalPadding * 2 + spinner_->sizeHint().width() + kSpacing + fontMetrics().horizontalAdvance(text_);
-#else
-  const int width = kHorizontalPadding * 2 + spinner_->sizeHint().width() + kSpacing + fontMetrics().width(text_);
-#endif
   const int height = kVerticalPadding * 2 + qMax(spinner_->sizeHint().height(), fontMetrics().height());
 
   return QSize(width, height);
 
 }
 
-void MultiLoadingIndicator::SetTaskManager(TaskManager *task_manager) {
+void MultiLoadingIndicator::SetTaskManager(SharedPtr<TaskManager> task_manager) {
 
   task_manager_ = task_manager;
-  QObject::connect(task_manager_, &TaskManager::TasksChanged, this, &MultiLoadingIndicator::UpdateText);
+  QObject::connect(&*task_manager_, &TaskManager::TasksChanged, this, &MultiLoadingIndicator::UpdateText);
 
 }
 

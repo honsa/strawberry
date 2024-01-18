@@ -22,21 +22,20 @@
 #include <cstdio>
 #include <cerrno>
 #include <alsa/asoundlib.h>
-#include <boost/scope_exit.hpp>
 
-#include <QList>
 #include <QString>
+#include <QScopeGuard>
 
 #include <core/logging.h>
 
-#include "devicefinder.h"
 #include "alsadevicefinder.h"
+#include "enginedevice.h"
 
 AlsaDeviceFinder::AlsaDeviceFinder() : DeviceFinder("alsa", { "alsa", "alsasink" }) {}
 
-QList<DeviceFinder::Device> AlsaDeviceFinder::ListDevices() {
+EngineDeviceList AlsaDeviceFinder::ListDevices() {
 
-  QList<Device> ret;
+  EngineDeviceList devices;
 
   snd_pcm_stream_name(SND_PCM_STREAM_PLAYBACK);
 
@@ -61,8 +60,7 @@ QList<DeviceFinder::Device> AlsaDeviceFinder::ListDevices() {
       qLog(Error) << "Unable to open soundcard" << card << ":" << snd_strerror(result);
       continue;
     }
-    BOOST_SCOPE_EXIT(&handle) { snd_ctl_close(handle); }  // clazy:exclude=rule-of-three NOLINT(google-explicit-constructor)
-    BOOST_SCOPE_EXIT_END
+    const QScopeGuard snd_ctl_handle_close = qScopeGuard([&handle]() { snd_ctl_close(handle); });
 
     result = snd_ctl_card_info(handle, cardinfo);
     if (result < 0) {
@@ -92,21 +90,21 @@ QList<DeviceFinder::Device> AlsaDeviceFinder::ListDevices() {
         continue;
       }
 
-      Device device;
+      EngineDevice device;
       device.description = QString("%1 %2").arg(snd_ctl_card_info_get_name(cardinfo), snd_pcm_info_get_name(pcminfo));
-      device.iconname = GuessIconName(device.description);
+      device.iconname = device.GuessIconName();
       device.card = card;
       device.device = dev;
 
       device.value = QString("hw:%1,%2").arg(card).arg(dev);
-      ret.append(device);
+      devices.append(device);
       device.value = QString("plughw:%1,%2").arg(card).arg(dev);
-      ret.append(device);
+      devices.append(device);
 
     }
   }
 
   snd_config_update_free_global();
 
-  return ret;
+  return devices;
 }

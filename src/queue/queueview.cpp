@@ -27,12 +27,13 @@
 #include <QAbstractItemModel>
 #include <QItemSelectionModel>
 #include <QList>
-#include <QTimer>
+#include <QMetaObject>
 #include <QSettings>
 #include <QKeySequence>
 #include <QLabel>
 #include <QToolButton>
 
+#include "core/shared_ptr.h"
 #include "core/iconloader.h"
 #include "playlist/playlist.h"
 #include "playlist/playlistdelegates.h"
@@ -45,7 +46,7 @@
 QueueView::QueueView(QWidget *parent)
     : QWidget(parent),
       ui_(new Ui_QueueView),
-      playlists_(nullptr),
+      playlist_manager_(nullptr),
       current_playlist_(nullptr) {
 
   ui_->setupUi(this);
@@ -74,12 +75,12 @@ QueueView::~QueueView() {
   delete ui_;
 }
 
-void QueueView::SetPlaylistManager(PlaylistManager *manager) {
+void QueueView::SetPlaylistManager(SharedPtr<PlaylistManager> playlist_manager) {
 
-  playlists_ = manager;
+  playlist_manager_ = playlist_manager;
 
-  QObject::connect(playlists_, &PlaylistManager::CurrentChanged, this, &QueueView::CurrentPlaylistChanged);
-  CurrentPlaylistChanged(playlists_->current());
+  QObject::connect(&*playlist_manager, &PlaylistManager::CurrentChanged, this, &QueueView::CurrentPlaylistChanged);
+  CurrentPlaylistChanged(playlist_manager_->current());
 
 }
 
@@ -120,7 +121,7 @@ void QueueView::CurrentPlaylistChanged(Playlist *playlist) {
   QObject::connect(ui_->list->selectionModel(), &QItemSelectionModel::currentChanged, this, &QueueView::UpdateButtonState);
   QObject::connect(ui_->list->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QueueView::UpdateButtonState);
 
-  QTimer::singleShot(0, current_playlist_->queue(), &Queue::UpdateSummaryText);
+  QMetaObject::invokeMethod(current_playlist_->queue(), &Queue::UpdateSummaryText);
 
 }
 

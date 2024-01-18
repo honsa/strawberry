@@ -34,6 +34,7 @@
 #include <QJsonObject>
 
 #include "core/logging.h"
+#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "utilities/timeconstants.h"
@@ -41,13 +42,13 @@
 #include "qobuzbaserequest.h"
 #include "qobuzstreamurlrequest.h"
 
-QobuzStreamURLRequest::QobuzStreamURLRequest(QobuzService *service, NetworkAccessManager *network, const QUrl &original_url, const uint id, QObject *parent)
+QobuzStreamURLRequest::QobuzStreamURLRequest(QobuzService *service, SharedPtr<NetworkAccessManager> network, const QUrl &media_url, const uint id, QObject *parent)
     : QobuzBaseRequest(service, network, parent),
       service_(service),
       reply_(nullptr),
-      original_url_(original_url),
+      media_url_(media_url),
       id_(id),
-      song_id_(original_url.path().toInt()),
+      song_id_(media_url.path().toInt()),
       tries_(0),
       need_login_(false) {}
 
@@ -67,7 +68,7 @@ void QobuzStreamURLRequest::LoginComplete(const bool success, const QString &err
   need_login_ = false;
 
   if (!success) {
-    emit StreamURLFailure(id_, original_url_, error);
+    emit StreamURLFailure(id_, media_url_, error);
     return;
   }
 
@@ -78,7 +79,7 @@ void QobuzStreamURLRequest::LoginComplete(const bool success, const QString &err
 void QobuzStreamURLRequest::Process() {
 
   if (app_id().isEmpty() || app_secret().isEmpty()) {
-    emit StreamURLFailure(id_, original_url_, tr("Missing Qobuz app ID or secret."));
+    emit StreamURLFailure(id_, media_url_, tr("Missing Qobuz app ID or secret."));
     return;
   }
 
@@ -97,7 +98,7 @@ void QobuzStreamURLRequest::Cancel() {
     reply_->abort();
   }
   else {
-    emit StreamURLFailure(id_, original_url_, tr("Cancelled."));
+    emit StreamURLFailure(id_, media_url_, tr("Cancelled."));
   }
 
 }
@@ -157,32 +158,32 @@ void QobuzStreamURLRequest::StreamURLReceived() {
       need_login_ = true;
       return;
     }
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
   QJsonObject json_obj = ExtractJsonObj(data);
   if (json_obj.isEmpty()) {
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
   if (!json_obj.contains("track_id")) {
     Error("Invalid Json reply, stream url is missing track_id.", json_obj);
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
   int track_id = json_obj["track_id"].toInt();
   if (track_id != song_id_) {
     Error("Incorrect track ID returned.", json_obj);
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
   if (!json_obj.contains("mime_type") || !json_obj.contains("url")) {
     Error("Invalid Json reply, stream url is missing url or mime_type.", json_obj);
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
@@ -203,7 +204,7 @@ void QobuzStreamURLRequest::StreamURLReceived() {
 
   if (!url.isValid()) {
     Error("Returned stream url is invalid.", json_obj);
-    emit StreamURLFailure(id_, original_url_, errors_.first());
+    emit StreamURLFailure(id_, media_url_, errors_.first());
     return;
   }
 
@@ -220,7 +221,7 @@ void QobuzStreamURLRequest::StreamURLReceived() {
     bit_depth = static_cast<int>(json_obj["bit_depth"].toDouble());
   }
 
-  emit StreamURLSuccess(id_, original_url_, url, filetype, samplerate, bit_depth, duration);
+  emit StreamURLSuccess(id_, media_url_, url, filetype, samplerate, bit_depth, duration);
 
 }
 

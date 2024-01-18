@@ -18,7 +18,7 @@ CREATE TABLE device_%deviceid_songs (
   track INTEGER NOT NULL DEFAULT -1,
   disc INTEGER NOT NULL DEFAULT -1,
   year INTEGER NOT NULL DEFAULT -1,
-  originalyear INTEGER NOT NULL DEFAULT 0,
+  originalyear INTEGER NOT NULL DEFAULT -1,
   genre TEXT,
   compilation INTEGER NOT NULL DEFAULT 0,
   composer TEXT,
@@ -59,8 +59,10 @@ CREATE TABLE device_%deviceid_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -81,7 +83,10 @@ CREATE TABLE device_%deviceid_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -94,4 +99,4 @@ CREATE VIRTUAL TABLE device_%deviceid_fts USING fts5(
   tokenize = "unicode61 remove_diacritics 1"
 );
 
-UPDATE devices SET schema_version=4 WHERE ROWID=%deviceid;
+UPDATE devices SET schema_version=5 WHERE ROWID=%deviceid;

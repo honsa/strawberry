@@ -108,12 +108,9 @@ bool TagReaderTagParser::ReadFile(const QString &filename, spb::tagreader::SongM
   song->set_basefilename(basefilename.constData(), basefilename.size());
   song->set_url(url.constData(), url.size());
   song->set_filesize(fileinfo.size());
+
   song->set_mtime(fileinfo.lastModified().isValid() ? std::max(fileinfo.lastModified().toSecsSinceEpoch(), 0LL) : 0LL);
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
   song->set_ctime(fileinfo.birthTime().isValid() ? std::max(fileinfo.birthTime().toSecsSinceEpoch(), 0LL) : fileinfo.lastModified().isValid() ? std::max(fileinfo.lastModified().toSecsSinceEpoch(), 0LL) : 0LL);
-#else
-  song->set_ctime(fileinfo.created().isValid() ? std::max(fileinfo.created().toSecsSinceEpoch(), 0LL) : fileinfo.lastModified().isValid() ? std::max(fileinfo.lastModified().toSecsSinceEpoch(), 0LL) : 0LL);
-#endif
 
   if (song->ctime() <= 0) {
     song->set_ctime(song->mtime());
@@ -227,7 +224,7 @@ bool TagReaderTagParser::ReadFile(const QString &filename, spb::tagreader::SongM
       song->set_track(tag->value(TagParser::KnownField::TrackPosition).toInteger());
       song->set_disc(tag->value(TagParser::KnownField::DiskPosition).toInteger());
       if (!tag->value(TagParser::KnownField::Cover).empty() && tag->value(TagParser::KnownField::Cover).dataSize() > 0) {
-        song->set_art_automatic(kEmbeddedCover);
+        song->set_art_embedded(true);
       }
       const float rating = ConvertPOPMRating(tag->value(TagParser::KnownField::Rating));
       if (song->rating() <= 0 && rating > 0.0 && rating <= 1.0) {

@@ -22,10 +22,10 @@
 
 #include "config.h"
 
-#include <memory>
-
 #include <QtGlobal>
+#include <QMetaType>
 
+#include "core/shared_ptr.h"
 #include "scrobblemetadata.h"
 
 class ScrobblerCacheItem {
@@ -36,9 +36,10 @@ class ScrobblerCacheItem {
   ScrobbleMetadata metadata;
   quint64 timestamp;
   bool sent;
+  bool error;
 };
 
-using ScrobblerCacheItemPtr = std::shared_ptr<ScrobblerCacheItem>;
+using ScrobblerCacheItemPtr = SharedPtr<ScrobblerCacheItem>;
 using ScrobblerCacheItemPtrList = QList<ScrobblerCacheItemPtr>;
 
 Q_DECLARE_METATYPE(ScrobblerCacheItemPtr)

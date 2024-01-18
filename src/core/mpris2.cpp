@@ -118,40 +118,39 @@ Mpris2::Mpris2(Application *app, QObject *parent)
     return;
   }
 
-  QObject::connect(app_->current_albumcover_loader(), &CurrentAlbumCoverLoader::AlbumCoverLoaded, this, &Mpris2::AlbumCoverLoaded);
+  QObject::connect(&*app_->current_albumcover_loader(), &CurrentAlbumCoverLoader::AlbumCoverLoaded, this, &Mpris2::AlbumCoverLoaded);
 
-  QObject::connect(app_->player()->engine(), &EngineBase::StateChanged, this, &Mpris2::EngineStateChanged);
-  QObject::connect(app_->player(), &Player::VolumeChanged, this, &Mpris2::VolumeChanged);
-  QObject::connect(app_->player(), &Player::Seeked, this, &Mpris2::Seeked);
+  QObject::connect(&*app_->player()->engine(), &EngineBase::StateChanged, this, &Mpris2::EngineStateChanged);
+  QObject::connect(&*app_->player(), &Player::VolumeChanged, this, &Mpris2::VolumeChanged);
+  QObject::connect(&*app_->player(), &Player::Seeked, this, &Mpris2::Seeked);
 
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::PlaylistManagerInitialized, this, &Mpris2::PlaylistManagerInitialized);
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &Mpris2::CurrentSongChanged);
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::PlaylistChanged, this, &Mpris2::PlaylistChangedSlot);
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::CurrentChanged, this, &Mpris2::PlaylistCollectionChanged);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::PlaylistManagerInitialized, this, &Mpris2::PlaylistManagerInitialized);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &Mpris2::CurrentSongChanged);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::PlaylistChanged, this, &Mpris2::PlaylistChangedSlot);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::CurrentChanged, this, &Mpris2::PlaylistCollectionChanged);
 
   app_name_[0] = app_name_[0].toUpper();
 
-  if (!QGuiApplication::desktopFileName().isEmpty()) {
-    desktop_files_ << QGuiApplication::desktopFileName();
+  QStringList data_dirs = QString(qgetenv("XDG_DATA_DIRS")).split(":");
+
+  if (!data_dirs.contains("/usr/local/share")) {
+    data_dirs.append("/usr/local/share");
   }
 
-  QStringList domain_split = QCoreApplication::organizationDomain().split(".");
-  std::reverse(domain_split.begin(), domain_split.end());
-  desktop_files_ << QStringList() << domain_split.join(".") + "." + QCoreApplication::applicationName().toLower();
-  desktop_files_ << QCoreApplication::applicationName().toLower();
-  desktop_file_ = desktop_files_.first();
+  if (!data_dirs.contains("/usr/share")) {
+    data_dirs.append("/usr/share");
+  }
 
-  data_dirs_ = QString(qgetenv("XDG_DATA_DIRS")).split(":");
-  data_dirs_.append("/usr/local/share");
-  data_dirs_.append("/usr/share");
-
-  for (const QString &directory : data_dirs_) {
-    for (const QString &desktop_file : desktop_files_) {
-      QString path = QString("%1/applications/%2.desktop").arg(directory, desktop_file);
-      if (QFile::exists(path)) {
-        desktop_file_ = desktop_file;
-      }
+  for (const QString &data_dir : data_dirs) {
+    const QString desktopfilepath = QString("%1/applications/%2.desktop").arg(data_dir, QGuiApplication::desktopFileName());
+    if (QFile::exists(desktopfilepath)) {
+      desktopfilepath_ = desktopfilepath;
+      break;
     }
+  }
+
+  if (desktopfilepath_.isEmpty()) {
+    desktopfilepath_ = QGuiApplication::desktopFileName() + ".desktop";
   }
 
 }
@@ -162,9 +161,9 @@ void Mpris2::PlaylistManagerInitialized() {
   QObject::connect(app_->playlist_manager()->sequence(), &PlaylistSequence::RepeatModeChanged, this, &Mpris2::RepeatModeChanged);
 }
 
-void Mpris2::EngineStateChanged(Engine::State newState) {
+void Mpris2::EngineStateChanged(EngineBase::State newState) {
 
-  if (newState != Engine::State::Playing && newState != Engine::State::Paused) {
+  if (newState != EngineBase::State::Playing && newState != EngineBase::State::Paused) {
     last_metadata_ = QVariantMap();
     EmitNotification("Metadata");
   }
@@ -172,7 +171,7 @@ void Mpris2::EngineStateChanged(Engine::State newState) {
   EmitNotification("CanPlay");
   EmitNotification("CanPause");
   EmitNotification("PlaybackStatus", PlaybackStatus(newState));
-  if (newState == Engine::State::Playing) EmitNotification("CanSeek", CanSeek(newState));
+  if (newState == EngineBase::State::Playing) EmitNotification("CanSeek", CanSeek(newState));
 
 }
 
@@ -212,6 +211,7 @@ void Mpris2::EmitNotification(const QString &name) {
   else if (name == "LoopStatus") value = LoopStatus();
   else if (name == "Shuffle") value = Shuffle();
   else if (name == "Metadata") value = Metadata();
+  else if (name == "Rating") value = Rating();
   else if (name == "Volume") value = Volume();
   else if (name == "Position") value = Position();
   else if (name == "CanPlay") value = CanPlay();
@@ -236,19 +236,11 @@ QString Mpris2::Identity() const { return app_name_; }
 
 QString Mpris2::DesktopEntryAbsolutePath() const {
 
-  for (const QString &directory : data_dirs_) {
-    for (const QString &desktop_file : desktop_files_) {
-      QString path = QString("%1/applications/%2.desktop").arg(directory, desktop_file);
-      if (QFile::exists(path)) {
-        return path;
-      }
-    }
-  }
-  return QString();
+  return desktopfilepath_;
 
 }
 
-QString Mpris2::DesktopEntry() const { return desktop_file_; }
+QString Mpris2::DesktopEntry() const { return QGuiApplication::desktopFileName() + ".desktop"; }
 
 QStringList Mpris2::SupportedUriSchemes() const {
 
@@ -304,11 +296,11 @@ QString Mpris2::PlaybackStatus() const {
   return PlaybackStatus(app_->player()->GetState());
 }
 
-QString Mpris2::PlaybackStatus(Engine::State state) const {
+QString Mpris2::PlaybackStatus(EngineBase::State state) const {
 
   switch (state) {
-    case Engine::State::Playing: return "Playing";
-    case Engine::State::Paused: return "Paused";
+    case EngineBase::State::Playing: return "Playing";
+    case EngineBase::State::Paused: return "Paused";
     default: return "Stopped";
   }
 
@@ -369,6 +361,24 @@ void Mpris2::SetShuffle(bool enable) {
 
 QVariantMap Mpris2::Metadata() const { return last_metadata_; }
 
+double Mpris2::Rating() const {
+  float rating = app_->playlist_manager()->active()->current_item_metadata().rating();
+  return (rating <= 0) ? 0 : rating;
+}
+
+void Mpris2::SetRating(double rating) {
+
+  if (rating > 1.0) {
+    rating = 1.0;
+  }
+  else if (rating <= 0.0) {
+    rating = -1.0;
+  }
+
+  app_->playlist_manager()->RateCurrentSong(static_cast<float>(rating));
+
+}
+
 QString Mpris2::current_track_id() const {
   return QString("/org/strawberrymusicplayer/strawberry/Track/%1").arg(QString::number(app_->playlist_manager()->active()->current_row()));
 }
@@ -401,14 +411,16 @@ void Mpris2::AlbumCoverLoaded(const Song &song, const AlbumCoverLoaderResult &re
   else if (result.temp_cover_url.isValid() && result.temp_cover_url.isLocalFile()) {
     cover_url = result.temp_cover_url;
   }
-  else if (song.art_manual().isValid() && song.art_manual().isLocalFile() && song.art_manual().path() != Song::kManuallyUnsetCover && song.art_manual().path() != Song::kEmbeddedCover) {
+  else if (song.art_manual().isValid() && song.art_manual().isLocalFile()) {
     cover_url = song.art_manual();
   }
-  else if (song.art_automatic().isValid() && song.art_automatic().isLocalFile() && song.art_automatic().path() != Song::kManuallyUnsetCover && song.art_automatic().path() != Song::kEmbeddedCover) {
+  else if (song.art_automatic().isValid() && song.art_automatic().isLocalFile()) {
     cover_url = song.art_automatic();
   }
 
-  if (cover_url.isValid()) AddMetadata("mpris:artUrl", cover_url.toString(), &last_metadata_);
+  if (cover_url.isValid()) {
+    AddMetadata("mpris:artUrl", cover_url.toString(), &last_metadata_);
+  }
 
   AddMetadata("year", song.year(), &last_metadata_);
   AddMetadata("bitrate", song.bitrate(), &last_metadata_);
@@ -447,13 +459,13 @@ bool Mpris2::CanPlay() const {
 
 // This one's a bit different than MPRIS 1 - we want this to be true even when the song is already paused or stopped.
 bool Mpris2::CanPause() const {
-  return (app_->player()->GetCurrentItem() && app_->player()->GetState() == Engine::State::Playing && !(app_->player()->GetCurrentItem()->options() & PlaylistItem::Option::PauseDisabled)) || PlaybackStatus() == "Paused" || PlaybackStatus() == "Stopped";
+  return (app_->player()->GetCurrentItem() && app_->player()->GetState() == EngineBase::State::Playing && !(app_->player()->GetCurrentItem()->options() & PlaylistItem::Option::PauseDisabled)) || PlaybackStatus() == "Paused" || PlaybackStatus() == "Stopped";
 }
 
 bool Mpris2::CanSeek() const { return CanSeek(app_->player()->GetState()); }
 
-bool Mpris2::CanSeek(Engine::State state) const {
-  return app_->player()->GetCurrentItem() && state != Engine::State::Empty && !app_->player()->GetCurrentItem()->Metadata().is_stream();
+bool Mpris2::CanSeek(EngineBase::State state) const {
+  return app_->player()->GetCurrentItem() && state != EngineBase::State::Empty && !app_->player()->GetCurrentItem()->Metadata().is_stream();
 }
 
 bool Mpris2::CanControl() const { return true; }
@@ -471,7 +483,7 @@ void Mpris2::Previous() {
 }
 
 void Mpris2::Pause() {
-  if (CanPause() && app_->player()->GetState() != Engine::State::Paused) {
+  if (CanPause() && app_->player()->GetState() != EngineBase::State::Paused) {
     app_->player()->Pause();
   }
 }

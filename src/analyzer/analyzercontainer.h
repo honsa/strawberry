@@ -30,15 +30,14 @@
 #include <QAction>
 #include <QActionGroup>
 
-#include "engine/engine_fwd.h"
+#include "core/shared_ptr.h"
+#include "engine/enginebase.h"
 
 class QTimer;
 class QMouseEvent;
 class QWheelEvent;
 
-namespace Analyzer {
-class Base;
-}  // namespace Analyzer
+class AnalyzerBase;
 
 class AnalyzerContainer : public QWidget {
   Q_OBJECT
@@ -46,14 +45,14 @@ class AnalyzerContainer : public QWidget {
  public:
   explicit AnalyzerContainer(QWidget *parent);
 
-  void SetEngine(EngineBase *engine);
+  void SetEngine(SharedPtr<EngineBase> engine);
   void SetActions(QAction *visualisation);
 
   static const char *kSettingsGroup;
   static const char *kSettingsFramerate;
 
  signals:
-  void WheelEvent(int delta);
+  void WheelEvent(const int delta);
 
  protected:
   void mouseReleaseEvent(QMouseEvent*) override;
@@ -94,8 +93,8 @@ class AnalyzerContainer : public QWidget {
   QPoint last_click_pos_;
   bool ignore_next_click_;
 
-  Analyzer::Base *current_analyzer_;
-  EngineBase *engine_;
+  AnalyzerBase *current_analyzer_;
+  SharedPtr<EngineBase> engine_;
 };
 
 template<typename T>

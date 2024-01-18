@@ -22,8 +22,6 @@
 #ifndef PLAYINGWIDGET_H
 #define PLAYINGWIDGET_H
 
-#include <memory>
-
 #include <QtGlobal>
 #include <QObject>
 #include <QWidget>
@@ -34,8 +32,8 @@
 #include <QAction>
 #include <QMovie>
 
+#include "core/scoped_ptr.h"
 #include "core/song.h"
-#include "covermanager/albumcoverloaderoptions.h"
 
 class QTimeLine;
 class QTextDocument;
@@ -68,7 +66,7 @@ class PlayingWidget : public QWidget {
   bool show_above_status_bar() const { return above_statusbar_action_->isChecked(); }
 
  signals:
-  void ShowAboveStatusBarChanged(bool above);
+  void ShowAboveStatusBarChanged(const bool above);
 
  public slots:
   void Playing();
@@ -123,8 +121,8 @@ class PlayingWidget : public QWidget {
   bool playing_;
   bool active_;
   int small_ideal_height_;
-  AlbumCoverLoaderOptions cover_loader_options_;
   int total_height_;
+  int desired_height_;
   bool fit_width_;
   QTimeLine *timeline_show_hide_;
   QTimeLine *timeline_fade_;
@@ -138,7 +136,7 @@ class PlayingWidget : public QWidget {
   QImage image_original_;
   QPixmap pixmap_cover_;
   QPixmap pixmap_previous_track_;
-  std::unique_ptr<QMovie> spinner_animation_;
+  ScopedPtr<QMovie> spinner_animation_;
 
   void SetVisible(const bool visible);
   void CreateModeAction(const Mode mode, const QString &text, QActionGroup *group);

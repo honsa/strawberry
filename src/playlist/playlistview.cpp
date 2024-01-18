@@ -32,8 +32,6 @@
 #include <QTreeView>
 #include <QHeaderView>
 #include <QClipboard>
-#include <QCommonStyle>
-#include <QFontMetrics>
 #include <QKeySequence>
 #include <QMimeData>
 #include <QMetaType>
@@ -55,9 +53,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QRegion>
-#include <QStyleOptionHeader>
 #include <QStyleOptionViewItem>
-#include <QProxyStyle>
 #include <QLinearGradient>
 #include <QScrollBar>
 #include <QtEvents>
@@ -73,6 +69,7 @@
 #include "playlistheader.h"
 #include "playlistview.h"
 #include "playlistfilter.h"
+#include "playlistproxystyle.h"
 #include "covermanager/currentalbumcoverloader.h"
 #include "covermanager/albumcoverloaderresult.h"
 #include "settings/appearancesettingspage.h"
@@ -88,54 +85,14 @@ const int PlaylistView::kAutoscrollGraceTimeout = 30;  // seconds
 const int PlaylistView::kDropIndicatorWidth = 2;
 const int PlaylistView::kDropIndicatorGradientWidth = 5;
 
-PlaylistProxyStyle::PlaylistProxyStyle(QObject*) : QProxyStyle(nullptr), common_style_(new QCommonStyle) {}
-
-void PlaylistProxyStyle::drawControl(ControlElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const {
-
-  if (element == CE_Header) {
-    const QStyleOptionHeader *header_option = qstyleoption_cast<const QStyleOptionHeader*>(option);
-    const QRect &rect = header_option->rect;
-    const QString &text = header_option->text;
-    const QFontMetrics &font_metrics = header_option->fontMetrics;
-
-    // Spaces added to make transition less abrupt
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
-    if (rect.width() < font_metrics.horizontalAdvance(text + "  ")) {
-#else
-    if (rect.width() < font_metrics.width(text + "  ")) {
-#endif
-      const Playlist::Column column = static_cast<Playlist::Column>(header_option->section);
-      QStyleOptionHeader new_option(*header_option);
-      new_option.text = Playlist::abbreviated_column_name(column);
-      QProxyStyle::drawControl(element, &new_option, painter, widget);
-      return;
-    }
-  }
-
-  if (element == CE_ItemViewItem) {
-    common_style_->drawControl(element, option, painter, widget);
-  }
-  else {
-    QProxyStyle::drawControl(element, option, painter, widget);
-  }
-
-}
-
-void PlaylistProxyStyle::drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const {
-
-  if (element == QStyle::PE_PanelItemViewRow || element == QStyle::PE_PanelItemViewItem) {
-    common_style_->drawPrimitive(element, option, painter, widget);
-  }
-  else {
-    QProxyStyle::drawPrimitive(element, option, painter, widget);
-  }
-
-}
-
 PlaylistView::PlaylistView(QWidget *parent)
     : QTreeView(parent),
       app_(nullptr),
-      style_(new PlaylistProxyStyle()),
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      style_(new PlaylistProxyStyle(QApplication::style()->name())),
+#else
+      style_(new PlaylistProxyStyle(QApplication::style()->objectName())),
+#endif
       playlist_(nullptr),
       header_(new PlaylistHeader(Qt::Horizontal, this, this)),
       background_image_type_(AppearanceSettingsPage::BackgroundImageType::Default),
@@ -183,9 +140,7 @@ PlaylistView::PlaylistView(QWidget *parent)
 
   setHeader(header_);
   header_->setSectionsMovable(true);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
   header_->setFirstSectionMovable(true);
-#endif
   header_->setSortIndicator(Playlist::Column_Title, Qt::AscendingOrder);
 
   setStyle(style_);
@@ -238,11 +193,11 @@ void PlaylistView::Init(Application *app) {
 
   SetItemDelegates();
 
-  QObject::connect(app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &PlaylistView::SongChanged);
-  QObject::connect(app_->current_albumcover_loader(), &CurrentAlbumCoverLoader::AlbumCoverLoaded, this, &PlaylistView::AlbumCoverLoaded);
-  QObject::connect(app_->player(), &Player::Playing, this, &PlaylistView::StartGlowing);
-  QObject::connect(app_->player(), &Player::Paused, this, &PlaylistView::StopGlowing);
-  QObject::connect(app_->player(), &Player::Stopped, this, &PlaylistView::Stopped);
+  QObject::connect(&*app_->playlist_manager(), &PlaylistManager::CurrentSongChanged, this, &PlaylistView::SongChanged);
+  QObject::connect(&*app_->current_albumcover_loader(), &CurrentAlbumCoverLoader::AlbumCoverLoaded, this, &PlaylistView::AlbumCoverLoaded);
+  QObject::connect(&*app_->player(), &Player::Playing, this, &PlaylistView::StartGlowing);
+  QObject::connect(&*app_->player(), &Player::Paused, this, &PlaylistView::StopGlowing);
+  QObject::connect(&*app_->player(), &Player::Stopped, this, &PlaylistView::Stopped);
 
 }
 
@@ -280,6 +235,8 @@ void PlaylistView::SetItemDelegates() {
   rating_delegate_ = new RatingItemDelegate(this);
   setItemDelegateForColumn(Playlist::Column_Rating, rating_delegate_);
 
+  setItemDelegateForColumn(Playlist::Column_EBUR128IntegratedLoudness, new Ebur128LoudnessLUFSItemDelegate(this));
+  setItemDelegateForColumn(Playlist::Column_EBUR128LoudnessRange, new Ebur128LoudnessRangeLUItemDelegate(this));
 }
 
 void PlaylistView::setModel(QAbstractItemModel *m) {
@@ -397,6 +354,8 @@ void PlaylistView::RestoreHeaderState() {
     header_->HideSection(Playlist::Column_Mood);
     header_->HideSection(Playlist::Column_Rating);
     header_->HideSection(Playlist::Column_HasCUE);
+    header_->HideSection(Playlist::Column_EBUR128IntegratedLoudness);
+    header_->HideSection(Playlist::Column_EBUR128LoudnessRange);
 
     header_->moveSection(header_->visualIndex(Playlist::Column_Track), 0);
 
@@ -1472,13 +1431,9 @@ void PlaylistView::AlbumCoverLoaded(const Song &song, const AlbumCoverLoaderResu
   if ((song != Song() && song_playing_ == Song()) || result.album_cover.image == current_song_cover_art_) return;
 
   current_song_cover_art_ = result.album_cover.image;
+
   if (background_image_type_ == AppearanceSettingsPage::BackgroundImageType::Album) {
-    if (song.art_automatic().isEmpty() && song.art_manual().isEmpty()) {
-      set_background_image(QImage());
-    }
-    else {
-      set_background_image(current_song_cover_art_);
-    }
+    set_background_image(result.success && result.type != AlbumCoverLoaderResult::Type::None && result.type != AlbumCoverLoaderResult::Type::Unset ? current_song_cover_art_ : QImage());
     force_background_redraw_ = true;
     update();
   }

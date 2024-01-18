@@ -23,11 +23,12 @@
 
 #include <QtGlobal>
 #include <QThread>
-#include <QTimer>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
+#include <QMetaObject>
 
+#include "shared_ptr.h"
 #include "taskmanager.h"
 #include "song.h"
 #include "deletefiles.h"
@@ -35,7 +36,7 @@
 
 const int DeleteFiles::kBatchSize = 50;
 
-DeleteFiles::DeleteFiles(TaskManager *task_manager, std::shared_ptr<MusicStorage> storage, const bool use_trash, QObject *parent)
+DeleteFiles::DeleteFiles(SharedPtr<TaskManager> task_manager, SharedPtr<MusicStorage> storage, const bool use_trash, QObject *parent)
     : QObject(parent),
       thread_(nullptr),
       task_manager_(task_manager),
@@ -123,6 +124,6 @@ void DeleteFiles::ProcessSomeFiles() {
     }
   }
 
-  QTimer::singleShot(0, this, &DeleteFiles::ProcessSomeFiles);
+  QMetaObject::invokeMethod(this, &DeleteFiles::ProcessSomeFiles);
 
 }

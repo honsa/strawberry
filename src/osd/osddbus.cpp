@@ -41,9 +41,12 @@
 #include <QDBusPendingCallWatcher>
 
 #include "core/logging.h"
+#include "core/scoped_ptr.h"
 #include "osddbus.h"
 
 #include "notification.h"
+
+using std::make_unique;
 
 QDBusArgument &operator<<(QDBusArgument &arg, const QImage &image) {
 
@@ -80,15 +83,11 @@ QDBusArgument &operator<<(QDBusArgument &arg, const QImage &image) {
   arg << static_cast<qint32>(i.height());
   arg << static_cast<qint32>(i.bytesPerLine());
   arg << i.hasAlphaChannel();
-  qint32 channels = i.isGrayscale() ? 1 : (i.hasAlphaChannel() ? 4 : 3);
+  qint32 channels = i.hasAlphaChannel() ? 4 : 3;
   qint32 bitspersample = i.depth() / channels;
   arg << bitspersample;
   arg << channels;
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
   arg << QByteArray(reinterpret_cast<const char*>(i.constBits()), static_cast<int>(i.sizeInBytes()));
-#else
-  arg << QByteArray(reinterpret_cast<const char*>(i.constBits()), i.byteCount());
-#endif
   arg.endStructure();
 
   return arg;
@@ -105,7 +104,7 @@ const QDBusArgument &operator>>(const QDBusArgument &arg, QImage &image) {
 
 }
 
-OSDDBus::OSDDBus(std::shared_ptr<SystemTrayIcon> tray_icon, Application *app, QObject *parent)
+OSDDBus::OSDDBus(SharedPtr<SystemTrayIcon> tray_icon, Application *app, QObject *parent)
     : OSDBase(tray_icon, app, parent),
       version_(1, 1),
       notification_id_(0) {
@@ -118,7 +117,7 @@ OSDDBus::~OSDDBus() = default;
 
 void OSDDBus::Init() {
 
-  interface_ = std::make_unique<OrgFreedesktopNotificationsInterface>(OrgFreedesktopNotificationsInterface::staticInterfaceName(), "/org/freedesktop/Notifications", QDBusConnection::sessionBus());
+  interface_ = make_unique<OrgFreedesktopNotificationsInterface>(OrgFreedesktopNotificationsInterface::staticInterfaceName(), "/org/freedesktop/Notifications", QDBusConnection::sessionBus());
   if (!interface_->isValid()) {
     qLog(Warning) << "Error connecting to notifications service.";
   }
@@ -177,7 +176,7 @@ void OSDDBus::ShowMessageNative(const QString &summary, const QString &message, 
 
 void OSDDBus::CallFinished(QDBusPendingCallWatcher *watcher) {
 
-  std::unique_ptr<QDBusPendingCallWatcher> w(watcher);
+  ScopedPtr<QDBusPendingCallWatcher> w(watcher);
 
   QDBusPendingReply<uint> reply = *w;
   if (reply.isError()) {

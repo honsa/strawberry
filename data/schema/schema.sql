@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 DELETE FROM schema_version;
 
-INSERT INTO schema_version (version) VALUES (16);
+INSERT INTO schema_version (version) VALUES (18);
 
 CREATE TABLE IF NOT EXISTS directories (
   path TEXT NOT NULL,
@@ -67,8 +67,10 @@ CREATE TABLE IF NOT EXISTS songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -89,7 +91,10 @@ CREATE TABLE IF NOT EXISTS songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -143,8 +148,10 @@ CREATE TABLE IF NOT EXISTS subsonic_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -165,7 +172,10 @@ CREATE TABLE IF NOT EXISTS subsonic_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -219,8 +229,10 @@ CREATE TABLE IF NOT EXISTS tidal_artists_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -241,7 +253,10 @@ CREATE TABLE IF NOT EXISTS tidal_artists_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -295,8 +310,10 @@ CREATE TABLE IF NOT EXISTS tidal_albums_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -317,7 +334,10 @@ CREATE TABLE IF NOT EXISTS tidal_albums_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -371,8 +391,10 @@ CREATE TABLE IF NOT EXISTS tidal_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -393,7 +415,10 @@ CREATE TABLE IF NOT EXISTS tidal_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -447,8 +472,10 @@ CREATE TABLE IF NOT EXISTS qobuz_artists_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -469,7 +496,10 @@ CREATE TABLE IF NOT EXISTS qobuz_artists_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -523,8 +553,10 @@ CREATE TABLE IF NOT EXISTS qobuz_albums_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -545,7 +577,10 @@ CREATE TABLE IF NOT EXISTS qobuz_albums_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -599,8 +634,10 @@ CREATE TABLE IF NOT EXISTS qobuz_songs (
   compilation_off INTEGER NOT NULL DEFAULT 0,
   compilation_effective INTEGER NOT NULL DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER NOT NULL DEFAULT 0,
@@ -621,7 +658,10 @@ CREATE TABLE IF NOT EXISTS qobuz_songs (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 
@@ -695,8 +735,10 @@ CREATE TABLE IF NOT EXISTS playlist_items (
   compilation_off INTEGER DEFAULT 0,
   compilation_effective INTEGER DEFAULT 0,
 
+  art_embedded INTEGER DEFAULT 0,
   art_automatic TEXT,
   art_manual TEXT,
+  art_unset INTEGER DEFAULT 0,
 
   effective_albumartist TEXT,
   effective_originalyear INTEGER,
@@ -717,7 +759,10 @@ CREATE TABLE IF NOT EXISTS playlist_items (
   musicbrainz_track_id TEXT,
   musicbrainz_disc_id TEXT,
   musicbrainz_release_group_id TEXT,
-  musicbrainz_work_id TEXT
+  musicbrainz_work_id TEXT,
+
+  ebur128_integrated_loudness_lufs REAL,
+  ebur128_loudness_range_lu REAL
 
 );
 

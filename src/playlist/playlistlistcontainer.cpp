@@ -21,8 +21,8 @@
 
 #include "config.h"
 
-#include <memory>
 #include <utility>
+#include <memory>
 
 #include <QObject>
 #include <QWidget>
@@ -44,6 +44,7 @@
 #include <QToolButton>
 #include <QShowEvent>
 #include <QContextMenuEvent>
+#include <QMimeData>
 
 #include "core/application.h"
 #include "core/iconloader.h"
@@ -62,6 +63,8 @@
 #  include "device/devicemanager.h"
 #  include "device/devicestatefiltermodel.h"
 #endif
+
+using std::make_unique;
 
 PlaylistListContainer::PlaylistListContainer(QWidget *parent)
     : QWidget(parent),
@@ -108,6 +111,7 @@ PlaylistListContainer::PlaylistListContainer(QWidget *parent)
 
   QObject::connect(ui_->tree, &PlaylistListView::ItemsSelectedChanged, this, &PlaylistListContainer::ItemsSelectedChanged);
   QObject::connect(ui_->tree, &PlaylistListView::doubleClicked, this, &PlaylistListContainer::ItemDoubleClicked);
+  QObject::connect(ui_->tree, &PlaylistListView::ItemMimeDataDroppedSignal, this, &PlaylistListContainer::ItemMimeDataDropped);
 
   model_->invisibleRootItem()->setData(PlaylistListModel::Type_Folder, PlaylistListModel::Role_Type);
 
@@ -120,8 +124,8 @@ PlaylistListContainer::~PlaylistListContainer() { delete ui_; }
 void PlaylistListContainer::SetApplication(Application *app) {
 
   app_ = app;
-  PlaylistManager *manager = app_->playlist_manager();
-  Player *player = app_->player();
+  PlaylistManager *manager = &*app_->playlist_manager();
+  Player *player = &*app_->player();
 
   QObject::connect(manager, &PlaylistManager::PlaylistAdded, this, &PlaylistListContainer::AddPlaylist);
   QObject::connect(manager, &PlaylistManager::PlaylistFavorited, this, &PlaylistListContainer::PlaylistFavoriteStateChanged);
@@ -346,6 +350,19 @@ void PlaylistListContainer::ItemDoubleClicked(const QModelIndex &proxy_idx) {
 
 }
 
+void PlaylistListContainer::ItemMimeDataDropped(const QModelIndex &proxy_idx, const QMimeData *q_mimedata) {
+
+  const QModelIndex idx = proxy_->mapToSource(proxy_idx);
+  if (!idx.isValid()) return;
+
+  // Drop playlist rows if type is playlist and it's not active, to prevent selfcopy
+  int playlis_id = idx.data(PlaylistListModel::Role_PlaylistId).toInt();
+  if (idx.data(PlaylistListModel::Role_Type).toInt() == PlaylistListModel::Type_Playlist && playlis_id != app_->playlist_manager()->active_id()) {
+    app_->playlist_manager()->playlist(playlis_id)->dropMimeData(q_mimedata, Qt::CopyAction, -1, 0, QModelIndex());
+  }
+
+}
+
 void PlaylistListContainer::CopyToDevice() {
 
 #ifndef Q_OS_WIN
@@ -370,7 +387,7 @@ void PlaylistListContainer::CopyToDevice() {
 
     // Reuse the organize dialog, but set the detail about the playlist name
     if (!organize_dialog_) {
-      organize_dialog_ = std::make_unique<OrganizeDialog>(app_->task_manager(), nullptr, this);
+      organize_dialog_ = make_unique<OrganizeDialog>(app_->task_manager(), nullptr, this);
     }
     organize_dialog_->SetDestinationModel(app_->device_manager()->connected_devices_model(), true);
     organize_dialog_->SetCopy(true);

@@ -32,6 +32,7 @@
 #include <QString>
 #include <QUrl>
 
+#include "core/shared_ptr.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
 
@@ -43,7 +44,7 @@ class LyricsFetcher : public QObject {
   Q_OBJECT
 
  public:
-  explicit LyricsFetcher(LyricsProviders *lyrics_providers, QObject *parent = nullptr);
+  explicit LyricsFetcher(SharedPtr<LyricsProviders> lyrics_providers, QObject *parent = nullptr);
   ~LyricsFetcher() override {}
 
   struct Request {
@@ -59,8 +60,8 @@ class LyricsFetcher : public QObject {
   void AddRequest(const Request &request);
 
  signals:
-  void LyricsFetched(quint64 request_id, QString provider, QString lyrics);
-  void SearchFinished(quint64 request_id, LyricsSearchResults results);
+  void LyricsFetched(const quint64 request_id, const QString &provider, const QString &lyrics);
+  void SearchFinished(const quint64 request_id, const LyricsSearchResults &results);
 
  private slots:
   void SingleSearchFinished(const quint64 request_id, const LyricsSearchResults &results);
@@ -70,14 +71,13 @@ class LyricsFetcher : public QObject {
  private:
   static const int kMaxConcurrentRequests;
 
-  LyricsProviders *lyrics_providers_;
+  SharedPtr<LyricsProviders> lyrics_providers_;
   quint64 next_id_;
 
   QQueue<Request> queued_requests_;
   QHash<quint64, LyricsFetcherSearch*> active_requests_;
 
   QTimer *request_starter_;
-
 };
 
 #endif  // LYRICSFETCHER_H

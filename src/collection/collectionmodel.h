@@ -2,7 +2,7 @@
  * Strawberry Music Player
  * This file was part of Clementine.
  * Copyright 2010, David Sansome <me@davidsansome.com>
- * Copyright 2018-2021, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2018-2023, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,15 +45,15 @@
 #include <QPixmap>
 #include <QNetworkDiskCache>
 
+#include "core/shared_ptr.h"
 #include "core/simpletreemodel.h"
 #include "core/song.h"
 #include "core/sqlrow.h"
-#include "covermanager/albumcoverloader.h"
+#include "covermanager/albumcoverloaderoptions.h"
+#include "covermanager/albumcoverloaderresult.h"
 #include "collectionfilteroptions.h"
-#include "collectionquery.h"
 #include "collectionqueryoptions.h"
 #include "collectionitem.h"
-#include "covermanager/albumcoverloaderoptions.h"
 
 class QSettings;
 
@@ -65,7 +65,7 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   Q_OBJECT
 
  public:
-  explicit CollectionModel(CollectionBackend *backend, Application *app, QObject *parent = nullptr);
+  explicit CollectionModel(SharedPtr<CollectionBackend> backend, Application *app, QObject *parent = nullptr);
   ~CollectionModel() override;
 
   static const int kPrettyCoverSize;
@@ -132,7 +132,7 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
     bool create_va;
   };
 
-  CollectionBackend *backend() const { return backend_; }
+  SharedPtr<CollectionBackend> backend() const { return backend_; }
   CollectionDirectoryModel *directory_model() const { return dir_model_; }
 
   // Call before Init()
@@ -199,10 +199,10 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   static QString ContainerKey(const GroupBy group_by, const bool separate_albums_by_grouping, const Song &song);
 
  signals:
-  void TotalSongCountUpdated(int count);
-  void TotalArtistCountUpdated(int count);
-  void TotalAlbumCountUpdated(int count);
-  void GroupingChanged(CollectionModel::Grouping g, bool separate_albums_by_grouping);
+  void TotalSongCountUpdated(const int count);
+  void TotalArtistCountUpdated(const int count);
+  void TotalAlbumCountUpdated(const int count);
+  void GroupingChanged(const CollectionModel::Grouping g, const bool separate_albums_by_grouping);
 
  public slots:
   void SetFilterMode(CollectionFilterOptions::FilterMode filter_mode);
@@ -267,13 +267,14 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   // Helpers
   static bool IsCompilationArtistNode(const CollectionItem *node) { return node == node->parent->compilation_artist_node_; }
   QString AlbumIconPixmapCacheKey(const QModelIndex &idx) const;
+  QUrl AlbumIconPixmapDiskCacheKey(const QString &cache_key) const;
   QVariant AlbumIcon(const QModelIndex &idx);
   QVariant data(const CollectionItem *item, const int role) const;
   bool CompareItems(const CollectionItem *a, const CollectionItem *b) const;
   static qint64 MaximumCacheSize(QSettings *s, const char *size_id, const char *size_unit_id, const qint64 cache_size_default);
 
  private:
-  CollectionBackend *backend_;
+  SharedPtr<CollectionBackend> backend_;
   Application *app_;
   CollectionDirectoryModel *dir_model_;
   bool show_various_artists_;
@@ -309,7 +310,7 @@ class CollectionModel : public SimpleTreeModel<CollectionItem> {
   bool use_disk_cache_;
   bool use_lazy_loading_;
 
-  AlbumCoverLoaderOptions cover_loader_options_;
+  AlbumCoverLoaderOptions::Types cover_types_;
 
   using ItemAndCacheKey = QPair<CollectionItem*, QString>;
   QMap<quint64, ItemAndCacheKey> pending_art_;

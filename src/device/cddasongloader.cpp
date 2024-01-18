@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#include <memory>
+
 #include <cstddef>
 #include <glib.h>
 #include <glib/gtypes.h>
@@ -39,11 +41,16 @@
 
 #include "cddasongloader.h"
 #include "core/logging.h"
+#include "core/shared_ptr.h"
+#include "core/networkaccessmanager.h"
 #include "utilities/timeconstants.h"
+
+using std::make_shared;
 
 CddaSongLoader::CddaSongLoader(const QUrl &url, QObject *parent)
     : QObject(parent),
       url_(url),
+      network_(make_shared<NetworkAccessManager>()),
       cdda_(nullptr),
       cdio_(nullptr) {}
 
@@ -195,7 +202,7 @@ void CddaSongLoader::LoadSongs() {
       QString musicbrainz_discid(string_mb);
       qLog(Info) << "MusicBrainz discid: " << musicbrainz_discid;
 
-      MusicBrainzClient *musicbrainz_client = new MusicBrainzClient;
+      MusicBrainzClient *musicbrainz_client = new MusicBrainzClient(network_);
       QObject::connect(musicbrainz_client, &MusicBrainzClient::DiscIdFinished, this, &CddaSongLoader::AudioCDTagsLoaded);
       musicbrainz_client->StartDiscIdRequest(musicbrainz_discid);
       g_free(string_mb);

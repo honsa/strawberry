@@ -33,6 +33,7 @@
 #include <QString>
 #include <QUrl>
 
+#include "core/shared_ptr.h"
 #include "core/song.h"
 #include "settings/playlistsettingspage.h"
 #include "playlist.h"
@@ -73,8 +74,8 @@ class PlaylistManagerInterface : public QObject {
 
   virtual QString GetPlaylistName(const int index) const = 0;
 
-  virtual CollectionBackend *collection_backend() const = 0;
-  virtual PlaylistBackend *playlist_backend() const = 0;
+  virtual SharedPtr<CollectionBackend> collection_backend() const = 0;
+  virtual SharedPtr<PlaylistBackend> playlist_backend() const = 0;
   virtual PlaylistSequence *sequence() const = 0;
   virtual PlaylistParser *parser() const = 0;
   virtual PlaylistContainer *playlist_container() const = 0;
@@ -117,25 +118,25 @@ class PlaylistManagerInterface : public QObject {
   void PlaylistManagerInitialized();
   void AllPlaylistsLoaded();
 
-  void PlaylistAdded(int id, QString name, bool favorite);
-  void PlaylistDeleted(int id);
-  void PlaylistClosed(int id);
-  void PlaylistRenamed(int id, QString new_name);
-  void PlaylistFavorited(int id, bool favorite);
-  void CurrentChanged(Playlist *new_playlist, int scroll_position = 0);
+  void PlaylistAdded(const int id, const QString &name, const bool favorite);
+  void PlaylistDeleted(const int id);
+  void PlaylistClosed(const int id);
+  void PlaylistRenamed(const int id, const QString &new_name);
+  void PlaylistFavorited(const int id, const bool favorite);
+  void CurrentChanged(Playlist *new_playlist, const int scroll_position = 0);
   void ActiveChanged(Playlist *new_playlist);
 
-  void Error(QString message);
-  void SummaryTextChanged(QString summary);
+  void Error(const QString &message);
+  void SummaryTextChanged(const QString &summary);
 
   // Forwarded from individual playlists
-  void CurrentSongChanged(Song song);
-  void SongMetadataChanged(Song song);
+  void CurrentSongChanged(const Song &song);
+  void SongMetadataChanged(const Song &song);
 
   // Signals that one of manager's playlists has changed (new items, new ordering etc.) - the argument shows which.
   void PlaylistChanged(Playlist *playlist);
-  void EditingFinished(int playlist_id, QModelIndex idx);
-  void PlayRequested(QModelIndex idx, Playlist::AutoScroll autoscroll);
+  void EditingFinished(const int playlist_id, const QModelIndex idx);
+  void PlayRequested(const QModelIndex idx, const Playlist::AutoScroll autoscroll);
 };
 
 class PlaylistManager : public PlaylistManagerInterface {
@@ -171,10 +172,10 @@ class PlaylistManager : public PlaylistManagerInterface {
   QString GetPlaylistName(const int index) const override { return playlists_[index].name; }
   bool IsPlaylistFavorite(const int index) const { return playlists_[index].p->is_favorite(); }
 
-  void Init(CollectionBackend *collection_backend, PlaylistBackend *playlist_backend, PlaylistSequence *sequence, PlaylistContainer *playlist_container);
+  void Init(SharedPtr<CollectionBackend> collection_backend, SharedPtr<PlaylistBackend> playlist_backend, PlaylistSequence *sequence, PlaylistContainer *playlist_container);
 
-  CollectionBackend *collection_backend() const override { return collection_backend_; }
-  PlaylistBackend *playlist_backend() const override { return playlist_backend_; }
+  SharedPtr<CollectionBackend> collection_backend() const override { return collection_backend_; }
+  SharedPtr<PlaylistBackend> playlist_backend() const override { return playlist_backend_; }
   PlaylistSequence *sequence() const override { return sequence_; }
   PlaylistParser *parser() const override { return parser_; }
   PlaylistContainer *playlist_container() const override { return playlist_container_; }
@@ -249,8 +250,8 @@ class PlaylistManager : public PlaylistManagerInterface {
   };
 
   Application *app_;
-  PlaylistBackend *playlist_backend_;
-  CollectionBackend *collection_backend_;
+  SharedPtr<PlaylistBackend> playlist_backend_;
+  SharedPtr<CollectionBackend> collection_backend_;
   PlaylistSequence *sequence_;
   PlaylistParser *parser_;
   PlaylistContainer *playlist_container_;

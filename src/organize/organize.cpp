@@ -19,10 +19,11 @@
  *
  */
 
+#include <QtGlobal>
+
 #include <functional>
 #include <chrono>
 
-#include <QtGlobal>
 #include <QThread>
 #include <QFile>
 #include <QFileInfo>
@@ -34,6 +35,7 @@
 #include <QImage>
 
 #include "core/logging.h"
+#include "core/shared_ptr.h"
 #include "core/taskmanager.h"
 #include "core/musicstorage.h"
 #include "core/tagreaderclient.h"
@@ -53,7 +55,7 @@ const int Organize::kBatchSize = 10;
 const int Organize::kTranscodeProgressInterval = 500;
 #endif
 
-Organize::Organize(TaskManager *task_manager, std::shared_ptr<MusicStorage> destination, const OrganizeFormat &format, const bool copy, const bool overwrite, const bool albumcover, const NewSongInfoList &songs_info, const bool eject_after, const QString &playlist, QObject *parent)
+Organize::Organize(SharedPtr<TaskManager> task_manager, SharedPtr<MusicStorage> destination, const OrganizeFormat &format, const bool copy, const bool overwrite, const bool albumcover, const NewSongInfoList &songs_info, const bool eject_after, const QString &playlist, QObject *parent)
     : QObject(parent),
       thread_(nullptr),
       task_manager_(task_manager),
@@ -222,7 +224,7 @@ void Organize::ProcessSomeFiles() {
     job.remove_original_ = !copy_;
     job.playlist_ = playlist_;
 
-    if (task.song_info_.song_.art_manual_is_valid() && !task.song_info_.song_.has_manually_unset_cover()) {
+    if (task.song_info_.song_.art_manual_is_valid() && !task.song_info_.song_.art_unset()) {
       if (task.song_info_.song_.art_manual().isLocalFile() && QFile::exists(task.song_info_.song_.art_manual().toLocalFile())) {
         job.cover_source_ = task.song_info_.song_.art_manual().toLocalFile();
       }
@@ -230,7 +232,7 @@ void Organize::ProcessSomeFiles() {
         job.cover_source_ = task.song_info_.song_.art_manual().path();
       }
     }
-    else if (task.song_info_.song_.art_automatic_is_valid() && !task.song_info_.song_.has_embedded_cover()) {
+    else if (task.song_info_.song_.art_automatic_is_valid()) {
       if (task.song_info_.song_.art_automatic().isLocalFile() && QFile::exists(task.song_info_.song_.art_automatic().toLocalFile())) {
         job.cover_source_ = task.song_info_.song_.art_automatic().toLocalFile();
       }
@@ -249,7 +251,7 @@ void Organize::ProcessSomeFiles() {
     job.progress_ = std::bind(&Organize::SetSongProgress, this, std::placeholders::_1, !task.transcoded_filename_.isEmpty());
 
     if (destination_->CopyToStorage(job)) {
-      if (job.remove_original_ && (destination_->source() == Song::Source::Collection || destination_->source() == Song::Source::Device)) {
+      if (job.remove_original_ && song.is_collection_song() && destination_->source() == Song::Source::Collection) {
         // Notify other aspects of system that song has been invalidated
         QString root = destination_->LocalPath();
         QFileInfo new_file = QFileInfo(root + "/" + task.song_info_.new_filename_);

@@ -41,7 +41,6 @@
 #cmakedefine HAVE_TAGLIB_DSDIFFFILE
 
 #cmakedefine USE_BUNDLE
-#define USE_BUNDLE_DIR "${USE_BUNDLE_DIR}"
 
 #cmakedefine HAVE_TRANSLATIONS
 #cmakedefine INSTALL_TRANSLATIONS
@@ -54,5 +53,9 @@
 
 #cmakedefine USE_TAGLIB
 #cmakedefine USE_TAGPARSER
+
+#cmakedefine HAVE_QX11APPLICATION
+
+#cmakedefine HAVE_EBUR128
 
 #endif // CONFIG_H_IN

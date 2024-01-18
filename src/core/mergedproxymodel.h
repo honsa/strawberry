@@ -24,7 +24,6 @@
 
 #include "config.h"
 
-#include <memory>
 #include <cstddef>
 
 #include <QObject>
@@ -35,6 +34,8 @@
 #include <QVariant>
 #include <QString>
 #include <QStringList>
+
+#include "core/scoped_ptr.h"
 
 class QMimeData;
 
@@ -85,7 +86,7 @@ class MergedProxyModel : public QAbstractProxyModel {
   QModelIndexList mapToSource(const QModelIndexList &proxy_indexes) const;
 
  signals:
-  void SubModelReset(QModelIndex root, QAbstractItemModel *model);
+  void SubModelReset(const QModelIndex root, QAbstractItemModel *model);
 
  private slots:
   void SourceModelReset();
@@ -112,7 +113,7 @@ class MergedProxyModel : public QAbstractProxyModel {
 
   QHash<QAbstractItemModel*, QModelIndex> old_merge_points_;
 
-  std::unique_ptr<MergedProxyModelPrivate> p_;
+  ScopedPtr<MergedProxyModelPrivate> p_;
 };
 
 #endif  // MERGEDPROXYMODEL_H

@@ -44,7 +44,7 @@
 #include <QJsonValue>
 #include <QFlags>
 
-#include "core/application.h"
+#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "core/logging.h"
@@ -52,7 +52,7 @@
 #include "internet/localredirectserver.h"
 #include "settings/scrobblersettingspage.h"
 
-#include "audioscrobbler.h"
+#include "scrobblersettings.h"
 #include "scrobblerservice.h"
 #include "scrobblingapi20.h"
 #include "scrobblercache.h"
@@ -63,19 +63,18 @@ const char *ScrobblingAPI20::kApiKey = "211990b4c96782c05d1536e7219eb56e";
 const char *ScrobblingAPI20::kSecret = "80fd738f49596e9709b1bf9319c444a8";
 const int ScrobblingAPI20::kScrobblesPerRequest = 50;
 
-ScrobblingAPI20::ScrobblingAPI20(const QString &name, const QString &settings_group, const QString &auth_url, const QString &api_url, const bool batch, const QString &cache_file, Application *app, QObject *parent)
-    : ScrobblerService(name, app, parent),
+ScrobblingAPI20::ScrobblingAPI20(const QString &name, const QString &settings_group, const QString &auth_url, const QString &api_url, const bool batch, const QString &cache_file, SharedPtr<ScrobblerSettings> settings, SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : ScrobblerService(name, parent),
       name_(name),
       settings_group_(settings_group),
       auth_url_(auth_url),
       api_url_(api_url),
       batch_(batch),
-      app_(app),
-      network_(new NetworkAccessManager(this)),
+      settings_(settings),
+      network_(network),
       cache_(new ScrobblerCache(cache_file, this)),
       server_(nullptr),
       enabled_(false),
-      https_(false),
       prefer_albumartist_(false),
       subscriber_(false),
       submitted_(false),
@@ -86,7 +85,7 @@ ScrobblingAPI20::ScrobblingAPI20(const QString &name, const QString &settings_gr
   timer_submit_.setSingleShot(true);
   QObject::connect(&timer_submit_, &QTimer::timeout, this, &ScrobblingAPI20::Submit);
 
-  ReloadSettings();
+  ScrobblingAPI20::ReloadSettings();
   LoadSession();
 
 }
@@ -114,7 +113,6 @@ void ScrobblingAPI20::ReloadSettings() {
 
   s.beginGroup(settings_group_);
   enabled_ = s.value("enabled", false).toBool();
-  https_ = s.value("https", false).toBool();
   s.endGroup();
 
   s.beginGroup(ScrobblerSettingsPage::kSettingsGroup);
@@ -149,11 +147,55 @@ void ScrobblingAPI20::Logout() {
 
 }
 
-void ScrobblingAPI20::Authenticate(const bool https) {
+ScrobblingAPI20::ReplyResult ScrobblingAPI20::GetJsonObject(QNetworkReply *reply, QJsonObject &json_obj, QString &error_description) {
+
+  ReplyResult reply_error_type = ReplyResult::ServerError;
+
+  if (reply->error() == QNetworkReply::NoError) {
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200) {
+      reply_error_type = ReplyResult::Success;
+    }
+    else {
+      error_description = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
+    }
+  }
+  else {
+    error_description = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
+  }
+
+  // See if there is Json data containing "error" and "message" - then use that instead.
+  if (reply->error() == QNetworkReply::NoError || reply->error() >= 200) {
+    const QByteArray data = reply->readAll();
+    int error_code = 0;
+    if (!data.isEmpty() && ExtractJsonObj(data, json_obj, error_description) && json_obj.contains("error") && json_obj.contains("message")) {
+      error_code = json_obj["error"].toInt();
+      QString error_message = json_obj["message"].toString();
+      error_description = QString("%1 (%2)").arg(error_message).arg(error_code);
+      reply_error_type = ReplyResult::APIError;
+    }
+    const ScrobbleErrorCode lastfm_error_code = static_cast<ScrobbleErrorCode>(error_code);
+    if (reply->error() == QNetworkReply::ContentAccessDenied ||
+        reply->error() == QNetworkReply::ContentOperationNotPermittedError ||
+        reply->error() == QNetworkReply::AuthenticationRequiredError ||
+        lastfm_error_code == ScrobbleErrorCode::InvalidSessionKey ||
+        lastfm_error_code == ScrobbleErrorCode::UnauthorizedToken ||
+        lastfm_error_code == ScrobbleErrorCode::LoginRequired ||
+        lastfm_error_code == ScrobbleErrorCode::AuthenticationFailed ||
+        lastfm_error_code == ScrobbleErrorCode::APIKeySuspended
+    ) {
+      // Session is probably expired
+      Logout();
+    }
+  }
+
+  return reply_error_type;
+
+}
+
+void ScrobblingAPI20::Authenticate() {
 
   if (!server_) {
     server_ = new LocalRedirectServer(this);
-    server_->set_https(https);
     if (!server_->Listen()) {
       AuthError(server_->error());
       delete server_;
@@ -216,7 +258,7 @@ void ScrobblingAPI20::RedirectArrived() {
       }
     }
     else {
-      AuthError(tr("Received invalid reply from web browser. Try the HTTPS option, or use another browser like Chromium or Chrome."));
+      AuthError(tr("Received invalid reply from web browser. Try another browser."));
     }
   }
   else {
@@ -262,57 +304,10 @@ void ScrobblingAPI20::AuthenticateReplyFinished(QNetworkReply *reply) {
   QObject::disconnect(reply, nullptr, this, nullptr);
   reply->deleteLater();
 
-  QByteArray data;
-
-  if (reply->error() == QNetworkReply::NoError && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200) {
-    data = reply->readAll();
-  }
-  else {
-    if (reply->error() < 200) {
-      // This is a network error, there is nothing more to do.
-      AuthError(QString("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
-    }
-    else {
-      // See if there is Json data containing "error" and "message" - then use that instead.
-      data = reply->readAll();
-      QString error;
-      QJsonParseError json_error;
-      QJsonDocument json_doc = QJsonDocument::fromJson(data, &json_error);
-      if (json_error.error == QJsonParseError::NoError && !json_doc.isEmpty() && json_doc.isObject()) {
-        QJsonObject json_obj = json_doc.object();
-        if (json_obj.contains("error") && json_obj.contains("message")) {
-          int code = json_obj["error"].toInt();
-          QString message = json_obj["message"].toString();
-          error = "Error: " + QString::number(code) + ": " + message;
-        }
-        else {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
-        }
-      }
-      if (error.isEmpty()) {
-        if (reply->error() != QNetworkReply::NoError) {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
-        }
-        else {
-          error = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
-        }
-      }
-      AuthError(error);
-    }
-    return;
-  }
-
-  QJsonObject json_obj = ExtractJsonObj(data);
-  if (json_obj.isEmpty()) {
-    AuthError("Json document from server was empty.");
-    return;
-  }
-
-  if (json_obj.contains("error") && json_obj.contains("message")) {
-    int error = json_obj["error"].toInt();
-    QString message = json_obj["message"].toString();
-    QString failure_reason = "Error: " + QString::number(error) + ": " + message;
-    AuthError(failure_reason);
+  QJsonObject json_obj;
+  QString error_message;
+  if (GetJsonObject(reply, json_obj, error_message) != ReplyResult::Success) {
+    AuthError(error_message);
     return;
   }
 
@@ -392,63 +387,6 @@ QNetworkReply *ScrobblingAPI20::CreateRequest(const ParamList &request_params) {
 
 }
 
-QByteArray ScrobblingAPI20::GetReplyData(QNetworkReply *reply) {
-
-  QByteArray data;
-
-  if (reply->error() == QNetworkReply::NoError && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200) {
-    data = reply->readAll();
-  }
-  else {
-    if (reply->error() != QNetworkReply::NoError && reply->error() < 200) {
-      // This is a network error, there is nothing more to do.
-      Error(QString("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
-    }
-    else {
-      QString error;
-      // See if there is Json data containing "error" and "message" - then use that instead.
-      data = reply->readAll();
-      QJsonParseError json_error;
-      QJsonDocument json_doc = QJsonDocument::fromJson(data, &json_error);
-      int error_code = -1;
-      if (json_error.error == QJsonParseError::NoError && !json_doc.isEmpty() && json_doc.isObject()) {
-        QJsonObject json_obj = json_doc.object();
-        if (json_obj.contains("error") && json_obj.contains("message")) {
-          error_code = json_obj["error"].toInt();
-          QString error_message = json_obj["message"].toString();
-          error = QString("%1 (%2)").arg(error_message).arg(error_code);
-        }
-      }
-      if (error.isEmpty()) {
-        if (reply->error() != QNetworkReply::NoError) {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
-        }
-        else {
-          error = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
-        }
-      }
-      const ScrobbleErrorCode lastfm_error_code = static_cast<ScrobbleErrorCode>(error_code);
-      if (reply->error() == QNetworkReply::ContentAccessDenied ||
-          reply->error() == QNetworkReply::ContentOperationNotPermittedError ||
-          reply->error() == QNetworkReply::AuthenticationRequiredError ||
-          lastfm_error_code == ScrobbleErrorCode::InvalidSessionKey ||
-          lastfm_error_code == ScrobbleErrorCode::UnauthorizedToken ||
-          lastfm_error_code == ScrobbleErrorCode::LoginRequired ||
-          lastfm_error_code == ScrobbleErrorCode::AuthenticationFailed ||
-          lastfm_error_code == ScrobbleErrorCode::APIKeySuspended
-        ){
-        // Session is probably expired
-        Logout();
-      }
-      Error(error);
-    }
-    return QByteArray();
-  }
-
-  return data;
-
-}
-
 void ScrobblingAPI20::UpdateNowPlaying(const Song &song) {
 
   CheckScrobblePrevSong();
@@ -457,7 +395,7 @@ void ScrobblingAPI20::UpdateNowPlaying(const Song &song) {
   timestamp_ = QDateTime::currentDateTime().toSecsSinceEpoch();
   scrobbled_ = false;
 
-  if (!IsAuthenticated() || !song.is_metadata_good() || app_->scrobbler()->IsOffline()) return;
+  if (!authenticated() || !song.is_metadata_good() || settings_->offline()) return;
 
   ParamList params = ParamList()
     << Param("method", "track.updateNowPlaying")
@@ -484,21 +422,10 @@ void ScrobblingAPI20::UpdateNowPlayingRequestFinished(QNetworkReply *reply) {
   QObject::disconnect(reply, nullptr, this, nullptr);
   reply->deleteLater();
 
-  QByteArray data = GetReplyData(reply);
-  if (data.isEmpty()) {
-    return;
-  }
-
-  QJsonObject json_obj = ExtractJsonObj(data);
-  if (json_obj.isEmpty()) {
-    return;
-  }
-
-  if (json_obj.contains("error") && json_obj.contains("message")) {
-    int error_code = json_obj["error"].toInt();
-    QString error_message = json_obj["message"].toString();
-    QString error_reason = QString("%1 (%2)").arg(error_message).arg(error_code);
-    Error(error_reason);
+  QJsonObject json_obj;
+  QString error_message;
+  if (GetJsonObject(reply, json_obj, error_message) != ReplyResult::Success) {
+    Error(error_message);
     return;
   }
 
@@ -527,10 +454,10 @@ void ScrobblingAPI20::Scrobble(const Song &song) {
 
   cache_->Add(song, timestamp_);
 
-  if (app_->scrobbler()->IsOffline()) return;
+  if (settings_->offline()) return;
 
-  if (!IsAuthenticated()) {
-    if (app_->scrobbler()->ShowErrorDialog()) {
+  if (!authenticated()) {
+    if (settings_->show_error_dialog()) {
       emit ErrorMessage(tr("Scrobbler %1 is not authenticated!").arg(name_));
     }
     return;
@@ -542,14 +469,14 @@ void ScrobblingAPI20::Scrobble(const Song &song) {
 void ScrobblingAPI20::StartSubmit(const bool initial) {
 
   if (!submitted_ && cache_->Count() > 0) {
-    if (initial && (!batch_ || app_->scrobbler()->SubmitDelay() <= 0) && !submit_error_) {
+    if (initial && (!batch_ || settings_->submit_delay() <= 0) && !submit_error_) {
       if (timer_submit_.isActive()) {
         timer_submit_.stop();
       }
       Submit();
     }
     else if (!timer_submit_.isActive()) {
-      int submit_delay = static_cast<int>(std::max(app_->scrobbler()->SubmitDelay(), submit_error_ ? 30 : 5) * kMsecPerSec);
+      int submit_delay = static_cast<int>(std::max(settings_->submit_delay(), submit_error_ ? 30 : 5) * kMsecPerSec);
       timer_submit_.setInterval(submit_delay);
       timer_submit_.start();
     }
@@ -559,50 +486,50 @@ void ScrobblingAPI20::StartSubmit(const bool initial) {
 
 void ScrobblingAPI20::Submit() {
 
-  if (!IsEnabled() || !IsAuthenticated() || app_->scrobbler()->IsOffline()) return;
+  if (!enabled() || !authenticated() || settings_->offline()) return;
 
   qLog(Debug) << name_ << "Submitting scrobbles.";
 
   ParamList params = ParamList() << Param("method", "track.scrobble");
 
   int i = 0;
-  QList<quint64> list;
-  ScrobblerCacheItemPtrList items = cache_->List();
-  for (ScrobblerCacheItemPtr item : items) {
-    if (item->sent) continue;
-    item->sent = true;
+  ScrobblerCacheItemPtrList all_cache_items = cache_->List();
+  ScrobblerCacheItemPtrList cache_items_sent;
+  for (ScrobblerCacheItemPtr cache_item : all_cache_items) {
+    if (cache_item->sent) continue;
+    cache_item->sent = true;
     if (!batch_) {
-      SendSingleScrobble(item);
+      SendSingleScrobble(cache_item);
       continue;
     }
-    list << item->timestamp;
-    params << Param(QString("%1[%2]").arg("artist").arg(i), prefer_albumartist_ ? item->metadata.effective_albumartist() : item->metadata.artist);
-    params << Param(QString("%1[%2]").arg("track").arg(i), StripTitle(item->metadata.title));
-    params << Param(QString("%1[%2]").arg("timestamp").arg(i), QString::number(item->timestamp));
-    params << Param(QString("%1[%2]").arg("duration").arg(i), QString::number(item->metadata.length_nanosec / kNsecPerSec));
-    if (!item->metadata.album.isEmpty()) {
-      params << Param(QString("%1[%2]").arg("album").arg(i), StripAlbum(item->metadata.album));
+    cache_items_sent << cache_item;
+    params << Param(QString("%1[%2]").arg("artist").arg(i), prefer_albumartist_ ? cache_item->metadata.effective_albumartist() : cache_item->metadata.artist);
+    params << Param(QString("%1[%2]").arg("track").arg(i), StripTitle(cache_item->metadata.title));
+    params << Param(QString("%1[%2]").arg("timestamp").arg(i), QString::number(cache_item->timestamp));
+    params << Param(QString("%1[%2]").arg("duration").arg(i), QString::number(cache_item->metadata.length_nanosec / kNsecPerSec));
+    if (!cache_item->metadata.album.isEmpty()) {
+      params << Param(QString("%1[%2]").arg("album").arg(i), StripAlbum(cache_item->metadata.album));
     }
-    if (!prefer_albumartist_ && !item->metadata.albumartist.isEmpty()) {
-      params << Param(QString("%1[%2]").arg("albumArtist").arg(i), item->metadata.albumartist);
+    if (!prefer_albumartist_ && !cache_item->metadata.albumartist.isEmpty()) {
+      params << Param(QString("%1[%2]").arg("albumArtist").arg(i), cache_item->metadata.albumartist);
     }
-    if (item->metadata.track > 0) {
-      params << Param(QString("%1[%2]").arg("trackNumber").arg(i), QString::number(item->metadata.track));
+    if (cache_item->metadata.track > 0) {
+      params << Param(QString("%1[%2]").arg("trackNumber").arg(i), QString::number(cache_item->metadata.track));
     }
     ++i;
-    if (i >= kScrobblesPerRequest) break;
+    if (cache_items_sent.count() >= kScrobblesPerRequest) break;
   }
 
-  if (!batch_ || i <= 0) return;
+  if (!batch_ || cache_items_sent.count() <= 0) return;
 
   submitted_ = true;
 
   QNetworkReply *reply = CreateRequest(params);
-  QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, list]() { ScrobbleRequestFinished(reply, list); });
+  QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, cache_items_sent]() { ScrobbleRequestFinished(reply, cache_items_sent); });
 
 }
 
-void ScrobblingAPI20::ScrobbleRequestFinished(QNetworkReply *reply, const QList<quint64> &list) {
+void ScrobblingAPI20::ScrobbleRequestFinished(QNetworkReply *reply, ScrobblerCacheItemPtrList cache_items) {
 
   if (!replies_.contains(reply)) return;
   replies_.removeAll(reply);
@@ -611,34 +538,17 @@ void ScrobblingAPI20::ScrobbleRequestFinished(QNetworkReply *reply, const QList<
 
   submitted_ = false;
 
-  QByteArray data = GetReplyData(reply);
-  if (data.isEmpty()) {
-    cache_->ClearSent(list);
+  QJsonObject json_obj;
+  QString error_message;
+  if (GetJsonObject(reply, json_obj, error_message) != ReplyResult::Success) {
+    Error(error_message);
+    cache_->ClearSent(cache_items);
     submit_error_ = true;
     StartSubmit();
     return;
   }
 
-  QJsonObject json_obj = ExtractJsonObj(data);
-  if (json_obj.isEmpty()) {
-    cache_->ClearSent(list);
-    submit_error_ = true;
-    StartSubmit();
-    return;
-  }
-
-  if (json_obj.contains("error") && json_obj.contains("message")) {
-    int error_code = json_obj["error"].toInt();
-    QString error_message = json_obj["message"].toString();
-    QString error_reason = QString("%1 (%2)").arg(error_message).arg(error_code);
-    Error(error_reason);
-    cache_->ClearSent(list);
-    submit_error_ = true;
-    StartSubmit();
-    return;
-  }
-
-  cache_->Flush(list);
+  cache_->Flush(cache_items);
   submit_error_ = false;
 
   if (!json_obj.contains("scrobbles")) {
@@ -799,52 +709,32 @@ void ScrobblingAPI20::SendSingleScrobble(ScrobblerCacheItemPtr item) {
   }
 
   QNetworkReply *reply = CreateRequest(params);
-  QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, item]() { SingleScrobbleRequestFinished(reply, item->timestamp); });
+  QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, item]() { SingleScrobbleRequestFinished(reply, item); });
 
 }
 
-void ScrobblingAPI20::SingleScrobbleRequestFinished(QNetworkReply *reply, const quint64 timestamp) {
+void ScrobblingAPI20::SingleScrobbleRequestFinished(QNetworkReply *reply, ScrobblerCacheItemPtr cache_item) {
 
   if (!replies_.contains(reply)) return;
   replies_.removeAll(reply);
   QObject::disconnect(reply, nullptr, this, nullptr);
   reply->deleteLater();
 
-  ScrobblerCacheItemPtr item = cache_->Get(timestamp);
-  if (!item) {
-    Error(QString("Received reply for non-existing cache entry %1.").arg(timestamp));
-    return;
-  }
-
-  QByteArray data = GetReplyData(reply);
-  if (data.isEmpty()) {
-    item->sent = false;
-    return;
-  }
-
-  QJsonObject json_obj = ExtractJsonObj(data);
-  if (json_obj.isEmpty()) {
-    item->sent = false;
-    return;
-  }
-
-  if (json_obj.contains("error") && json_obj.contains("message")) {
-    int error_code = json_obj["error"].toInt();
-    QString error_message = json_obj["message"].toString();
-    QString error_reason = QString("%1 (%2)").arg(error_message).arg(error_code);
-    Error(error_reason);
-    item->sent = false;
+  QJsonObject json_obj;
+  QString error_message;
+  if (GetJsonObject(reply, json_obj, error_message) != ReplyResult::Success) {
+    Error(error_message);
+    cache_item->sent = false;
     return;
   }
 
   if (!json_obj.contains("scrobbles")) {
     Error("Json reply from server is missing scrobbles.", json_obj);
-    item->sent = false;
+    cache_item->sent = false;
     return;
   }
 
-  cache_->Remove(timestamp);
-  item = nullptr;
+  cache_->Remove(cache_item);
 
   QJsonValue value_scrobbles = json_obj["scrobbles"];
   if (!value_scrobbles.isObject()) {
@@ -934,7 +824,7 @@ void ScrobblingAPI20::Love() {
 
   if (!song_playing_.is_valid() || !song_playing_.is_metadata_good()) return;
 
-  if (!IsAuthenticated()) app_->scrobbler()->ShowConfig();
+  if (!authenticated()) settings_->ShowConfig();
 
   qLog(Debug) << name_ << "Sending love for song" << song_playing_.artist() << song_playing_.album() << song_playing_.title();
 
@@ -963,13 +853,10 @@ void ScrobblingAPI20::LoveRequestFinished(QNetworkReply *reply) {
   QObject::disconnect(reply, nullptr, this, nullptr);
   reply->deleteLater();
 
-  QByteArray data = GetReplyData(reply);
-  if (data.isEmpty()) {
-    return;
-  }
-
-  QJsonObject json_obj = ExtractJsonObj(data, true);
-  if (json_obj.isEmpty()) {
+  QJsonObject json_obj;
+  QString error_message;
+  if (GetJsonObject(reply, json_obj, error_message) != ReplyResult::Success) {
+    Error(error_message);
     return;
   }
 
@@ -1008,7 +895,10 @@ void ScrobblingAPI20::LoveRequestFinished(QNetworkReply *reply) {
 }
 
 void ScrobblingAPI20::AuthError(const QString &error) {
+
+  qLog(Error) << name_ << error;
   emit AuthenticationComplete(false, error);
+
 }
 
 void ScrobblingAPI20::Error(const QString &error, const QVariant &debug) {
@@ -1016,7 +906,7 @@ void ScrobblingAPI20::Error(const QString &error, const QVariant &debug) {
   qLog(Error) << name_ << error;
   if (debug.isValid()) qLog(Debug) << debug;
 
-  if (app_->scrobbler()->ShowErrorDialog()) {
+  if (settings_->show_error_dialog()) {
     emit ErrorMessage(tr("Scrobbler %1 error: %2").arg(name_, error));
   }
 }

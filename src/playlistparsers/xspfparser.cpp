@@ -29,6 +29,7 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
+#include "core/shared_ptr.h"
 #include "utilities/xmlutils.h"
 #include "utilities/timeconstants.h"
 #include "settings/playlistsettingspage.h"
@@ -37,8 +38,8 @@
 
 class CollectionBackendInterface;
 
-XSPFParser::XSPFParser(CollectionBackendInterface *collection, QObject *parent)
-    : XMLParser(collection, parent) {}
+XSPFParser::XSPFParser(SharedPtr<CollectionBackendInterface> collection_backend, QObject *parent)
+    : XMLParser(collection_backend, parent) {}
 
 SongList XSPFParser::Load(QIODevice *device, const QString &playlist_path, const QDir &dir, const bool collection_search) const {
 
@@ -172,13 +173,10 @@ void XSPFParser::Save(const SongList &songs, QIODevice *device, const QDir &dir,
         writer.writeTextElement("trackNum", QString::number(song.track()));
       }
 
-      QUrl cover_url = song.art_manual().isEmpty() || song.art_manual().path().isEmpty() ? song.art_automatic() : song.art_manual();
+      const QUrl cover_url = song.art_manual().isEmpty() || !song.art_manual().isValid() ? song.art_automatic() : song.art_manual();
       // Ignore images that are in our resource bundle.
-      if (!cover_url.isEmpty() && !cover_url.path().isEmpty() && cover_url.path() != Song::kManuallyUnsetCover && cover_url.path() != Song::kEmbeddedCover) {
-        if (cover_url.scheme().isEmpty()) {
-          cover_url.setScheme("file");
-        }
-        QString cover_filename = QUrl::toPercentEncoding(URLOrFilename(cover_url, dir, path_type), "/ ");
+      if (!cover_url.isEmpty() && cover_url.isValid()) {
+        const QString cover_filename = QUrl::toPercentEncoding(URLOrFilename(cover_url, dir, path_type), "/ ");
         writer.writeTextElement("image", cover_filename);
       }
     }

@@ -102,12 +102,12 @@ endif()
 option(USE_ICU "Use ICU" ON)
 
 find_package(PkgConfig REQUIRED)
-find_package(Boost REQUIRED)
-find_package(Threads)
+find_package(Threads REQUIRED)
 find_package(Backtrace)
 if(Backtrace_FOUND)
   set(HAVE_BACKTRACE ON)
 endif()
+find_package(Boost REQUIRED)
 if(USE_ICU)
   find_package(ICU COMPONENTS uc i18n REQUIRED)
   if(ICU_FOUND)
@@ -116,10 +116,12 @@ if(USE_ICU)
 else()
   find_package(Iconv)
 endif()
-find_package(GnuTLS REQUIRED)
-find_package(Protobuf REQUIRED)
-if(NOT Protobuf_PROTOC_EXECUTABLE)
-  message(FATAL_ERROR "Missing protobuf compiler.")
+find_package(Protobuf CONFIG)
+if(NOT Protobuf_FOUND)
+  find_package(Protobuf REQUIRED)
+endif()
+if(NOT TARGET protobuf::protoc)
+  message(FATAL_ERROR "Missing Protobuf compiler.")
 endif()
 if(LINUX)
   find_package(ALSA REQUIRED)
@@ -160,84 +162,52 @@ find_package(FFTW3)
 find_package(GTest)
 find_library(GMOCK_LIBRARY gmock)
 
-option(QT_VERSION_MAJOR "Qt version to use (5 or 6)")
 option(BUILD_WITH_QT5 "Build with Qt 5" OFF)
 option(BUILD_WITH_QT6 "Build with Qt 6" OFF)
 
-if(WITH_QT6)
-  set(BUILD_WITH_QT6 ON)
-endif()
-if(QT_MAJOR_VERSION)
-  set(QT_VERSION_MAJOR ${QT_MAJOR_VERSION})
+if(BUILD_WITH_QT6)
+  set(QT_VERSION_MAJOR 6)
+elseif(BUILD_WITH_QT5)
+  set(QT_VERSION_MAJOR 5)
 endif()
 
-if(QT_VERSION_MAJOR)
-  set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
+if(NOT QT_VERSION_MAJOR)
+  message(STATUS "QT_VERSION_MAJOR, BUILD_WITH_QT5 or BUILD_WITH_QT6 not set, detecting Qt version...")
+  find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
 endif()
+
+if(QT_VERSION_MAJOR EQUAL 6)
+  set(QT_MIN_VERSION 6.0)
+elseif(QT_VERSION_MAJOR EQUAL 5)
+  set(QT_MIN_VERSION 5.12)
+else()
+  message(FATAL_ERROR "Invalid QT_VERSION_MAJOR.")
+endif()
+
+set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
+
 set(QT_COMPONENTS Core Concurrent Gui Widgets Network Sql)
+set(QT_OPTIONAL_COMPONENTS LinguistTools Test)
 if(DBUS_FOUND AND NOT WIN32)
   list(APPEND QT_COMPONENTS DBus)
 endif()
-set(QT_OPTIONAL_COMPONENTS Test)
-set(QT_MIN_VERSION 5.9)
-
-if(BUILD_WITH_QT6 OR QT_VERSION_MAJOR EQUAL 6)
-  set(QT_VERSION_MAJOR 6 CACHE STRING "" FORCE)
-  set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
-elseif(BUILD_WITH_QT5 OR QT_VERSION_MAJOR EQUAL 5)
-  set(QT_VERSION_MAJOR 5 CACHE STRING "" FORCE)
-  set(BUILD_WITH_QT5 ON CACHE BOOL "" FORCE)
-else()
-  # Automatically detect Qt version.
-  find_package(QT NAMES Qt6 Qt5 COMPONENTS ${QT_COMPONENTS} REQUIRED)
-  if(QT_FOUND AND QT_VERSION_MAJOR EQUAL 6)
-    set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
-    set(QT_VERSION_MAJOR 6 CACHE STRING "" FORCE)
-  elseif(QT_FOUND AND QT_VERSION_MAJOR EQUAL 5)
-    set(BUILD_WITH_QT5 ON CACHE BOOL "" FORCE)
-    set(QT_VERSION_MAJOR 5 CACHE STRING "" FORCE)
-  else()
-    message(FATAL_ERROR "Missing Qt.")
-  endif()
+if(X11_FOUND AND QT_VERSION_MAJOR EQUAL 5)
+  list(APPEND QT_COMPONENTS X11Extras)
 endif()
 
-if(QT_VERSION_MAJOR)
-  set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
-endif()
+find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} COMPONENTS ${QT_COMPONENTS} REQUIRED OPTIONAL_COMPONENTS ${QT_OPTIONAL_COMPONENTS})
 
-if(X11_FOUND AND BUILD_WITH_QT5)
-  list(APPEND QT_OPTIONAL_COMPONENTS X11Extras)
-endif()
-
-find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} REQUIRED COMPONENTS ${QT_COMPONENTS} OPTIONAL_COMPONENTS ${QT_OPTIONAL_COMPONENTS})
-
-set(QtCore_LIBRARIES Qt${QT_VERSION_MAJOR}::Core)
-set(QtConcurrent_LIBRARIES Qt${QT_VERSION_MAJOR}::Concurrent)
-set(QtGui_LIBRARIES Qt${QT_VERSION_MAJOR}::Gui)
-set(QtWidgets_LIBRARIES Qt${QT_VERSION_MAJOR}::Widgets)
-set(QtNetwork_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
-set(QtSql_LIBRARIES Qt${QT_VERSION_MAJOR}::Sql)
-set(QT_LIBRARIES Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Concurrent Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Sql)
 if(Qt${QT_VERSION_MAJOR}DBus_FOUND)
-  set(QtDBus_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
-  list(APPEND QT_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
   get_target_property(QT_DBUSXML2CPP_EXECUTABLE Qt${QT_VERSION_MAJOR}::qdbusxml2cpp LOCATION)
 endif()
-if(BUILD_WITH_QT5 AND Qt5X11Extras_FOUND)
-  set(HAVE_X11EXTRAS ON)
-  set(QtX11Extras_LIBRARIES Qt5::X11Extras)
-  list(APPEND QT_LIBRARIES Qt5::X11Extras)
-endif()
-if(Qt${QT_VERSION_MAJOR}Test_FOUND)
-  set(QtTest_LIBRARIES Qt${QT_VERSION_MAJOR}::Test)
-endif()
-
-find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS LinguistTools CONFIG)
 if(Qt${QT_VERSION_MAJOR}LinguistTools_FOUND)
-  set(QT_LCONVERT_EXECUTABLE Qt${QT_VERSION_MAJOR}::lconvert)
+  get_target_property(QT_LCONVERT_EXECUTABLE Qt${QT_VERSION_MAJOR}::lconvert LOCATION)
+endif()
+if(Qt${QT_VERSION_MAJOR}X11Extras_FOUND)
+  set(HAVE_X11EXTRAS ON)
 endif()
 
-if(BUILD_WITH_QT5 AND Qt5Core_VERSION VERSION_LESS 5.15.0)
+if(QT_VERSION_MAJOR EQUAL 5 AND Qt5Core_VERSION VERSION_LESS 5.15.0)
   macro(qt_add_resources)
     qt5_add_resources(${ARGN})
   endmacro()
@@ -276,6 +246,24 @@ if(X11_FOUND)
   else()
     message(STATUS "Missing qpa/qplatformnativeinterface.h header.")
   endif()
+
+  # Check for QX11Application (Qt 6 compiled with XCB).
+  if(QT_VERSION_MAJOR EQUAL 6 AND Qt6Gui_VERSION VERSION_GREATER_EQUAL 6.2.0)
+    set(CMAKE_REQUIRED_FLAGS "-std=c++17")
+    set(CMAKE_REQUIRED_LIBRARIES Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)
+    check_cxx_source_compiles("
+    #include <QGuiApplication>
+    int main() {
+      (void)qApp->nativeInterface<QNativeInterface::QX11Application>();
+      return 0;
+    }
+    "
+      HAVE_QX11APPLICATION
+      )
+    unset(CMAKE_REQUIRED_FLAGS)
+    unset(CMAKE_REQUIRED_LIBRARIES)
+  endif()
+
 endif(X11_FOUND)
 
 option(USE_TAGLIB "Build with TagLib" OFF)
@@ -305,42 +293,55 @@ if(USE_TAGPARSER)
   pkg_check_modules(TAGPARSER REQUIRED tagparser)
 endif()
 
+pkg_check_modules(LIBEBUR128 IMPORTED_TARGET libebur128)
+
 if(NOT TAGLIB_FOUND AND NOT TAGPARSER_FOUND)
   message(FATAL_ERROR "You need either TagLib or TagParser!")
 endif()
 
 # SingleApplication
-add_subdirectory(3rdparty/singleapplication)
-set(SINGLEAPPLICATION_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/singleapplication/singleapplication
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/singleapplication/singlecoreapplication
-)
-set(SINGLEAPPLICATION_LIBRARIES singleapplication)
-set(SINGLECOREAPPLICATION_LIBRARIES singlecoreapplication)
+if(QT_VERSION_MAJOR EQUAL 5)
+  set(KDSINGLEAPPLICATION_NAME "KDSingleApplication")
+else()
+  set(KDSINGLEAPPLICATION_NAME "KDSingleApplication-qt${QT_VERSION_MAJOR}")
+endif()
+find_package(${KDSINGLEAPPLICATION_NAME} 1.1.0)
+if(TARGET KDAB::kdsingleapplication)
+  if(QT_VERSION_MAJOR EQUAL 5)
+    set(KDSINGLEAPPLICATION_VERSION "${KDSingleApplication_VERSION}")
+  elseif(QT_VERSION_MAJOR EQUAL 6)
+    set(KDSINGLEAPPLICATION_VERSION "${KDSingleApplication-qt6_VERSION}")
+  endif()
+  message(STATUS "Using system KDSingleApplication (Version ${KDSINGLEAPPLICATION_VERSION})")
+  set(SINGLEAPPLICATION_LIBRARIES KDAB::kdsingleapplication)
+else()
+  message(STATUS "Using 3rdparty KDSingleApplication")
+  set(HAVE_KDSINGLEAPPLICATION_OPTIONS ON)
+  add_subdirectory(3rdparty/kdsingleapplication)
+  set(SINGLEAPPLICATION_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kdsingleapplication/KDSingleApplication/src)
+  set(SINGLEAPPLICATION_LIBRARIES kdsingleapplication)
+  add_definitions(-DKDSINGLEAPPLICATION_STATIC_BUILD)
+endif()
 
 if(APPLE)
   add_subdirectory(3rdparty/SPMediaKeyTap)
   set(SPMEDIAKEYTAP_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SPMediaKeyTap)
   set(SPMEDIAKEYTAP_LIBRARIES SPMediaKeyTap)
-  add_subdirectory(3rdparty/macdeployqt)
   add_subdirectory(ext/macdeploycheck)
 endif()
 
 if(WIN32)
-  if(BUILD_WITH_QT6)
-    pkg_check_modules(QTSPARKLE qtsparkle-qt6)
-  else()
-    pkg_check_modules(QTSPARKLE qtsparkle-qt5)
-  endif()
+  pkg_check_modules(QTSPARKLE qtsparkle-qt${QT_VERSION_MAJOR})
   if(QTSPARKLE_FOUND)
     set(HAVE_QTSPARKLE ON)
   endif()
 endif()
 
-if(WIN32 AND MSVC)
+if(WIN32)
   add_subdirectory(3rdparty/getopt)
   set(GETOPT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/getopt)
   set(GETOPT_LIBRARIES getopt)
+  add_definitions(-DSTATIC_GETOPT -D_UNICODE)
 endif()
 
 if(WIN32 AND NOT MSVC)
@@ -364,6 +365,7 @@ optional_component(LIBPULSE ON "PulseAudio integration"
 
 optional_component(DBUS ON "D-Bus support"
   DEPENDS "D-Bus" DBUS_FOUND
+  DEPENDS "Qt D-Bus" Qt${QT_VERSION_MAJOR}DBus_FOUND
 )
 
 optional_component(GSTREAMER ON "Engine: GStreamer backend"
@@ -389,7 +391,7 @@ optional_component(MUSICBRAINZ ON "MusicBrainz integration"
   DEPENDS "gstreamer" HAVE_GSTREAMER
 )
 
-if(X11_FOUND OR HAVE_DBUS OR APPLE OR WIN32)
+if(X11_FOUND OR (HAVE_DBUS AND Qt${QT_VERSION_MAJOR}DBus_FOUND) OR APPLE OR WIN32)
   set(HAVE_GLOBALSHORTCUTS_SUPPORT ON)
 endif()
 
@@ -397,17 +399,13 @@ optional_component(GLOBALSHORTCUTS ON "Global shortcuts"
   DEPENDS "D-Bus, X11, Windows or macOS" HAVE_GLOBALSHORTCUTS_SUPPORT
 )
 
-if(BUILD_WITH_QT6 AND (Qt6Core_VERSION VERSION_EQUAL 6.2.0 OR Qt6Core_VERSION VERSION_GREATER 6.2.0))
-  optional_component(X11_GLOBALSHORTCUTS ON "X11 global shortcuts" DEPENDS "X11" X11_FOUND)
-else()
-  if(HAVE_X11EXTRAS OR HAVE_QPA_QPLATFORMNATIVEINTERFACE_H)
-    set(HAVE_X11EXTRAS_OR_QPA_QPLATFORMNATIVEINTERFACE_H ON)
-  endif()
-  optional_component(X11_GLOBALSHORTCUTS ON "X11 global shortcuts"
-    DEPENDS "X11" X11_FOUND
-    DEPENDS "Qt >= 6.2, X11Extras or qpa/qplatformnativeinterface.h header" HAVE_X11EXTRAS_OR_QPA_QPLATFORMNATIVEINTERFACE_H
-  )
+if(HAVE_QX11APPLICATION OR HAVE_X11EXTRAS OR HAVE_QPA_QPLATFORMNATIVEINTERFACE_H)
+  set(X11_GLOBALSHORTCUTS_REQUIREMENT_FOUND ON)
 endif()
+optional_component(X11_GLOBALSHORTCUTS ON "X11 global shortcuts"
+  DEPENDS "X11" X11_FOUND
+  DEPENDS "QX11Application, X11Extras or qpa/qplatformnativeinterface.h header" X11_GLOBALSHORTCUTS_REQUIREMENT_FOUND
+)
 
 optional_component(AUDIOCD ON "Devices: Audio CD support"
   DEPENDS "libcdio" LIBCDIO_FOUND
@@ -415,7 +413,8 @@ optional_component(AUDIOCD ON "Devices: Audio CD support"
 )
 
 optional_component(UDISKS2 ON "Devices: UDisks2 backend"
-  DEPENDS "D-Bus support" DBUS_FOUND
+  DEPENDS "D-Bus" DBUS_FOUND
+  DEPENDS "Qt D-Bus" Qt${QT_VERSION_MAJOR}DBus_FOUND
 )
 
 optional_component(GIO ON "Devices: GIO device backend"
@@ -425,7 +424,7 @@ optional_component(GIO ON "Devices: GIO device backend"
 
 optional_component(GIO_UNIX ON "Devices: GIO device backend (Unix support)"
   DEPENDS "libgio-unix" GIO_UNIX_FOUND
-  DEPENDS "Unix" "UNIX"
+  DEPENDS "Unix or Windows" "NOT APPLE"
 )
 
 optional_component(LIBGPOD ON "Devices: iPod classic support"
@@ -437,17 +436,10 @@ optional_component(LIBMTP ON "Devices: MTP support"
   DEPENDS "libmtp" LIBMTP_FOUND
 )
 
-if(BUILD_WITH_QT6)
-  optional_component(TRANSLATIONS ON "Translations"
-    DEPENDS "gettext" GETTEXT_FOUND
-    DEPENDS "Qt6LinguistTools" Qt6LinguistTools_FOUND
-  )
-else()
-  optional_component(TRANSLATIONS ON "Translations"
-    DEPENDS "gettext" GETTEXT_FOUND
-    DEPENDS "Qt5LinguistTools" Qt5LinguistTools_FOUND
-  )
-endif()
+optional_component(TRANSLATIONS ON "Translations"
+  DEPENDS "gettext" GETTEXT_FOUND
+  DEPENDS "Qt LinguistTools" Qt${QT_VERSION_MAJOR}LinguistTools_FOUND
+)
 
 option(INSTALL_TRANSLATIONS "Install translations" OFF)
 
@@ -460,25 +452,22 @@ optional_component(MOODBAR ON "Moodbar"
   DEPENDS "gstreamer" HAVE_GSTREAMER
 )
 
-if(APPLE OR WIN32)
-  option(USE_BUNDLE "Bundle dependencies" ON)
-else()
-  option(USE_BUNDLE "Bundle dependencies" OFF)
-endif()
+optional_component(EBUR128 ON "EBU R 128 loudness normalization"
+  DEPENDS "libebur128" LIBEBUR128_FOUND
+  DEPENDS "gstreamer" HAVE_GSTREAMER
+)
 
-if(USE_BUNDLE AND NOT USE_BUNDLE_DIR)
-  if(LINUX)
-    set(USE_BUNDLE_DIR "../plugins")
-  endif()
-  if(APPLE)
-    set(USE_BUNDLE_DIR "../PlugIns")
-  endif()
+if(APPLE OR WIN32)
+  set(USE_BUNDLE_DEFAULT ON)
+else()
+  set(USE_BUNDLE_DEFAULT OFF)
 endif()
+option(USE_BUNDLE "Bundle dependencies" ${USE_BUNDLE_DEFAULT})
 
 if(NOT CMAKE_CROSSCOMPILING)
   # Check that we have Qt with sqlite driver
   set(CMAKE_REQUIRED_FLAGS "-std=c++17")
-  set(CMAKE_REQUIRED_LIBRARIES ${QtCore_LIBRARIES} ${QtSql_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Sql)
   check_cxx_source_runs("
     #include <QSqlDatabase>
     #include <QSqlQuery>
@@ -510,6 +499,8 @@ if(NOT CMAKE_CROSSCOMPILING)
       SQLITE_FTS5_TEST
     )
   endif()
+  unset(CMAKE_REQUIRED_FLAGS)
+  unset(CMAKE_REQUIRED_LIBRARIES)
 endif()
 
 # Set up definitions
@@ -542,7 +533,7 @@ if(HAVE_MOODBAR)
   add_subdirectory(ext/gstmoodbar)
 endif()
 
-if(GTest_FOUND AND GMOCK_LIBRARY AND QtTest_LIBRARIES)
+if(GTest_FOUND AND GMOCK_LIBRARY AND Qt${QT_VERSION_MAJOR}Test_FOUND)
   add_subdirectory(tests)
 endif()
 

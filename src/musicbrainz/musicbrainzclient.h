@@ -33,10 +33,12 @@
 #include <QString>
 #include <QStringList>
 
-class QNetworkAccessManager;
+#include "core/shared_ptr.h"
+
 class QNetworkReply;
 class QTimer;
 class QXmlStreamReader;
+class NetworkAccessManager;
 class NetworkTimeouts;
 
 class MusicBrainzClient : public QObject {
@@ -50,7 +52,7 @@ class MusicBrainzClient : public QObject {
  public:
   // The second argument allows for specifying a custom network access manager.
   // It is used in tests. The ownership of network is not transferred.
-  explicit MusicBrainzClient(QObject *parent = nullptr, QNetworkAccessManager *network = nullptr);
+  explicit MusicBrainzClient(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~MusicBrainzClient() override;
 
   struct Result {
@@ -101,9 +103,9 @@ class MusicBrainzClient : public QObject {
 
  signals:
   // Finished signal emitted when fechting songs tags
-  void Finished(int id, MusicBrainzClient::ResultList result, QString error = QString());
+  void Finished(const int id, const MusicBrainzClient::ResultList &result, const QString &error = QString());
   // Finished signal emitted when fechting album's songs tags using DiscId
-  void DiscIdFinished(QString artist, QString album, MusicBrainzClient::ResultList result, QString error = QString());
+  void DiscIdFinished(const QString &artist, const QString &album, const MusicBrainzClient::ResultList &result, const QString &error = QString());
 
  private slots:
   void FlushRequests();
@@ -208,7 +210,7 @@ class MusicBrainzClient : public QObject {
   static const int kDefaultTimeout;
   static const int kMaxRequestPerTrack;
 
-  QNetworkAccessManager *network_;
+  SharedPtr<NetworkAccessManager> network_;
   NetworkTimeouts *timeouts_;
   QMultiMap<int, Request> requests_pending_;
   QMultiMap<int, QNetworkReply*> requests_;

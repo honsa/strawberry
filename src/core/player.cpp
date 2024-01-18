@@ -38,12 +38,14 @@
 #include "core/logging.h"
 #include "utilities/timeconstants.h"
 
+#include "scoped_ptr.h"
+#include "shared_ptr.h"
 #include "song.h"
 #include "urlhandler.h"
 #include "application.h"
 
 #include "engine/enginebase.h"
-#include "engine/enginetype.h"
+#include "engine/enginemetadata.h"
 
 #ifdef HAVE_GSTREAMER
 #  include "engine/gstengine.h"
@@ -64,9 +66,8 @@
 #include "settings/backendsettingspage.h"
 #include "settings/behavioursettingspage.h"
 #include "settings/playlistsettingspage.h"
-#include "internet/internetservices.h"
-#include "internet/internetservice.h"
-#include "scrobbler/audioscrobbler.h"
+
+using std::make_shared;
 
 const char *Player::kSettingsGroup = "Player";
 
@@ -79,9 +80,9 @@ Player::Player(Application *app, QObject *parent)
 #endif
       analyzer_(nullptr),
       equalizer_(nullptr),
-      stream_change_type_(Engine::TrackChangeType::First),
+      stream_change_type_(EngineBase::TrackChangeType::First),
       autoscroll_(Playlist::AutoScroll::Maybe),
-      last_state_(Engine::State::Empty),
+      last_state_(EngineBase::State::Empty),
       nb_errors_received_(0),
       volume_(100),
       volume_before_mute_(100),
@@ -94,40 +95,40 @@ Player::Player(Application *app, QObject *parent)
 
   QSettings s;
   s.beginGroup(BackendSettingsPage::kSettingsGroup);
-  Engine::EngineType enginetype = Engine::EngineTypeFromName(s.value("engine", EngineName(Engine::EngineType::GStreamer)).toString().toLower());
+  EngineBase::Type enginetype = EngineBase::TypeFromName(s.value("engine", EngineBase::Name(EngineBase::Type::GStreamer)).toString().toLower());
   s.endGroup();
 
   CreateEngine(enginetype);
 
 }
 
-Engine::EngineType Player::CreateEngine(Engine::EngineType enginetype) {
+EngineBase::Type Player::CreateEngine(EngineBase::Type enginetype) {
 
-  Engine::EngineType use_enginetype(Engine::EngineType::None);
+  EngineBase::Type use_enginetype = EngineBase::Type::None;
 
-  for (int i = 0; use_enginetype == Engine::EngineType::None; i++) {
+  for (int i = 0; use_enginetype == EngineBase::Type::None; i++) {
     switch (enginetype) {
-      case Engine::EngineType::None:
+      case EngineBase::Type::None:
 #ifdef HAVE_GSTREAMER
-      case Engine::EngineType::GStreamer:{
-        use_enginetype=Engine::EngineType::GStreamer;
-        std::unique_ptr<GstEngine> gst_engine(new GstEngine(app_->task_manager()));
+      case EngineBase::Type::GStreamer:{
+        use_enginetype=EngineBase::Type::GStreamer;
+        ScopedPtr<GstEngine> gst_engine(new GstEngine(app_->task_manager()));
         gst_engine->SetStartup(gst_startup_);
         engine_.reset(gst_engine.release());
         break;
       }
 #endif
 #ifdef HAVE_VLC
-      case Engine::EngineType::VLC:
-        use_enginetype = Engine::EngineType::VLC;
-        engine_ = std::make_shared<VLCEngine>(app_->task_manager());
+      case EngineBase::Type::VLC:
+        use_enginetype = EngineBase::Type::VLC;
+        engine_ = make_shared<VLCEngine>(app_->task_manager());
         break;
 #endif
       default:
         if (i > 0) {
           qFatal("No engine available!");
         }
-        enginetype = Engine::EngineType::None;
+        enginetype = EngineBase::Type::None;
         break;
     }
   }
@@ -135,7 +136,7 @@ Engine::EngineType Player::CreateEngine(Engine::EngineType enginetype) {
   if (use_enginetype != enginetype) {  // Engine was set to something else. Reset output and device.
     QSettings s;
     s.beginGroup(BackendSettingsPage::kSettingsGroup);
-    s.setValue("engine", EngineName(use_enginetype));
+    s.setValue("engine", EngineBase::Name(use_enginetype));
     s.setValue("output", engine_->DefaultOutput());
     s.setValue("device", QVariant());
     s.endGroup();
@@ -157,7 +158,7 @@ void Player::Init() {
 
   if (!engine_) {
     s.beginGroup(BackendSettingsPage::kSettingsGroup);
-    Engine::EngineType enginetype = Engine::EngineTypeFromName(s.value("engine", EngineName(Engine::EngineType::GStreamer)).toString().toLower());
+    EngineBase::Type enginetype = EngineBase::TypeFromName(s.value("engine", EngineBase::Name(EngineBase::Type::GStreamer)).toString().toLower());
     s.endGroup();
     CreateEngine(enginetype);
   }
@@ -166,23 +167,23 @@ void Player::Init() {
     qFatal("Error initializing audio engine");
   }
 
-  analyzer_->SetEngine(engine_.get());
+  analyzer_->SetEngine(engine_);
 
-  QObject::connect(engine_.get(), &EngineBase::Error, this, &Player::Error);
-  QObject::connect(engine_.get(), &EngineBase::FatalError, this, &Player::FatalError);
-  QObject::connect(engine_.get(), &EngineBase::ValidSongRequested, this, &Player::ValidSongRequested);
-  QObject::connect(engine_.get(), &EngineBase::InvalidSongRequested, this, &Player::InvalidSongRequested);
-  QObject::connect(engine_.get(), &EngineBase::StateChanged, this, &Player::EngineStateChanged);
-  QObject::connect(engine_.get(), &EngineBase::TrackAboutToEnd, this, &Player::TrackAboutToEnd);
-  QObject::connect(engine_.get(), &EngineBase::TrackEnded, this, &Player::TrackEnded);
-  QObject::connect(engine_.get(), &EngineBase::MetaData, this, &Player::EngineMetadataReceived);
-  QObject::connect(engine_.get(), &EngineBase::VolumeChanged, this, &Player::SetVolumeFromEngine);
+  QObject::connect(&*engine_, &EngineBase::Error, this, &Player::Error);
+  QObject::connect(&*engine_, &EngineBase::FatalError, this, &Player::FatalError);
+  QObject::connect(&*engine_, &EngineBase::ValidSongRequested, this, &Player::ValidSongRequested);
+  QObject::connect(&*engine_, &EngineBase::InvalidSongRequested, this, &Player::InvalidSongRequested);
+  QObject::connect(&*engine_, &EngineBase::StateChanged, this, &Player::EngineStateChanged);
+  QObject::connect(&*engine_, &EngineBase::TrackAboutToEnd, this, &Player::TrackAboutToEnd);
+  QObject::connect(&*engine_, &EngineBase::TrackEnded, this, &Player::TrackEnded);
+  QObject::connect(&*engine_, &EngineBase::MetaData, this, &Player::EngineMetadataReceived);
+  QObject::connect(&*engine_, &EngineBase::VolumeChanged, this, &Player::SetVolumeFromEngine);
 
   // Equalizer
-  QObject::connect(equalizer_, &Equalizer::StereoBalancerEnabledChanged, app_->player()->engine(), &EngineBase::SetStereoBalancerEnabled);
-  QObject::connect(equalizer_, &Equalizer::StereoBalanceChanged, app_->player()->engine(), &EngineBase::SetStereoBalance);
-  QObject::connect(equalizer_, &Equalizer::EqualizerEnabledChanged, app_->player()->engine(), &EngineBase::SetEqualizerEnabled);
-  QObject::connect(equalizer_, &Equalizer::EqualizerParametersChanged, app_->player()->engine(), &EngineBase::SetEqualizerParameters);
+  QObject::connect(&*equalizer_, &Equalizer::StereoBalancerEnabledChanged, &*app_->player()->engine(), &EngineBase::SetStereoBalancerEnabled);
+  QObject::connect(&*equalizer_, &Equalizer::StereoBalanceChanged, &*app_->player()->engine(), &EngineBase::SetStereoBalance);
+  QObject::connect(&*equalizer_, &Equalizer::EqualizerEnabledChanged, &*app_->player()->engine(), &EngineBase::SetEqualizerEnabled);
+  QObject::connect(&*equalizer_, &Equalizer::EqualizerParametersChanged, &*app_->player()->engine(), &EngineBase::SetEqualizerParameters);
 
   engine_->SetStereoBalancerEnabled(equalizer_->is_stereo_balancer_enabled());
   engine_->SetStereoBalance(equalizer_->stereo_balance());
@@ -235,8 +236,8 @@ void Player::SaveVolume() {
 
 void Player::HandleLoadResult(const UrlHandler::LoadResult &result) {
 
-  if (loading_async_.contains(result.original_url_)) {
-    loading_async_.removeAll(result.original_url_);
+  if (loading_async_.contains(result.media_url_)) {
+    loading_async_.removeAll(result.media_url_);
   }
 
   // Might've been an async load, so check we're still on the same item
@@ -254,10 +255,10 @@ void Player::HandleLoadResult(const UrlHandler::LoadResult &result) {
   bool is_current(false);
   bool is_next(false);
 
-  if (result.original_url_ == item->Url()) {
+  if (result.media_url_ == item->Url()) {
     is_current = true;
   }
-  else if (has_next_row && next_item->Url() == result.original_url_) {
+  else if (has_next_row && next_item->Url() == result.media_url_) {
     is_next = true;
   }
   else {
@@ -267,19 +268,19 @@ void Player::HandleLoadResult(const UrlHandler::LoadResult &result) {
   switch (result.type_) {
     case UrlHandler::LoadResult::Type::Error:
       if (is_current) {
-        InvalidSongRequested(result.original_url_);
+        InvalidSongRequested(result.media_url_);
       }
       emit Error(result.error_);
       break;
 
     case UrlHandler::LoadResult::Type::NoMoreTracks:
-      qLog(Debug) << "URL handler for" << result.original_url_ << "said no more tracks" << is_current;
+      qLog(Debug) << "URL handler for" << result.media_url_ << "said no more tracks" << is_current;
       if (is_current) NextItem(stream_change_type_, autoscroll_);
       break;
 
     case UrlHandler::LoadResult::Type::TrackAvailable: {
 
-      qLog(Debug) << "URL handler for" << result.original_url_ << "returned" << result.stream_url_;
+      qLog(Debug) << "URL handler for" << result.media_url_ << "returned" << result.stream_url_;
 
       Song song;
       if (is_current) song = item->Metadata();
@@ -341,31 +342,31 @@ void Player::HandleLoadResult(const UrlHandler::LoadResult &result) {
 
       if (is_current) {
         qLog(Debug) << "Playing song" << item->Metadata().title() << result.stream_url_ << "position" << play_offset_nanosec_;
-        engine_->Play(result.stream_url_, result.original_url_, stream_change_type_, song.has_cue(), song.beginning_nanosec(), song.end_nanosec(), play_offset_nanosec_);
+        engine_->Play(result.media_url_, result.stream_url_, stream_change_type_, song.has_cue(), song.beginning_nanosec(), song.end_nanosec(), play_offset_nanosec_, song.ebur128_integrated_loudness_lufs());
         current_item_ = item;
         play_offset_nanosec_ = 0;
       }
       else if (is_next && !item->Metadata().is_module_music()) {
         qLog(Debug) << "Preloading next song" << next_item->Metadata().title() << result.stream_url_;
-        engine_->StartPreloading(result.stream_url_, next_item->Url(), song.has_cue(), song.beginning_nanosec(), song.end_nanosec());
+        engine_->StartPreloading(next_item->Url(), result.stream_url_, song.has_cue(), song.beginning_nanosec(), song.end_nanosec());
       }
 
       break;
     }
 
     case UrlHandler::LoadResult::Type::WillLoadAsynchronously:
-      qLog(Debug) << "URL handler for" << result.original_url_ << "is loading asynchronously";
+      qLog(Debug) << "URL handler for" << result.media_url_ << "is loading asynchronously";
 
       // We'll get called again later with either NoMoreTracks or TrackAvailable
-      loading_async_ << result.original_url_;
+      loading_async_ << result.media_url_;
       break;
   }
 
 }
 
-void Player::Next() { NextInternal(Engine::TrackChangeType::Manual, Playlist::AutoScroll::Always); }
+void Player::Next() { NextInternal(EngineBase::TrackChangeType::Manual, Playlist::AutoScroll::Always); }
 
-void Player::NextInternal(const Engine::TrackChangeFlags change, const Playlist::AutoScroll autoscroll) {
+void Player::NextInternal(const EngineBase::TrackChangeFlags change, const Playlist::AutoScroll autoscroll) {
 
   pause_time_ = QDateTime();
   play_offset_nanosec_ = 0;
@@ -376,7 +377,7 @@ void Player::NextInternal(const Engine::TrackChangeFlags change, const Playlist:
 
 }
 
-void Player::NextItem(const Engine::TrackChangeFlags change, const Playlist::AutoScroll autoscroll) {
+void Player::NextItem(const EngineBase::TrackChangeFlags change, const Playlist::AutoScroll autoscroll) {
 
   pause_time_ = QDateTime();
   play_offset_nanosec_ = 0;
@@ -384,7 +385,7 @@ void Player::NextItem(const Engine::TrackChangeFlags change, const Playlist::Aut
   Playlist *active_playlist = app_->playlist_manager()->active();
 
   // If we received too many errors in auto change, with repeat enabled, we stop
-  if (change == Engine::TrackChangeType::Auto) {
+  if (change & EngineBase::TrackChangeType::Auto) {
     const PlaylistSequence::RepeatMode repeat_mode = active_playlist->sequence()->repeat_mode();
     if (repeat_mode != PlaylistSequence::RepeatMode::Off) {
       if ((repeat_mode == PlaylistSequence::RepeatMode::Track && nb_errors_received_ >= 3) || (nb_errors_received_ >= app_->playlist_manager()->active()->filter()->rowCount())) {
@@ -396,8 +397,13 @@ void Player::NextItem(const Engine::TrackChangeFlags change, const Playlist::Aut
     }
   }
 
+  if (nb_errors_received_ >= 100) {
+    Stop();
+    return;
+  }
+
   // Manual track changes override "Repeat track"
-  const bool ignore_repeat_track = change & Engine::TrackChangeType::Manual;
+  const bool ignore_repeat_track = change & EngineBase::TrackChangeType::Manual;
 
   int i = active_playlist->next_row(ignore_repeat_track);
   if (i == -1) {
@@ -413,10 +419,10 @@ void Player::NextItem(const Engine::TrackChangeFlags change, const Playlist::Aut
 }
 
 void Player::PlayPlaylist(const QString &playlist_name) {
-  PlayPlaylistInternal(Engine::TrackChangeType::Manual, Playlist::AutoScroll::Always, playlist_name);
+  PlayPlaylistInternal(EngineBase::TrackChangeType::Manual, Playlist::AutoScroll::Always, playlist_name);
 }
 
-void Player::PlayPlaylistInternal(const Engine::TrackChangeFlags change, const Playlist::AutoScroll autoscroll, const QString &playlist_name) {
+void Player::PlayPlaylistInternal(const EngineBase::TrackChangeFlags change, const Playlist::AutoScroll autoscroll, const QString &playlist_name) {
 
   pause_time_ = QDateTime();
   play_offset_nanosec_ = 0;
@@ -474,19 +480,19 @@ void Player::TrackEnded() {
 
   if (HandleStopAfter(Playlist::AutoScroll::Maybe)) return;
 
-  NextInternal(Engine::TrackChangeType::Auto, Playlist::AutoScroll::Maybe);
+  NextInternal(EngineBase::TrackChangeType::Auto, Playlist::AutoScroll::Maybe);
 
 }
 
 void Player::PlayPause(const quint64 offset_nanosec, const Playlist::AutoScroll autoscroll) {
 
   switch (engine_->state()) {
-    case Engine::State::Paused:
+    case EngineBase::State::Paused:
       UnPause();
       emit Resumed();
       break;
 
-    case Engine::State::Playing: {
+    case EngineBase::State::Playing: {
       if (current_item_->options() & PlaylistItem::Option::PauseDisabled) {
         Stop();
       }
@@ -498,9 +504,9 @@ void Player::PlayPause(const quint64 offset_nanosec, const Playlist::AutoScroll 
       break;
     }
 
-    case Engine::State::Empty:
-    case Engine::State::Error:
-    case Engine::State::Idle: {
+    case EngineBase::State::Empty:
+    case EngineBase::State::Error:
+    case EngineBase::State::Idle: {
       pause_time_ = QDateTime();
       play_offset_nanosec_ = offset_nanosec;
       app_->playlist_manager()->SetActivePlaylist(app_->playlist_manager()->current_id());
@@ -508,7 +514,7 @@ void Player::PlayPause(const quint64 offset_nanosec, const Playlist::AutoScroll 
       int i = app_->playlist_manager()->active()->current_row();
       if (i == -1) i = app_->playlist_manager()->active()->last_played_row();
       if (i == -1) i = 0;
-      PlayAt(i, offset_nanosec, Engine::TrackChangeType::First, autoscroll, true);
+      PlayAt(i, offset_nanosec, EngineBase::TrackChangeType::First, autoscroll, true);
       break;
     }
   }
@@ -572,14 +578,14 @@ bool Player::PreviousWouldRestartTrack() const {
 
 }
 
-void Player::Previous() { PreviousItem(Engine::TrackChangeType::Manual); }
+void Player::Previous() { PreviousItem(EngineBase::TrackChangeType::Manual); }
 
-void Player::PreviousItem(const Engine::TrackChangeFlags change) {
+void Player::PreviousItem(const EngineBase::TrackChangeFlags change) {
 
   pause_time_ = QDateTime();
   play_offset_nanosec_ = 0;
 
-  const bool ignore_repeat_track = change & Engine::TrackChangeType::Manual;
+  const bool ignore_repeat_track = change & EngineBase::TrackChangeType::Manual;
 
   if (menu_previousmode_ == BehaviourSettingsPage::PreviousBehaviour::Restart) {
     // Check if it has been over two seconds since previous button was pressed
@@ -604,9 +610,9 @@ void Player::PreviousItem(const Engine::TrackChangeFlags change) {
 
 }
 
-void Player::EngineStateChanged(const Engine::State state) {
+void Player::EngineStateChanged(const EngineBase::State state) {
 
-  if (state == Engine::State::Error) {
+  if (state == EngineBase::State::Error) {
     nb_errors_received_++;
   }
   else {
@@ -614,21 +620,21 @@ void Player::EngineStateChanged(const Engine::State state) {
   }
 
   switch (state) {
-    case Engine::State::Paused:
+    case EngineBase::State::Paused:
       pause_time_ = QDateTime::currentDateTime();
       play_offset_nanosec_ = engine_->position_nanosec();
       emit Paused();
       break;
-    case Engine::State::Playing:
+    case EngineBase::State::Playing:
       pause_time_ = QDateTime();
       play_offset_nanosec_ = 0;
       emit Playing();
       break;
-    case Engine::State::Error:
+    case EngineBase::State::Error:
       emit Error();
       [[fallthrough]];
-    case Engine::State::Empty:
-    case Engine::State::Idle:
+    case EngineBase::State::Empty:
+    case EngineBase::State::Idle:
       pause_time_ = QDateTime();
       play_offset_nanosec_ = 0;
       emit Stopped();
@@ -695,17 +701,17 @@ void Player::VolumeDown() {
 
 }
 
-void Player::PlayAt(const int index, const quint64 offset_nanosec, Engine::TrackChangeFlags change, const Playlist::AutoScroll autoscroll, const bool reshuffle, const bool force_inform) {
+void Player::PlayAt(const int index, const quint64 offset_nanosec, EngineBase::TrackChangeFlags change, const Playlist::AutoScroll autoscroll, const bool reshuffle, const bool force_inform) {
 
   pause_time_ = QDateTime();
   play_offset_nanosec_ = offset_nanosec;
 
-  if (current_item_ && change == Engine::TrackChangeType::Manual && engine_->position_nanosec() != engine_->length_nanosec()) {
+  if (current_item_ && change & EngineBase::TrackChangeType::Manual && engine_->position_nanosec() != engine_->length_nanosec()) {
     emit TrackSkipped(current_item_);
   }
 
   if (current_item_ && app_->playlist_manager()->active()->has_item_at(index) && current_item_->Metadata().IsOnSameAlbum(app_->playlist_manager()->active()->item_at(index)->Metadata())) {
-    change |= Engine::TrackChangeType::SameAlbum;
+    change |= EngineBase::TrackChangeType::SameAlbum;
   }
 
   if (reshuffle) app_->playlist_manager()->active()->ReshuffleIndices();
@@ -731,7 +737,7 @@ void Player::PlayAt(const int index, const quint64 offset_nanosec, Engine::Track
   }
   else {
     qLog(Debug) << "Playing song" << current_item_->Metadata().title() << url << "position" << offset_nanosec;
-    engine_->Play(url, current_item_->Url(), change, current_item_->Metadata().has_cue(), current_item_->effective_beginning_nanosec(), current_item_->effective_end_nanosec(), offset_nanosec);
+    engine_->Play(current_item_->Url(), url, change, current_item_->Metadata().has_cue(), current_item_->effective_beginning_nanosec(), current_item_->effective_end_nanosec(), offset_nanosec, current_item_->effective_ebur128_integrated_loudness_lufs());
   }
 
 }
@@ -774,25 +780,25 @@ void Player::SeekBackward() {
   SeekTo(engine()->position_nanosec() / kNsecPerSec - seek_step_sec_);
 }
 
-void Player::EngineMetadataReceived(const Engine::SimpleMetaBundle &bundle) {
+void Player::EngineMetadataReceived(const EngineMetadata &engine_metadata) {
 
-  if (bundle.type == Engine::SimpleMetaBundle::Type::Any || bundle.type == Engine::SimpleMetaBundle::Type::Current) {
+  if (engine_metadata.type == EngineMetadata::Type::Any || engine_metadata.type == EngineMetadata::Type::Current) {
     PlaylistItemPtr item = app_->playlist_manager()->active()->current_item();
-    if (item && bundle.url == item->Url()) {
+    if (item && engine_metadata.media_url == item->Url()) {
       Song song = item->Metadata();
-      bool minor = song.MergeFromSimpleMetaBundle(bundle);
+      bool minor = song.MergeFromEngineMetadata(engine_metadata);
       app_->playlist_manager()->active()->SetStreamMetadata(item->Url(), song, minor);
       return;
     }
   }
 
-  if (bundle.type == Engine::SimpleMetaBundle::Type::Any || bundle.type == Engine::SimpleMetaBundle::Type::Next) {
+  if (engine_metadata.type == EngineMetadata::Type::Any || engine_metadata.type == EngineMetadata::Type::Next) {
     int next_row = app_->playlist_manager()->active()->next_row();
     if (next_row != -1) {
       PlaylistItemPtr next_item = app_->playlist_manager()->active()->item_at(next_row);
-      if (bundle.url == next_item->Url()) {
+      if (engine_metadata.media_url == next_item->Url()) {
         Song song = next_item->Metadata();
-        song.MergeFromSimpleMetaBundle(bundle);
+        song.MergeFromEngineMetadata(engine_metadata);
         next_item->SetTemporaryMetadata(song);
         app_->playlist_manager()->active()->ItemChanged(next_row);
       }
@@ -828,10 +834,10 @@ void Player::Pause() { engine_->Pause(); }
 void Player::Play(const quint64 offset_nanosec) {
 
   switch (GetState()) {
-    case Engine::State::Playing:
+    case EngineBase::State::Playing:
       SeekTo(offset_nanosec);
       break;
-    case Engine::State::Paused:
+    case EngineBase::State::Paused:
       UnPause();
       break;
     default:
@@ -860,6 +866,9 @@ void Player::TrackAboutToEnd() {
 
   if (engine_->is_autocrossfade_enabled()) {
     // Crossfade is on, so just start playing the next track.  The current one will fade out, and the new one will fade in
+
+    // If the decoding failed, current_item_ will be null
+    if (!current_item_) return;
 
     // But, if there's no next track, and we don't want to fade out, then do nothing and just let the track finish to completion.
     if (!engine_->is_fadeout_enabled() && !has_next_row) return;
@@ -892,7 +901,7 @@ void Player::TrackAboutToEnd() {
         loading_async_ << url;
         return;
       case UrlHandler::LoadResult::Type::TrackAvailable:
-        qLog(Debug) << "URL handler for" << result.original_url_ << "returned" << result.stream_url_;
+        qLog(Debug) << "URL handler for" << result.media_url_ << "returned" << result.stream_url_;
         url = result.stream_url_;
         Song song = next_item->Metadata();
         song.set_stream_url(url);
@@ -907,7 +916,7 @@ void Player::TrackAboutToEnd() {
     return;
   }
 
-  engine_->StartPreloading(url, next_item->Url(), next_item->Metadata().has_cue(), next_item->effective_beginning_nanosec(), next_item->effective_end_nanosec());
+  engine_->StartPreloading(next_item->Url(), url, next_item->Metadata().has_cue(), next_item->effective_beginning_nanosec(), next_item->effective_end_nanosec());
 
 }
 
@@ -929,7 +938,7 @@ void Player::InvalidSongRequested(const QUrl &url) {
     return;
   }
 
-  NextItem(Engine::TrackChangeType::Auto, Playlist::AutoScroll::Maybe);
+  NextItem(EngineBase::TrackChangeType::Auto, Playlist::AutoScroll::Maybe);
 
 }
 

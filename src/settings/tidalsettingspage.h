@@ -25,6 +25,7 @@
 #include <QObject>
 #include <QString>
 
+#include "core/shared_ptr.h"
 #include "settings/settingspage.h"
 
 class QEvent;
@@ -53,8 +54,8 @@ class TidalSettingsPage : public SettingsPage {
   bool eventFilter(QObject *object, QEvent *event) override;
 
  signals:
-  void Authorize(QString client_id);
-  void Login(QString api_token, QString username, QString password);
+  void Authorize(const QString &client_id);
+  void Login(const QString &api_token, const QString &username, const QString &password);
 
  private slots:
   void OAuthClicked(const bool enabled);
@@ -65,7 +66,7 @@ class TidalSettingsPage : public SettingsPage {
 
  private:
   Ui_TidalSettingsPage *ui_;
-  TidalService *service_;
+  SharedPtr<TidalService> service_;
 };
 
 #endif  // TIDALSETTINGSPAGE_H

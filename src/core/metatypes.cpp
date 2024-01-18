@@ -47,9 +47,8 @@
 
 #include "song.h"
 
-#include "engine/engine_fwd.h"
 #include "engine/enginebase.h"
-#include "engine/enginetype.h"
+#include "engine/enginemetadata.h"
 #ifdef HAVE_GSTREAMER
 #  include "engine/gstenginepipeline.h"
 #endif
@@ -89,6 +88,7 @@ void RegisterMetaTypes() {
   qRegisterMetaType<QVector<int>>("QVector<int>");
   qRegisterMetaType<QList<QUrl>>("QList<QUrl>");
   qRegisterMetaType<QFileInfo>("QFileInfo");
+  qRegisterMetaType<QAbstractSocket::SocketState>("QAbstractSocket::SocketState");
   qRegisterMetaType<QNetworkReply*>("QNetworkReply*");
   qRegisterMetaType<QNetworkReply**>("QNetworkReply**");
   qRegisterMetaType<QItemSelection>("QItemSelection");
@@ -103,14 +103,15 @@ void RegisterMetaTypes() {
   qRegisterMetaType<SongMap>("SongMap");
   qRegisterMetaType<Song::Source>("Song::Source");
   qRegisterMetaType<Song::FileType>("Song::FileType");
-  qRegisterMetaType<Engine::EngineType>("Engine::EngineType");
-  qRegisterMetaType<Engine::SimpleMetaBundle>("Engine::SimpleMetaBundle");
-  qRegisterMetaType<Engine::State>("Engine::State");
-  qRegisterMetaType<Engine::TrackChangeFlags>("Engine::TrackChangeFlags");
+  qRegisterMetaType<EngineBase::Type>("EngineBase::Type");
+  qRegisterMetaType<EngineBase::State>("EngineBase::State");
+  qRegisterMetaType<EngineBase::TrackChangeFlags>("EngineBase::TrackChangeFlags");
   qRegisterMetaType<EngineBase::OutputDetails>("EngineBase::OutputDetails");
+  qRegisterMetaType<EngineMetadata>("EngineMetadata");
 #ifdef HAVE_GSTREAMER
   qRegisterMetaType<GstBuffer*>("GstBuffer*");
   qRegisterMetaType<GstElement*>("GstElement*");
+  qRegisterMetaType<GstState>("GstState");
   qRegisterMetaType<GstEnginePipeline*>("GstEnginePipeline*");
 #endif
   qRegisterMetaType<CollectionDirectory>("CollectionDirectory");
@@ -159,8 +160,11 @@ void RegisterMetaTypes() {
   qRegisterMetaType<PlaylistSettingsPage::PathType>("PlaylistSettingsPage::PathType");
 
   qRegisterMetaType<PlaylistGeneratorPtr>("PlaylistGeneratorPtr");
+  qRegisterMetaType<SmartPlaylistSearchTerm::Field>("SmartPlaylistSearchTerm::Field");
   qRegisterMetaType<SmartPlaylistSearchTerm::Operator>("SmartPlaylistSearchTerm::Operator");
   qRegisterMetaType<SmartPlaylistSearchTerm::OperatorList>("SmartPlaylistSearchTerm::OperatorList");
+  qRegisterMetaType<SmartPlaylistSearchTerm::Type>("SmartPlaylistSearchTerm::Type");
+  qRegisterMetaType<SmartPlaylistSearchTerm::DateType>("SmartPlaylistSearchTerm::DateType");
   qRegisterMetaType<SmartPlaylistsItem::Type>("SmartPlaylistsItem::Type");
 
 }

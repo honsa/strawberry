@@ -33,18 +33,17 @@
 #include "utilities/envutils.h"
 #include "utilities/timeconstants.h"
 #include "core/networkproxyfactory.h"
-#include "engine_fwd.h"
 #include "enginebase.h"
 #include "settings/backendsettingspage.h"
 #include "settings/networkproxysettingspage.h"
 
-Engine::Base::Base(const EngineType type, QObject *parent)
+EngineBase::EngineBase(QObject *parent)
     : QObject(parent),
-      type_(type),
       volume_control_(true),
       volume_(100),
       beginning_nanosec_(0),
       end_nanosec_(0),
+      ebur128_loudness_normalizing_gain_db_(0.0),
       scope_(kScopeSize),
       buffering_(false),
       equalizer_enabled_(false),
@@ -53,6 +52,8 @@ Engine::Base::Base(const EngineType type, QObject *parent)
       rg_preamp_(0.0),
       rg_fallbackgain_(0.0),
       rg_compression_(true),
+      ebur128_loudness_normalization_(false),
+      ebur128_target_level_lufs_(-23.0),
       buffer_duration_nanosec_(BackendSettingsPage::kDefaultBufferDuration * kNsecPerMsec),
       buffer_low_watermark_(BackendSettingsPage::kDefaultBufferLowWatermark),
       buffer_high_watermark_(BackendSettingsPage::kDefaultBufferHighWatermark),
@@ -73,16 +74,59 @@ Engine::Base::Base(const EngineType type, QObject *parent)
       strict_ssl_enabled_(false),
       about_to_end_emitted_(false) {}
 
-Engine::Base::~Base() = default;
+EngineBase::~EngineBase() = default;
 
-bool Engine::Base::Load(const QUrl &stream_url, const QUrl &original_url, const TrackChangeFlags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec) {
+EngineBase::Type EngineBase::TypeFromName(const QString &name) {
+
+  if (name.compare("gstreamer", Qt::CaseInsensitive) == 0) return Type::GStreamer;
+  if (name.compare("vlc", Qt::CaseInsensitive) == 0)  return Type::VLC;
+
+  return Type::None;
+
+}
+
+QString EngineBase::Name(const Type type) {
+
+  switch (type) {
+    case Type::GStreamer:  return QString("gstreamer");
+    case Type::VLC:        return QString("vlc");
+    case Type::None:
+    default:               return QString("None");
+  }
+
+}
+
+QString EngineBase::Description(const Type type) {
+
+  switch (type) {
+    case Type::GStreamer:  return QString("GStreamer");
+    case Type::VLC:        return QString("VLC");
+    case Type::None:
+    default:               return QString("None");
+  }
+
+}
+
+bool EngineBase::Load(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
 
   Q_UNUSED(force_stop_at_end);
 
+  media_url_ = media_url;
   stream_url_ = stream_url;
-  original_url_ = original_url;
   beginning_nanosec_ = beginning_nanosec;
   end_nanosec_ = end_nanosec;
+
+  ebur128_loudness_normalizing_gain_db_ = 0.0;
+  if (ebur128_loudness_normalization_ && ebur128_integrated_loudness_lufs) {
+    auto computeGain_dB = [](double source_dB, double target_dB) {
+      // Let's suppose the `source_dB` is -12 dB, while `target_dB` is -23 dB.
+      // In that case, we'd need to apply -11 dB of gain, which is computed as:
+      //   -12 dB + x dB = -23 dB --> x dB = -23 dB - (-12 dB)
+      return target_dB - source_dB;
+    };
+
+    ebur128_loudness_normalizing_gain_db_ = computeGain_dB(*ebur128_integrated_loudness_lufs, ebur128_target_level_lufs_);
+  }
 
   about_to_end_emitted_ = false;
 
@@ -90,9 +134,9 @@ bool Engine::Base::Load(const QUrl &stream_url, const QUrl &original_url, const 
 
 }
 
-bool Engine::Base::Play(const QUrl &stream_url, const QUrl &original_url, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec) {
+bool EngineBase::Play(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
 
-  if (!Load(stream_url, original_url, flags, force_stop_at_end, beginning_nanosec, end_nanosec)) {
+  if (!Load(media_url, stream_url, flags, force_stop_at_end, beginning_nanosec, end_nanosec, ebur128_integrated_loudness_lufs)) {
     return false;
   }
 
@@ -100,21 +144,21 @@ bool Engine::Base::Play(const QUrl &stream_url, const QUrl &original_url, const 
 
 }
 
-void Engine::Base::UpdateVolume(const uint volume) {
+void EngineBase::UpdateVolume(const uint volume) {
 
   volume_ = volume;
   emit VolumeChanged(volume);
 
 }
 
-void Engine::Base::SetVolume(const uint volume) {
+void EngineBase::SetVolume(const uint volume) {
 
   volume_ = volume;
   SetVolumeSW(volume);
 
 }
 
-void Engine::Base::ReloadSettings() {
+void EngineBase::ReloadSettings() {
 
   QSettings s;
 
@@ -137,6 +181,9 @@ void Engine::Base::ReloadSettings() {
   rg_preamp_ = s.value("rgpreamp", 0.0).toDouble();
   rg_fallbackgain_ = s.value("rgfallbackgain", 0.0).toDouble();
   rg_compression_ = s.value("rgcompression", true).toBool();
+
+  ebur128_loudness_normalization_ = s.value("ebur128_loudness_normalization", false).toBool();
+  ebur128_target_level_lufs_ = s.value("ebur128_target_level_lufs", -23.0).toDouble();
 
   fadeout_enabled_ = s.value("FadeoutEnabled", false).toBool();
   crossfade_enabled_ = s.value("CrossfadeEnabled", false).toBool();
@@ -190,17 +237,19 @@ void Engine::Base::ReloadSettings() {
 
 }
 
-void Engine::Base::EmitAboutToEnd() {
+void EngineBase::EmitAboutToFinish() {
 
   if (about_to_end_emitted_) {
     return;
   }
 
   about_to_end_emitted_ = true;
+
   emit TrackAboutToEnd();
+
 }
 
-bool Engine::Base::ValidOutput(const QString &output) {
+bool EngineBase::ValidOutput(const QString &output) {
 
   Q_UNUSED(output);
 

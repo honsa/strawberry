@@ -24,11 +24,12 @@
 
 #include "config.h"
 
-#include <memory>
-
 #include <QObject>
 #include <QString>
 #include <QUrl>
+
+#include "core/scoped_ptr.h"
+#include "core/shared_ptr.h"
 
 class QThread;
 class TaskManager;
@@ -39,7 +40,7 @@ class MtpLoader : public QObject {
   Q_OBJECT
 
  public:
-  explicit MtpLoader(const QUrl &url, TaskManager *task_manager, CollectionBackend *backend, QObject *parent = nullptr);
+  explicit MtpLoader(const QUrl &url, SharedPtr<TaskManager> task_manager, SharedPtr<CollectionBackend> backend, QObject *parent = nullptr);
   ~MtpLoader() override;
 
   bool Init();
@@ -49,18 +50,18 @@ class MtpLoader : public QObject {
   void LoadDatabase();
 
  signals:
-  void Error(QString message);
-  void TaskStarted(int task_id);
-  void LoadFinished(bool success, MtpConnection*);
+  void Error(const QString &message);
+  void TaskStarted(const int task_id);
+  void LoadFinished(const bool success, MtpConnection *connection);
 
  private:
   bool TryLoad();
 
  private:
   QUrl url_;
-  TaskManager *task_manager_;
-  CollectionBackend *backend_;
-  std::unique_ptr<MtpConnection> connection_;
+  SharedPtr<TaskManager> task_manager_;
+  SharedPtr<CollectionBackend> backend_;
+  ScopedPtr<MtpConnection> connection_;
   QThread *original_thread_;
   bool abort_;
 

@@ -30,6 +30,7 @@
 #include <QString>
 #include <QUrl>
 
+#include "core/shared_ptr.h"
 #include "core/musicstorage.h"
 #include "core/song.h"
 
@@ -39,12 +40,13 @@ class CollectionModel;
 class DeviceLister;
 class DeviceManager;
 
-class ConnectedDevice : public QObject, public virtual MusicStorage, public std::enable_shared_from_this<ConnectedDevice> {
+using std::enable_shared_from_this;
+
+class ConnectedDevice : public QObject, public virtual MusicStorage, public enable_shared_from_this<ConnectedDevice> {
   Q_OBJECT
 
  public:
-  explicit ConnectedDevice(const QUrl &url, DeviceLister *lister, const QString &unique_id, DeviceManager *manager, Application *app, const int database_id, const bool first_time, QObject *parent = nullptr);
-  ~ConnectedDevice() override;
+  explicit ConnectedDevice(const QUrl &url, DeviceLister *lister, const QString &unique_id, SharedPtr<DeviceManager> manager, Application *app, const int database_id, const bool first_time, QObject *parent = nullptr);
 
   Song::Source source() const override { return Song::Source::Device; }
 
@@ -75,10 +77,10 @@ class ConnectedDevice : public QObject, public virtual MusicStorage, public std:
   void BackendCloseFinished();
 
  signals:
-  void TaskStarted(int id);
-  void SongCountUpdated(int count);
-  void DeviceConnectFinished(QString id, bool success);
-  void DeviceCloseFinished(QString id);
+  void TaskStarted(const int id);
+  void SongCountUpdated(const int count);
+  void DeviceConnectFinished(const QString &id, const bool success);
+  void DeviceCloseFinished(const QString &id);
 
  protected:
   void InitBackendDirectory(const QString &mount_point, const bool first_time, const bool rewrite_path = true);
@@ -91,9 +93,9 @@ class ConnectedDevice : public QObject, public virtual MusicStorage, public std:
   DeviceLister *lister_;
   QString unique_id_;
   int database_id_;
-  DeviceManager *manager_;
+  SharedPtr<DeviceManager> manager_;
 
-  CollectionBackend *backend_;
+  SharedPtr<CollectionBackend> backend_;
   CollectionModel *model_;
 
   qint64 song_count_;

@@ -24,13 +24,12 @@
 
 #include "config.h"
 
-#include <memory>
-
 #include <QObject>
 #include <QUrl>
 #include <QPixmap>
 #include <QAction>
 
+#include "scoped_ptr.h"
 #include "song.h"
 
 class MacSystemTrayIconPrivate;
@@ -76,7 +75,7 @@ class SystemTrayIcon : public QObject {
   void ActionChanged();
 
  signals:
-  void ChangeVolume(int delta);
+  void ChangeVolume(const int delta);
   void SeekForward();
   void SeekBackward();
   void NextTrack();
@@ -85,7 +84,7 @@ class SystemTrayIcon : public QObject {
   void PlayPause();
 
  private:
-  std::unique_ptr<MacSystemTrayIconPrivate> p_;
+  ScopedPtr<MacSystemTrayIconPrivate> p_;
 
   QPixmap normal_icon_;
   QPixmap grey_icon_;

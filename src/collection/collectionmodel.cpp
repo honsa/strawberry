@@ -2,7 +2,7 @@
  * Strawberry Music Player
  * This file was part of Clementine.
  * Copyright 2010, David Sansome <me@davidsansome.com>
- * Copyright 2018-2021, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2018-2023, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,8 @@
 #include <QSettings>
 #include <QStandardPaths>
 
+#include "core/scoped_ptr.h"
+#include "core/shared_ptr.h"
 #include "core/application.h"
 #include "core/database.h"
 #include "core/iconloader.h"
@@ -68,8 +70,9 @@
 #include "collectionmodel.h"
 #include "playlist/playlistmanager.h"
 #include "playlist/songmimedata.h"
-#include "covermanager/albumcoverloader.h"
+#include "covermanager/albumcoverloaderoptions.h"
 #include "covermanager/albumcoverloaderresult.h"
+#include "covermanager/albumcoverloader.h"
 #include "settings/collectionsettingspage.h"
 
 const int CollectionModel::kPrettyCoverSize = 32;
@@ -77,7 +80,7 @@ const char *CollectionModel::kPixmapDiskCacheDir = "pixmapcache";
 
 QNetworkDiskCache *CollectionModel::sIconCache = nullptr;
 
-CollectionModel::CollectionModel(CollectionBackend *backend, Application *app, QObject *parent)
+CollectionModel::CollectionModel(SharedPtr<CollectionBackend> backend, Application *app, QObject *parent)
     : SimpleTreeModel<CollectionItem>(new CollectionItem(this), parent),
       backend_(backend),
       app_(app),
@@ -101,14 +104,8 @@ CollectionModel::CollectionModel(CollectionBackend *backend, Application *app, Q
   group_by_[1] = GroupBy::AlbumDisc;
   group_by_[2] = GroupBy::None;
 
-  cover_loader_options_.get_image_data_ = false;
-  cover_loader_options_.get_image_ = true;
-  cover_loader_options_.scale_output_image_ = true;
-  cover_loader_options_.pad_output_image_ = true;
-  cover_loader_options_.desired_height_ = kPrettyCoverSize;
-
   if (app_) {
-    QObject::connect(app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &CollectionModel::AlbumCoverLoaded);
+    QObject::connect(&*app_->album_cover_loader(), &AlbumCoverLoader::AlbumCoverLoaded, this, &CollectionModel::AlbumCoverLoaded);
   }
 
   QIcon nocover = IconLoader::Load("cdcase");
@@ -123,14 +120,14 @@ CollectionModel::CollectionModel(CollectionBackend *backend, Application *app, Q
     QObject::connect(app_, &Application::ClearPixmapDiskCache, this, &CollectionModel::ClearDiskCache);
   }
 
-  QObject::connect(backend_, &CollectionBackend::SongsDiscovered, this, &CollectionModel::SongsDiscovered);
-  QObject::connect(backend_, &CollectionBackend::SongsDeleted, this, &CollectionModel::SongsDeleted);
-  QObject::connect(backend_, &CollectionBackend::DatabaseReset, this, &CollectionModel::Reset);
-  QObject::connect(backend_, &CollectionBackend::TotalSongCountUpdated, this, &CollectionModel::TotalSongCountUpdatedSlot);
-  QObject::connect(backend_, &CollectionBackend::TotalArtistCountUpdated, this, &CollectionModel::TotalArtistCountUpdatedSlot);
-  QObject::connect(backend_, &CollectionBackend::TotalAlbumCountUpdated, this, &CollectionModel::TotalAlbumCountUpdatedSlot);
-  QObject::connect(backend_, &CollectionBackend::SongsStatisticsChanged, this, &CollectionModel::SongsSlightlyChanged);
-  QObject::connect(backend_, &CollectionBackend::SongsRatingChanged, this, &CollectionModel::SongsSlightlyChanged);
+  QObject::connect(&*backend_, &CollectionBackend::SongsDiscovered, this, &CollectionModel::SongsDiscovered);
+  QObject::connect(&*backend_, &CollectionBackend::SongsDeleted, this, &CollectionModel::SongsDeleted);
+  QObject::connect(&*backend_, &CollectionBackend::DatabaseReset, this, &CollectionModel::Reset);
+  QObject::connect(&*backend_, &CollectionBackend::TotalSongCountUpdated, this, &CollectionModel::TotalSongCountUpdatedSlot);
+  QObject::connect(&*backend_, &CollectionBackend::TotalArtistCountUpdated, this, &CollectionModel::TotalArtistCountUpdatedSlot);
+  QObject::connect(&*backend_, &CollectionBackend::TotalAlbumCountUpdated, this, &CollectionModel::TotalAlbumCountUpdatedSlot);
+  QObject::connect(&*backend_, &CollectionBackend::SongsStatisticsChanged, this, &CollectionModel::SongsSlightlyChanged);
+  QObject::connect(&*backend_, &CollectionBackend::SongsRatingChanged, this, &CollectionModel::SongsSlightlyChanged);
 
   backend_->UpdateTotalSongCountAsync();
   backend_->UpdateTotalArtistCountAsync();
@@ -141,7 +138,11 @@ CollectionModel::CollectionModel(CollectionBackend *backend, Application *app, Q
 }
 
 CollectionModel::~CollectionModel() {
+
+  qLog(Debug) << "Collection model" << this << "for" << Song::TextForSource(backend_->source()) << "deleted";
+
   delete root_;
+
 }
 
 void CollectionModel::set_pretty_covers(const bool use_pretty_covers) {
@@ -150,6 +151,7 @@ void CollectionModel::set_pretty_covers(const bool use_pretty_covers) {
     use_pretty_covers_ = use_pretty_covers;
     Reset();
   }
+
 }
 
 void CollectionModel::set_show_dividers(const bool show_dividers) {
@@ -176,6 +178,8 @@ void CollectionModel::ReloadSettings() {
   }
 
   s.endGroup();
+
+  cover_types_ = AlbumCoverLoaderOptions::LoadTypes();
 
   if (!use_disk_cache_) {
     ClearDiskCache();
@@ -558,7 +562,7 @@ void CollectionModel::SongsDeleted(const SongList &songs) {
       // Remove from pixmap cache
       const QString cache_key = AlbumIconPixmapCacheKey(ItemToIndex(node));
       QPixmapCache::remove(cache_key);
-      if (use_disk_cache_ && sIconCache) sIconCache->remove(QUrl(cache_key));
+      if (use_disk_cache_ && sIconCache) sIconCache->remove(AlbumIconPixmapDiskCacheKey(cache_key));
       if (pending_cache_keys_.contains(cache_key)) {
         pending_cache_keys_.remove(cache_key);
       }
@@ -613,6 +617,12 @@ QString CollectionModel::AlbumIconPixmapCacheKey(const QModelIndex &idx) const {
 
 }
 
+QUrl CollectionModel::AlbumIconPixmapDiskCacheKey(const QString &cache_key) const {
+
+  return QUrl(QUrl::toPercentEncoding(cache_key));
+
+}
+
 QVariant CollectionModel::AlbumIcon(const QModelIndex &idx) {
 
   CollectionItem *item = IndexToItem(idx);
@@ -628,10 +638,10 @@ QVariant CollectionModel::AlbumIcon(const QModelIndex &idx) {
 
   // Try to load it from the disk cache
   if (use_disk_cache_ && sIconCache) {
-    std::unique_ptr<QIODevice> cache(sIconCache->data(QUrl(cache_key)));
-    if (cache) {
+    ScopedPtr<QIODevice> disk_cache_img(sIconCache->data(AlbumIconPixmapDiskCacheKey(cache_key)));
+    if (disk_cache_img) {
       QImage cached_image;
-      if (cached_image.load(cache.get(), "XPM")) {
+      if (cached_image.load(&*disk_cache_img, "XPM")) {
         QPixmapCache::insert(cache_key, QPixmap::fromImage(cached_image));
         return QPixmap::fromImage(cached_image);
       }
@@ -646,7 +656,10 @@ QVariant CollectionModel::AlbumIcon(const QModelIndex &idx) {
   // No art is cached and we're not loading it already.  Load art for the first song in the album.
   SongList songs = GetChildSongs(idx);
   if (!songs.isEmpty()) {
-    const quint64 id = app_->album_cover_loader()->LoadImageAsync(cover_loader_options_, songs.first());
+    AlbumCoverLoaderOptions cover_loader_options(AlbumCoverLoaderOptions::Option::ScaledImage | AlbumCoverLoaderOptions::Option::PadScaledImage);
+    cover_loader_options.desired_scaled_size = QSize(kPrettyCoverSize, kPrettyCoverSize);
+    cover_loader_options.types = cover_types_;
+    const quint64 id = app_->album_cover_loader()->LoadImageAsync(cover_loader_options, songs.first());
     pending_art_[id] = ItemAndCacheKey(item, cache_key);
     pending_cache_keys_.insert(cache_key);
   }
@@ -668,7 +681,7 @@ void CollectionModel::AlbumCoverLoaded(const quint64 id, const AlbumCoverLoaderR
   pending_cache_keys_.remove(cache_key);
 
   // Insert this image in the cache.
-  if (!result.success || result.image_scaled.isNull() || result.type == AlbumCoverLoaderResult::Type_ManuallyUnset) {
+  if (!result.success || result.image_scaled.isNull() || result.type == AlbumCoverLoaderResult::Type::Unset) {
     // Set the no_cover image so we don't continually try to load art.
     QPixmapCache::insert(cache_key, no_cover_icon_);
   }
@@ -680,15 +693,18 @@ void CollectionModel::AlbumCoverLoaded(const quint64 id, const AlbumCoverLoaderR
 
   // If we have a valid cover not already in the disk cache
   if (use_disk_cache_ && sIconCache && result.success && !result.image_scaled.isNull()) {
-    std::unique_ptr<QIODevice> cached_img(sIconCache->data(QUrl(cache_key)));
-    if (!cached_img) {
-      QNetworkCacheMetaData item_metadata;
-      item_metadata.setSaveToDisk(true);
-      item_metadata.setUrl(QUrl(cache_key));
-      QIODevice *cache = sIconCache->prepare(item_metadata);
-      if (cache) {
-        result.image_scaled.save(cache, "XPM");
-        sIconCache->insert(cache);
+    const QUrl disk_cache_key = AlbumIconPixmapDiskCacheKey(cache_key);
+    ScopedPtr<QIODevice> disk_cache_img(sIconCache->data(disk_cache_key));
+    if (!disk_cache_img) {
+      QNetworkCacheMetaData disk_cache_metadata;
+      disk_cache_metadata.setSaveToDisk(true);
+      disk_cache_metadata.setUrl(disk_cache_key);
+      // Qt 6 now ignores any entry without headers, so add a fake header.
+      disk_cache_metadata.setRawHeaders(QNetworkCacheMetaData::RawHeaderList() << qMakePair(QByteArray(), QByteArray()));
+      QIODevice *device_iconcache = sIconCache->prepare(disk_cache_metadata);
+      if (device_iconcache) {
+        result.image_scaled.save(device_iconcache, "XPM");
+        sIconCache->insert(device_iconcache);
       }
     }
   }

@@ -23,13 +23,14 @@
 #include <QMutexLocker>
 #include <QSqlDatabase>
 
+#include "core/shared_ptr.h"
 #include "core/database.h"
 #include "core/sqlquery.h"
 #include "core/song.h"
 #include "radiobackend.h"
 #include "radiochannel.h"
 
-RadioBackend::RadioBackend(Database *db, QObject *parent)
+RadioBackend::RadioBackend(SharedPtr<Database> db, QObject *parent)
     : QObject(parent),
       db_(db),
       original_thread_(thread()) {}
@@ -44,7 +45,7 @@ void RadioBackend::Close() {
 }
 
 void RadioBackend::ExitAsync() {
-  QMetaObject::invokeMethod(this, "Exit", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &RadioBackend::Exit, Qt::QueuedConnection);
 }
 
 void RadioBackend::Exit() {
@@ -85,7 +86,7 @@ void RadioBackend::AddChannels(const RadioChannelList &channels) {
 
 void RadioBackend::GetChannelsAsync() {
 
-  QMetaObject::invokeMethod(this, "GetChannels", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &RadioBackend::GetChannels, Qt::QueuedConnection);
 
 }
 
@@ -117,7 +118,7 @@ void RadioBackend::GetChannels() {
 }
 
 void RadioBackend::DeleteChannelsAsync() {
-  QMetaObject::invokeMethod(this, "DeleteChannels", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &RadioBackend::DeleteChannels, Qt::QueuedConnection);
 }
 
 void RadioBackend::DeleteChannels() {
