@@ -19,32 +19,34 @@
 
 #include "enginedevice.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 EngineDevice::EngineDevice() : card(0), device(0) {}
 
 QString EngineDevice::GuessIconName() const {
 
-  if (description.contains("mcintosh", Qt::CaseInsensitive)) {
-    return "mcintosh";
+  if (description.contains("mcintosh"_L1, Qt::CaseInsensitive)) {
+    return u"mcintosh"_s;
   }
-  if (description.contains("electrocompaniet", Qt::CaseInsensitive)) {
-    return "electrocompaniet";
+  if (description.contains("electrocompaniet"_L1, Qt::CaseInsensitive)) {
+    return u"electrocompaniet"_s;
   }
-  if (description.contains("intel", Qt::CaseInsensitive)) {
-    return "intel";
+  if (description.contains("intel"_L1, Qt::CaseInsensitive)) {
+    return u"intel"_s;
   }
-  if (description.contains("realtek", Qt::CaseInsensitive)) {
-    return "realtek";
+  if (description.contains("realtek"_L1, Qt::CaseInsensitive)) {
+    return u"realtek"_s;
   }
-  if (description.contains("nvidia", Qt::CaseInsensitive)) {
-    return "nvidia";
+  if (description.contains("nvidia"_L1, Qt::CaseInsensitive)) {
+    return u"nvidia"_s;
   }
-  if (description.contains("headset", Qt::CaseInsensitive)) {
-    return "headset";
+  if (description.contains("headset"_L1, Qt::CaseInsensitive)) {
+    return u"headset"_s;
   }
-  if (description.contains("pulseaudio", Qt::CaseInsensitive)) {
-    return "pulseaudio";
+  if (description.contains("pulseaudio"_L1, Qt::CaseInsensitive)) {
+    return u"pulseaudio"_s;
   }
 
-  return "soundcard";
+  return u"soundcard"_s;
 
 }

@@ -43,16 +43,14 @@ class FavoriteWidget : public QWidget {
 
   QSize sizeHint() const override;
 
- signals:
+ Q_SIGNALS:
   void FavoriteStateChanged(const int, const bool);
 
  protected:
   void paintEvent(QPaintEvent *e) override;
-  void mouseDoubleClickEvent(QMouseEvent*) override;
+  void mouseDoubleClickEvent(QMouseEvent *e) override;
 
  private:
-  static const int kStarSize;
-
   // The playlist's id this widget belongs to
   int tab_index_;
   bool favorite_;

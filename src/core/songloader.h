@@ -27,10 +27,7 @@
 #include <memory>
 #include <functional>
 #include <glib.h>
-
-#ifdef HAVE_GSTREAMER
-#  include <gst/gst.h>
-#endif
+#include <gst/gst.h>
 
 #include <QtGlobal>
 #include <QObject>
@@ -41,17 +38,18 @@
 #include <QStringList>
 #include <QUrl>
 
-#include "shared_ptr.h"
-#include "song.h"
+#include "includes/shared_ptr.h"
+#include "core/song.h"
 
 class QTimer;
-class Player;
+class UrlHandlers;
+class TagReaderClient;
 class CollectionBackendInterface;
 class PlaylistParser;
 class ParserBase;
 class CueParser;
 
-#if defined(HAVE_AUDIOCD) && defined(HAVE_GSTREAMER)
+#ifdef HAVE_AUDIOCD
 class CddaSongLoader;
 #endif
 
@@ -59,7 +57,11 @@ class SongLoader : public QObject {
   Q_OBJECT
 
  public:
-  explicit SongLoader(SharedPtr<CollectionBackendInterface> collection_backend, const SharedPtr<Player> player, QObject *parent = nullptr);
+  explicit SongLoader(const SharedPtr<UrlHandlers> url_handlers,
+                      const SharedPtr<CollectionBackendInterface> collection_backend,
+                      const SharedPtr<TagReaderClient> tagreader_client,
+                      QObject *parent = nullptr);
+
   ~SongLoader() override;
 
   enum class Result {
@@ -67,8 +69,6 @@ class SongLoader : public QObject {
     Error,
     BlockingLoadRequired
   };
-
-  static const int kDefaultTimeout;
 
   const QUrl &url() const { return url_; }
   const SongList &songs() const { return songs_; }
@@ -88,19 +88,19 @@ class SongLoader : public QObject {
 
   QStringList errors() { return errors_; }
 
- signals:
+ Q_SIGNALS:
   void AudioCDTracksLoadFinished();
   void LoadAudioCDFinished(const bool success);
   void LoadRemoteFinished();
 
- private slots:
+ private Q_SLOTS:
   void ScheduleTimeout();
   void Timeout();
   void StopTypefind();
-#if defined(HAVE_AUDIOCD) && defined(HAVE_GSTREAMER)
+#ifdef HAVE_AUDIOCD
   void AudioCDTracksLoadFinishedSlot(const SongList &songs, const QString &error);
   void AudioCDTracksTagsLoaded(const SongList &songs);
-#endif  // HAVE_AUDIOCD && HAVE_GSTREAMER
+#endif  // HAVE_AUDIOCD
 
  private:
   enum class State {
@@ -119,14 +119,13 @@ class SongLoader : public QObject {
 
   void AddAsRawStream();
 
-#ifdef HAVE_GSTREAMER
   Result LoadRemote();
 
   // GStreamer callbacks
-  static void TypeFound(GstElement *typefind, uint probability, GstCaps *caps, void *self);
-  static GstPadProbeReturn DataReady(GstPad*, GstPadProbeInfo *info, gpointer self);
-  static GstBusSyncReply BusCallbackSync(GstBus*, GstMessage*, gpointer);
-  static gboolean BusWatchCallback(GstBus*, GstMessage*, gpointer);
+  static void TypeFound(GstElement *typefind, const uint probability, GstCaps *caps, void *self);
+  static GstPadProbeReturn DataReady(GstPad *pad, GstPadProbeInfo *info, gpointer self);
+  static GstBusSyncReply BusCallbackSync(GstBus *bus, GstMessage *msg, gpointer self);
+  static gboolean BusWatchCallback(GstBus *bus, GstMessage *msg, gpointer self);
 
   void ErrorMessageReceived(GstMessage *msg);
   void EndOfStreamReached();
@@ -134,7 +133,6 @@ class SongLoader : public QObject {
   bool IsPipelinePlaying();
   void StopTypefindAsync(const bool success);
   void CleanupPipeline();
-#endif
 
   void ScheduleTimeoutAsync();
 
@@ -144,8 +142,9 @@ class SongLoader : public QObject {
   QUrl url_;
   SongList songs_;
 
-  const SharedPtr<Player> player_;
-  SharedPtr<CollectionBackendInterface> collection_backend_;
+  const SharedPtr<UrlHandlers> url_handlers_;
+  const SharedPtr<CollectionBackendInterface> collection_backend_;
+  const SharedPtr<TagReaderClient> tagreader_client_;
   QTimer *timeout_timer_;
   PlaylistParser *playlist_parser_;
   CueParser *cue_parser_;
@@ -158,11 +157,9 @@ class SongLoader : public QObject {
   State state_;
   int timeout_;
 
-#ifdef HAVE_GSTREAMER
   SharedPtr<GstElement> pipeline_;
   GstElement *fakesink_;
   gulong buffer_probe_cb_id_;
-#endif
 
   QThreadPool thread_pool_;
   QStringList errors_;

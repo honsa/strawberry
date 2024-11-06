@@ -35,7 +35,7 @@
 #include <QUrl>
 #include <QImage>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "albumcoverfetcher.h"
 #include "coversearchstatistics.h"
 #include "albumcoverimageresult.h"
@@ -65,14 +65,14 @@ class AlbumCoverFetcherSearch : public QObject {
 
   static bool CoverProviderSearchResultCompareNumber(const CoverProviderSearchResult &a, const CoverProviderSearchResult &b);
 
- signals:
+ Q_SIGNALS:
   // It's the end of search (when there was no fetch-me-a-cover request).
   void SearchFinished(quint64, const CoverProviderSearchResults &results);
 
   // It's the end of search and we've fetched a cover.
   void AlbumCoverFetched(const quint64 id, const AlbumCoverImageResult &result);
 
- private slots:
+ private Q_SLOTS:
   void ProviderSearchResults(const int id, const CoverProviderSearchResults &results);
   void ProviderSearchFinished(const int id, const CoverProviderSearchResults &results);
   void ProviderCoverFetchFinished(QNetworkReply *reply);
@@ -90,11 +90,6 @@ class AlbumCoverFetcherSearch : public QObject {
   static bool CoverProviderSearchResultCompareScore(const CoverProviderSearchResult &a, const CoverProviderSearchResult &b);
 
  private:
-  static const int kSearchTimeoutMs;
-  static const int kImageLoadTimeoutMs;
-  static const int kTargetSize;
-  static const float kGoodScore;
-
   CoverSearchStatistics statistics_;
 
   // Search request encapsulated by this AlbumCoverFetcherSearch.

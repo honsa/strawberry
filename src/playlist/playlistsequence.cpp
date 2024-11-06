@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include <QWidget>
 #include <QVariant>
 #include <QIcon>
@@ -37,7 +39,11 @@
 #include "playlistsequence.h"
 #include "ui_playlistsequence.h"
 
-const char *PlaylistSequence::kSettingsGroup = "PlaylistSequence";
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr char kSettingsGroup[] = "PlaylistSequence";
+}
 
 PlaylistSequence::PlaylistSequence(QWidget *parent, SettingsProvider *settings)
     : QWidget(parent),
@@ -47,18 +53,17 @@ PlaylistSequence::PlaylistSequence(QWidget *parent, SettingsProvider *settings)
       shuffle_menu_(new QMenu(this)),
       loading_(false),
       repeat_mode_(RepeatMode::Off),
-      shuffle_mode_(ShuffleMode::Off),
-      dynamic_(false) {
+      shuffle_mode_(ShuffleMode::Off) {
 
   ui_->setupUi(this);
 
   // Icons
-  ui_->repeat->setIcon(AddDesaturatedIcon(IconLoader::Load("media-playlist-repeat")));
-  ui_->shuffle->setIcon(AddDesaturatedIcon(IconLoader::Load("media-playlist-shuffle")));
+  ui_->repeat->setIcon(AddDesaturatedIcon(IconLoader::Load(u"media-playlist-repeat"_s)));
+  ui_->shuffle->setIcon(AddDesaturatedIcon(IconLoader::Load(u"media-playlist-shuffle"_s)));
 
   // Remove arrow indicators
-  ui_->repeat->setStyleSheet("QToolButton::menu-indicator { image: none; }");
-  ui_->shuffle->setStyleSheet("QToolButton::menu-indicator { image: none; }");
+  ui_->repeat->setStyleSheet(u"QToolButton::menu-indicator { image: none; }"_s);
+  ui_->shuffle->setStyleSheet(u"QToolButton::menu-indicator { image: none; }"_s);
 
   settings_->set_group(kSettingsGroup);
 
@@ -94,8 +99,8 @@ PlaylistSequence::~PlaylistSequence() {
 void PlaylistSequence::Load() {
 
   loading_ = true;  // Stops these setter functions calling Save()
-  SetShuffleMode(static_cast<ShuffleMode>(settings_->value("shuffle_mode", static_cast<int>(ShuffleMode::Off)).toInt()));
-  SetRepeatMode(static_cast<RepeatMode>(settings_->value("repeat_mode", static_cast<int>(RepeatMode::Off)).toInt()));
+  SetShuffleMode(static_cast<ShuffleMode>(settings_->value(u"shuffle_mode"_s, static_cast<int>(ShuffleMode::Off)).toInt()));
+  SetRepeatMode(static_cast<RepeatMode>(settings_->value(u"repeat_mode"_s, static_cast<int>(RepeatMode::Off)).toInt()));
   loading_ = false;
 
 }
@@ -104,15 +109,16 @@ void PlaylistSequence::Save() {
 
   if (loading_) return;
 
-  settings_->setValue("shuffle_mode", static_cast<int>(shuffle_mode_));
-  settings_->setValue("repeat_mode", static_cast<int>(repeat_mode_));
+  settings_->setValue(u"shuffle_mode"_s, static_cast<int>(shuffle_mode_));
+  settings_->setValue(u"repeat_mode"_s, static_cast<int>(repeat_mode_));
 
 }
 
 QIcon PlaylistSequence::AddDesaturatedIcon(const QIcon &icon) {
 
   QIcon ret;
-  for (const QSize &size : icon.availableSizes()) {
+  const QList<QSize> sizes = icon.availableSizes();
+  for (const QSize &size : sizes) {
     QPixmap on(icon.pixmap(size));
     QPixmap off(DesaturatedPixmap(on));
 
@@ -171,13 +177,13 @@ void PlaylistSequence::SetRepeatMode(const RepeatMode mode) {
     case RepeatMode::Album:    ui_->action_repeat_album->setChecked(true);    break;
     case RepeatMode::Playlist: ui_->action_repeat_playlist->setChecked(true); break;
     case RepeatMode::OneByOne: ui_->action_repeat_onebyone->setChecked(true); break;
-    case RepeatMode::Intro: ui_->action_repeat_intro->setChecked(true);	 break;
+    case RepeatMode::Intro: ui_->action_repeat_intro->setChecked(true);       break;
 
   }
 
   if (mode != repeat_mode_) {
     repeat_mode_ = mode;
-    emit RepeatModeChanged(mode);
+    Q_EMIT RepeatModeChanged(mode);
   }
 
   Save();
@@ -197,7 +203,7 @@ void PlaylistSequence::SetShuffleMode(const ShuffleMode mode) {
 
   if (mode != shuffle_mode_) {
     shuffle_mode_ = mode;
-    emit ShuffleModeChanged(mode);
+    Q_EMIT ShuffleModeChanged(mode);
   }
 
   Save();
@@ -205,11 +211,11 @@ void PlaylistSequence::SetShuffleMode(const ShuffleMode mode) {
 }
 
 PlaylistSequence::ShuffleMode PlaylistSequence::shuffle_mode() const {
-  return dynamic_ ? ShuffleMode::Off : shuffle_mode_;
+  return shuffle_mode_;
 }
 
 PlaylistSequence::RepeatMode PlaylistSequence::repeat_mode() const {
-  return dynamic_ ? RepeatMode::Off : repeat_mode_;
+  return repeat_mode_;
 }
 
 // Called from global shortcut
@@ -234,11 +240,11 @@ void PlaylistSequence::CycleRepeatMode() {
   RepeatMode mode = RepeatMode::Off;
   //we cycle through the repeat modes
   switch (repeat_mode()) {
-    case RepeatMode::Off:		mode = RepeatMode::Track;	break;
-    case RepeatMode::Track:		mode = RepeatMode::Album;	break;
-    case RepeatMode::Album:		mode = RepeatMode::Playlist;    break;
-    case RepeatMode::Playlist:	        mode = RepeatMode::OneByOne;    break;
-    case RepeatMode::OneByOne:	        mode = RepeatMode::Intro;	break;
+    case RepeatMode::Off:       mode = RepeatMode::Track;     break;
+    case RepeatMode::Track:     mode = RepeatMode::Album;     break;
+    case RepeatMode::Album:     mode = RepeatMode::Playlist;  break;
+    case RepeatMode::Playlist:  mode = RepeatMode::OneByOne;  break;
+    case RepeatMode::OneByOne:  mode = RepeatMode::Intro;     break;
     case RepeatMode::Intro:
       break;
   }

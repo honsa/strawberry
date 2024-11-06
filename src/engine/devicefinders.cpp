@@ -32,7 +32,7 @@
 #  include "alsapcmdevicefinder.h"
 #endif
 
-#ifdef HAVE_LIBPULSE
+#ifdef HAVE_PULSE
 #  include "pulsedevicefinder.h"
 #endif
 
@@ -45,10 +45,17 @@
 #  include "mmdevicefinder.h"
 #  ifdef _MSC_VER
 #    include "uwpdevicefinder.h"
+#    include "asiodevicefinder.h"
 #  endif  // _MSC_VER
 #endif  // Q_OS_WIN32
 
-DeviceFinders::DeviceFinders(QObject *parent) : QObject(parent) {}
+using namespace Qt::Literals::StringLiterals;
+
+DeviceFinders::DeviceFinders(QObject *parent) : QObject(parent) {
+
+  setObjectName(QLatin1String(metaObject()->className()));
+
+}
 
 DeviceFinders::~DeviceFinders() {
   qDeleteAll(device_finders_);
@@ -62,7 +69,7 @@ void DeviceFinders::Init() {
   device_finders.append(new AlsaDeviceFinder);
   device_finders.append(new AlsaPCMDeviceFinder);
 #endif
-#ifdef HAVE_LIBPULSE
+#ifdef HAVE_PULSE
   device_finders.append(new PulseDeviceFinder);
 #endif
 #ifdef Q_OS_MACOS
@@ -73,6 +80,7 @@ void DeviceFinders::Init() {
   device_finders.append(new MMDeviceFinder);
 #  ifdef _MSC_VER
   device_finders.append(new UWPDeviceFinder);
+  device_finders.append(new AsioDeviceFinder);
 #  endif  // _MSC_VER
 #endif  // Q_OS_WIN32
 

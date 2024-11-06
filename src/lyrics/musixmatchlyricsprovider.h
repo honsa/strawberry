@@ -29,7 +29,7 @@
 #include <QString>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsonlyricsprovider.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
@@ -42,11 +42,8 @@ class MusixmatchLyricsProvider : public JsonLyricsProvider, public MusixmatchPro
   Q_OBJECT
 
  public:
-  explicit MusixmatchLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit MusixmatchLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~MusixmatchLyricsProvider() override;
-
-  bool StartSearch(const int id, const LyricsSearchRequest &request) override;
-  void CancelSearch(const int id) override;
 
  private:
   struct LyricsSearchContext {
@@ -66,9 +63,12 @@ class MusixmatchLyricsProvider : public JsonLyricsProvider, public MusixmatchPro
   void EndSearch(LyricsSearchContextPtr search, const QUrl &url = QUrl());
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
- private slots:
-  void HandleSearchReply(QNetworkReply *reply, LyricsSearchContextPtr search);
-  void HandleLyricsReply(QNetworkReply *reply, LyricsSearchContextPtr search, const QUrl &url);
+ protected Q_SLOTS:
+  void StartSearch(const int id, const LyricsSearchRequest &request) override;
+
+ private Q_SLOTS:
+  void HandleSearchReply(QNetworkReply *reply, MusixmatchLyricsProvider::LyricsSearchContextPtr search);
+  void HandleLyricsReply(QNetworkReply *reply, MusixmatchLyricsProvider::LyricsSearchContextPtr search, const QUrl &url);
 
  private:
   QList<LyricsSearchContextPtr> requests_search_;

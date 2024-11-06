@@ -22,11 +22,10 @@
 #include <chrono>
 
 #include <QtGlobal>
-#include <QObject>
 #include <QTimer>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "lyricsfetcher.h"
 #include "lyricsfetchersearch.h"
@@ -35,9 +34,11 @@
 
 using namespace std::chrono_literals;
 
-const int LyricsFetcher::kMaxConcurrentRequests = 5;
+namespace {
+constexpr int kMaxConcurrentRequests = 5;
+}
 
-LyricsFetcher::LyricsFetcher(SharedPtr<LyricsProviders> lyrics_providers, QObject *parent)
+LyricsFetcher::LyricsFetcher(const SharedPtr<LyricsProviders> lyrics_providers, QObject *parent)
     : QObject(parent),
       lyrics_providers_(lyrics_providers),
       next_id_(0),
@@ -53,10 +54,8 @@ quint64 LyricsFetcher::Search(const QString &effective_albumartist, const QStrin
   LyricsSearchRequest search_request;
   search_request.albumartist = effective_albumartist;
   search_request.artist = artist;
-  search_request.album = album;
-  search_request.album.remove(Song::kAlbumRemoveMisc);
-  search_request.title = title;
-  search_request.title.remove(Song::kTitleRemoveMisc);
+  search_request.album = Song::AlbumRemoveDiscMisc(album);
+  search_request.title = Song::TitleRemoveMisc(title);
 
   Request request;
   request.id = ++next_id_;
@@ -81,7 +80,7 @@ void LyricsFetcher::Clear() {
 
   queued_requests_.clear();
 
-  QList<LyricsFetcherSearch*> searches = active_requests_.values();
+  const QList<LyricsFetcherSearch*> searches = active_requests_.values();
   for (LyricsFetcherSearch *search : searches) {
     search->Cancel();
     search->deleteLater();
@@ -118,7 +117,7 @@ void LyricsFetcher::SingleSearchFinished(const quint64 request_id, const LyricsS
 
   LyricsFetcherSearch *search = active_requests_.take(request_id);
   search->deleteLater();
-  emit SearchFinished(request_id, results);
+  Q_EMIT SearchFinished(request_id, results);
 
 }
 
@@ -128,6 +127,6 @@ void LyricsFetcher::SingleLyricsFetched(const quint64 request_id, const QString 
 
   LyricsFetcherSearch *search = active_requests_.take(request_id);
   search->deleteLater();
-  emit LyricsFetched(request_id, provider, lyrics);
+  Q_EMIT LyricsFetched(request_id, provider, lyrics);
 
 }

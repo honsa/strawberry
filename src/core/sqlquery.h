@@ -1,6 +1,6 @@
 /*
  * Strawberry Music Player
- * Copyright 2021, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2021-2024, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,14 @@
 #include <QString>
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <QSqlRecord>
 
 class SqlQuery : public QSqlQuery {
 
  public:
   explicit SqlQuery(const QSqlDatabase &db) : QSqlQuery(db) {}
+
+  int columns() const { return QSqlQuery::record().count(); }
 
   void BindValue(const QString &placeholder, const QVariant &value);
   void BindStringValue(const QString &placeholder, const QString &value);
@@ -50,11 +53,8 @@ class SqlQuery : public QSqlQuery {
   QString LastQuery() const;
 
  private:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   QMap<QString, QVariant> bound_values_;
-#endif
   QString last_query_;
-
 };
 
 #endif  // SQLQUERY_H

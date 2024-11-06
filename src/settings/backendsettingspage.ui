@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>717</width>
-    <height>1245</height>
+    <height>1259</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,6 +50,9 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="currentText">
+           <string notr="true"/>
+          </property>
          </widget>
         </item>
         <item row="3" column="0">
@@ -64,12 +67,18 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="currentText">
+           <string notr="true"/>
+          </property>
          </widget>
         </item>
         <item row="0" column="1">
          <widget class="QComboBox" name="combobox_engine">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="currentText">
+           <string notr="true"/>
           </property>
          </widget>
         </item>
@@ -140,12 +149,53 @@
          <item>
           <spacer name="spacer_alsaplugin">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
              <width>0</width>
              <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget_exclusive_mode" native="true">
+        <layout class="QHBoxLayout" name="layout_exclusive_mode">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="checkbox_exclusive_mode">
+           <property name="text">
+            <string>Exclusive mode (Experimental)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="spacer_exclusive_mode">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
             </size>
            </property>
           </spacer>
@@ -232,7 +282,7 @@
          <item>
           <spacer name="spacer_channels">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -343,7 +393,7 @@
         <item row="2" column="2">
          <spacer name="spacer_buffer_3">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -356,7 +406,7 @@
         <item row="1" column="2">
          <spacer name="spacer_buffer_2">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -369,7 +419,7 @@
         <item row="0" column="2">
          <spacer name="spacer_buffer_1">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -393,7 +443,7 @@
         <item>
          <spacer name="spacer_buffer_defaults">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -509,7 +559,7 @@
                  <number>600</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sticky_center" stdset="0">
                  <number>600</number>
@@ -542,7 +592,7 @@
                  <number>600</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sticky_center" stdset="0">
                  <number>600</number>
@@ -628,7 +678,7 @@
                  <number>-230</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sticky_center" stdset="0">
                  <number>-230</number>
@@ -733,7 +783,7 @@
          <item>
           <spacer name="spacer_fading_1">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -784,7 +834,7 @@
         <item>
          <spacer name="spacer_fading_duration_1">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -802,7 +852,7 @@
    <item>
     <spacer name="spacer_bottom">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>

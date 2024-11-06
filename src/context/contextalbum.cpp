@@ -19,6 +19,7 @@
 
 #include "config.h"
 
+#include <utility>
 #include <memory>
 
 #include <QtGlobal>
@@ -37,7 +38,7 @@
 #include <QContextMenuEvent>
 #include <QPaintEvent>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "utilities/imageutils.h"
 #include "covermanager/albumcoverchoicecontroller.h"
 
@@ -47,7 +48,11 @@
 using std::make_unique;
 using std::make_shared;
 
-const int ContextAlbum::kFadeTimeLineMs = 1000;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr int kFadeTimeLineMs = 1000;
+}
 
 ContextAlbum::ContextAlbum(QWidget *parent)
     : QWidget(parent),
@@ -56,12 +61,12 @@ ContextAlbum::ContextAlbum(QWidget *parent)
       album_cover_choice_controller_(nullptr),
       downloading_covers_(false),
       timeline_fade_(new QTimeLine(kFadeTimeLineMs, this)),
-      image_strawberry_(":/pictures/strawberry.png"),
+      image_strawberry_(u":/pictures/strawberry.png"_s),
       image_original_(image_strawberry_),
       pixmap_current_opacity_(1.0),
       desired_height_(width()) {
 
-  setObjectName("context-widget-album");
+  setObjectName(u"context-widget-album"_s);
 
   setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
@@ -97,7 +102,9 @@ QSize ContextAlbum::sizeHint() const {
 
 }
 
-void ContextAlbum::paintEvent(QPaintEvent*) {
+void ContextAlbum::paintEvent(QPaintEvent *paint_event) {
+
+  Q_UNUSED(paint_event)
 
   QPainter p(this);
   p.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -139,11 +146,7 @@ void ContextAlbum::UpdateWidth(const int new_width) {
 
 }
 
-void ContextAlbum::SetImage(QImage image) {
-
-  if (image.isNull()) {
-    image = image_strawberry_;
-  }
+void ContextAlbum::SetImage(const QImage &image) {
 
   if (downloading_covers_) {
     downloading_covers_ = false;
@@ -154,14 +157,20 @@ void ContextAlbum::SetImage(QImage image) {
   QPixmap pixmap_previous = pixmap_current_;
   qreal opacity_previous = pixmap_current_opacity_;
 
-  image_original_ = image;
+  if (image.isNull()) {
+    image_original_ = image_strawberry_;
+  }
+  else {
+    image_original_ = image;
+  }
+
   pixmap_current_opacity_ = 0.0;
   ScaleCover();
 
   if (!pixmap_previous.isNull()) {
     SharedPtr<PreviousCover> previous_cover = make_shared<PreviousCover>();
     previous_cover->image = image_previous;
-    previous_cover->pixmap =  pixmap_previous;
+    previous_cover->pixmap = pixmap_previous;
     previous_cover->opacity = opacity_previous;
     previous_cover->timeline.reset(new QTimeLine(kFadeTimeLineMs), [](QTimeLine *timeline) { timeline->deleteLater(); });
     previous_cover->timeline->setDirection(QTimeLine::Backward);
@@ -198,7 +207,7 @@ void ContextAlbum::DrawSpinner(QPainter *p) {
 
 void ContextAlbum::DrawPreviousCovers(QPainter *p) {
 
-  for (SharedPtr<PreviousCover> previous_cover : previous_covers_) {
+  for (SharedPtr<PreviousCover> previous_cover : std::as_const(previous_covers_)) {
     DrawImage(p, previous_cover->pixmap, previous_cover->opacity);
   }
 
@@ -216,7 +225,7 @@ void ContextAlbum::FadeCurrentCover(const qreal value) {
 void ContextAlbum::FadeCurrentCoverFinished() {
 
   if (image_original_ == image_strawberry_) {
-    emit FadeStopFinished();
+    Q_EMIT FadeStopFinished();
   }
 
 }
@@ -231,6 +240,7 @@ void ContextAlbum::FadePreviousCover(SharedPtr<PreviousCover> previous_cover) {
 
 void ContextAlbum::FadePreviousCoverFinished(SharedPtr<PreviousCover> previous_cover) {
 
+  previous_cover->timeline.reset();
   previous_covers_.removeAll(previous_cover);
 
 }
@@ -249,7 +259,7 @@ void ContextAlbum::ScaleCover() {
 
 void ContextAlbum::ScalePreviousCovers() {
 
-  for (SharedPtr<PreviousCover> previous_cover : previous_covers_) {
+  for (SharedPtr<PreviousCover> previous_cover : std::as_const(previous_covers_)) {
     QImage image = ImageUtils::ScaleImage(previous_cover->image, QSize(desired_height_, desired_height_), devicePixelRatioF(), true);
     if (image.isNull()) {
       previous_cover->pixmap = QPixmap();
@@ -266,7 +276,7 @@ void ContextAlbum::SearchCoverInProgress() {
   downloading_covers_ = true;
 
   // Show a spinner animation
-  spinner_animation_ = make_unique<QMovie>(":/pictures/spinner.gif", QByteArray(), this);
+  spinner_animation_ = make_unique<QMovie>(u":/pictures/spinner.gif"_s, QByteArray(), this);
   QObject::connect(&*spinner_animation_, &QMovie::updated, this, &ContextAlbum::Update);
   spinner_animation_->start();
   update();

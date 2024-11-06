@@ -42,7 +42,6 @@
 
 class QNetworkAccessManager;
 class QNetworkReply;
-class Application;
 class SubsonicService;
 class SubsonicUrlHandler;
 class NetworkTimeouts;
@@ -51,7 +50,7 @@ class SubsonicRequest : public SubsonicBaseRequest {
   Q_OBJECT
 
  public:
-  explicit SubsonicRequest(SubsonicService *service, SubsonicUrlHandler *url_handler, Application *app, QObject *parent = nullptr);
+  explicit SubsonicRequest(SubsonicService *service, SubsonicUrlHandler *url_handler, QObject *parent = nullptr);
   ~SubsonicRequest() override;
 
   void ReloadSettings();
@@ -77,16 +76,16 @@ class SubsonicRequest : public SubsonicBaseRequest {
     QString filename;
   };
 
- signals:
+ Q_SIGNALS:
   void Results(const SongMap &songs, const QString &error);
   void UpdateStatus(const QString &text);
   void ProgressSetMaximum(const int max);
   void UpdateProgress(const int progress);
 
- private slots:
+ private Q_SLOTS:
   void AlbumsReplyReceived(QNetworkReply *reply, const int offset_requested, const int size_requested);
   void AlbumSongsReplyReceived(QNetworkReply *reply, const QString &artist_id, const QString &album_id, const QString &album_artist);
-  void AlbumCoverReceived(QNetworkReply *reply, const AlbumCoverRequest &request);
+  void AlbumCoverReceived(QNetworkReply *reply, const SubsonicRequest::AlbumCoverRequest &request);
 
  private:
 
@@ -110,14 +109,8 @@ class SubsonicRequest : public SubsonicBaseRequest {
   static void Warn(const QString &error, const QVariant &debug = QVariant());
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
-  static const int kMaxConcurrentAlbumsRequests;
-  static const int kMaxConcurrentArtistAlbumsRequests;
-  static const int kMaxConcurrentAlbumSongsRequests;
-  static const int kMaxConcurrentAlbumCoverRequests;
-
   SubsonicService *service_;
   SubsonicUrlHandler *url_handler_;
-  Application *app_;
   QNetworkAccessManager *network_;
   NetworkTimeouts *timeouts_;
 

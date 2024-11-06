@@ -19,6 +19,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include <QtGlobal>
 #include <QObject>
 #include <QByteArray>
@@ -41,7 +43,9 @@
 #include "subsonicservice.h"
 #include "subsonicbaserequest.h"
 
-#include "settings/subsonicsettingspage.h"
+#include "constants/subsonicsettings.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 SubsonicBaseRequest::SubsonicBaseRequest(SubsonicService *service, QObject *parent)
     : QObject(parent),
@@ -52,38 +56,38 @@ SubsonicBaseRequest::SubsonicBaseRequest(SubsonicService *service, QObject *pare
 
 }
 
-QUrl SubsonicBaseRequest::CreateUrl(const QUrl &server_url, const SubsonicSettingsPage::AuthMethod auth_method, const QString &username, const QString &password, const QString &ressource_name, const ParamList &params_provided) {
+QUrl SubsonicBaseRequest::CreateUrl(const QUrl &server_url, const SubsonicSettings::AuthMethod auth_method, const QString &username, const QString &password, const QString &ressource_name, const ParamList &params_provided) {
 
   ParamList params = ParamList() << params_provided
-                                 << Param("c", SubsonicService::kClientName)
-                                 << Param("v", SubsonicService::kApiVersion)
-                                 << Param("f", "json")
-                                 << Param("u", username);
+                                 << Param(u"c"_s, QLatin1String(SubsonicService::kClientName))
+                                 << Param(u"v"_s, QLatin1String(SubsonicService::kApiVersion))
+                                 << Param(u"f"_s, u"json"_s)
+                                 << Param(u"u"_s, username);
 
-  if (auth_method == SubsonicSettingsPage::AuthMethod::Hex) {
-    params << Param("p", QString("enc:" + password.toUtf8().toHex()));
+  if (auth_method == SubsonicSettings::AuthMethod::Hex) {
+    params << Param(u"p"_s, u"enc:"_s + QString::fromUtf8(password.toUtf8().toHex()));
   }
   else {
     const QString salt = Utilities::CryptographicRandomString(20);
     QCryptographicHash md5(QCryptographicHash::Md5);
     md5.addData(password.toUtf8());
     md5.addData(salt.toUtf8());
-    params << Param("s", salt);
-    params << Param("t", md5.result().toHex());
+    params << Param(u"s"_s, salt);
+    params << Param(u"t"_s, QString::fromUtf8(md5.result().toHex()));
   }
 
   QUrlQuery url_query;
-  for (const Param &param : params) {
-    url_query.addQueryItem(QUrl::toPercentEncoding(param.first), QUrl::toPercentEncoding(param.second));
+  for (const Param &param : std::as_const(params)) {
+    url_query.addQueryItem(QString::fromLatin1(QUrl::toPercentEncoding(param.first)), QString::fromLatin1(QUrl::toPercentEncoding(param.second)));
   }
 
   QUrl url(server_url);
 
-  if (!url.path().isEmpty() && url.path().right(1) == "/") {
-    url.setPath(url.path() + QString("rest/") + ressource_name + QString(".view"));
+  if (!url.path().isEmpty() && url.path().right(1) == u'/') {
+    url.setPath(url.path() + "rest/"_L1 + ressource_name + ".view"_L1);
   }
   else {
-    url.setPath(url.path() + QString("/rest/") + ressource_name + QString(".view"));
+    url.setPath(url.path() + "/rest/"_L1 + ressource_name + ".view"_L1);
   }
 
   url.setQuery(url_query);
@@ -97,18 +101,15 @@ QNetworkReply *SubsonicBaseRequest::CreateGetRequest(const QString &ressource_na
   QUrl url = CreateUrl(server_url(), auth_method(), username(), password(), ressource_name, params_provided);
   QNetworkRequest req(url);
 
-  if (url.scheme() == "https" && !verify_certificate()) {
+  if (url.scheme() == "https"_L1 && !verify_certificate()) {
     QSslConfiguration sslconfig = QSslConfiguration::defaultConfiguration();
     sslconfig.setPeerVerifyMode(QSslSocket::VerifyNone);
     req.setSslConfiguration(sslconfig);
   }
 
-  req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  req.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
   req.setAttribute(QNetworkRequest::Http2AllowedAttribute, http2());
-#endif
 
   QNetworkReply *reply = network_->get(req);
   QObject::connect(reply, &QNetworkReply::sslErrors, this, &SubsonicBaseRequest::HandleSSLErrors);
@@ -137,7 +138,7 @@ QByteArray SubsonicBaseRequest::GetReplyData(QNetworkReply *reply) {
   else {
     if (reply->error() != QNetworkReply::NoError && reply->error() < 200) {
       // This is a network error, there is nothing more to do.
-      Error(QString("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
+      Error(QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
     }
     else {
 
@@ -148,24 +149,24 @@ QByteArray SubsonicBaseRequest::GetReplyData(QNetworkReply *reply) {
       QJsonDocument json_doc = QJsonDocument::fromJson(data, &parse_error);
       if (parse_error.error == QJsonParseError::NoError && !json_doc.isEmpty() && json_doc.isObject()) {
         QJsonObject json_obj = json_doc.object();
-        if (!json_obj.isEmpty() && json_obj.contains("error")) {
-          QJsonValue json_error = json_obj["error"];
+        if (!json_obj.isEmpty() && json_obj.contains("error"_L1)) {
+          QJsonValue json_error = json_obj["error"_L1];
           if (json_error.isObject()) {
             json_obj = json_error.toObject();
-            if (!json_obj.isEmpty() && json_obj.contains("code") && json_obj.contains("message")) {
-              int code = json_obj["code"].toInt();
-              QString message = json_obj["message"].toString();
-              error = QString("%1 (%2)").arg(message).arg(code);
+            if (!json_obj.isEmpty() && json_obj.contains("code"_L1) && json_obj.contains("message"_L1)) {
+              int code = json_obj["code"_L1].toInt();
+              QString message = json_obj["message"_L1].toString();
+              error = QStringLiteral("%1 (%2)").arg(message).arg(code);
             }
           }
         }
       }
       if (error.isEmpty()) {
         if (reply->error() != QNetworkReply::NoError) {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
+          error = QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error());
         }
         else {
-          error = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
+          error = QStringLiteral("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
         }
       }
       Error(error);
@@ -182,34 +183,34 @@ QJsonObject SubsonicBaseRequest::ExtractJsonObj(QByteArray &data) {
   QJsonDocument json_doc = QJsonDocument::fromJson(data, &json_error);
 
   if (json_error.error != QJsonParseError::NoError) {
-    Error("Reply from server missing Json data.", data);
+    Error(u"Reply from server missing Json data."_s, data);
     return QJsonObject();
   }
 
   if (json_doc.isEmpty()) {
-    Error("Received empty Json document.", data);
+    Error(u"Received empty Json document."_s, data);
     return QJsonObject();
   }
 
   if (!json_doc.isObject()) {
-    Error("Json document is not an object.", json_doc);
+    Error(u"Json document is not an object."_s, json_doc);
     return QJsonObject();
   }
 
   QJsonObject json_obj = json_doc.object();
   if (json_obj.isEmpty()) {
-    Error("Received empty Json object.", json_doc);
+    Error(u"Received empty Json object."_s, json_doc);
     return QJsonObject();
   }
 
-  if (!json_obj.contains("subsonic-response")) {
-    Error("Json reply is missing subsonic-response.", json_obj);
+  if (!json_obj.contains("subsonic-response"_L1)) {
+    Error(u"Json reply is missing subsonic-response."_s, json_obj);
     return QJsonObject();
   }
 
-  QJsonValue json_response = json_obj["subsonic-response"];
+  QJsonValue json_response = json_obj["subsonic-response"_L1];
   if (!json_response.isObject()) {
-    Error("Json response is not an object.", json_response);
+    Error(u"Json response is not an object."_s, json_response);
     return QJsonObject();
   }
   json_obj = json_response.toObject();
@@ -222,7 +223,7 @@ QString SubsonicBaseRequest::ErrorsToHTML(const QStringList &errors) {
 
   QString error_html;
   for (const QString &error : errors) {
-    error_html += error + "<br />";
+    error_html += error + "<br />"_L1;
   }
   return error_html;
 

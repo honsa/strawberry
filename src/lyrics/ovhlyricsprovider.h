@@ -28,7 +28,7 @@
 #include <QVariant>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsonlyricsprovider.h"
 #include "lyricssearchrequest.h"
 
@@ -39,20 +39,19 @@ class OVHLyricsProvider : public JsonLyricsProvider {
   Q_OBJECT
 
  public:
-  explicit OVHLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit OVHLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~OVHLyricsProvider() override;
-
-  bool StartSearch(const int id, const LyricsSearchRequest &request) override;
-  void CancelSearch(const int id) override;
 
  private:
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
- private slots:
+ protected Q_SLOTS:
+  void StartSearch(const int id, const LyricsSearchRequest &request) override;
+
+ private Q_SLOTS:
   void HandleSearchReply(QNetworkReply *reply, const int id, const LyricsSearchRequest &request);
 
  private:
-  static const char *kUrlSearch;
   QList<QNetworkReply*> replies_;
 };
 

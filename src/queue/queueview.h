@@ -28,7 +28,7 @@
 #include <QWidget>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class Playlist;
 class PlaylistManager;
@@ -44,7 +44,7 @@ class QueueView : public QWidget {
   void SetPlaylistManager(SharedPtr<PlaylistManager> playlist_manager);
   void ReloadSettings();
 
- private slots:
+ private Q_SLOTS:
   void CurrentPlaylistChanged(Playlist *playlist);
   void PlaylistDestroyed();
   void UpdateButtonState();

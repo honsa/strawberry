@@ -17,6 +17,8 @@
  *
  */
 
+#include <utility>
+
 #include <QByteArray>
 #include <QString>
 #include <QStringList>
@@ -29,7 +31,8 @@
 #include "imageutils.h"
 #include "fileutils.h"
 #include "mimeutils.h"
-#include "core/tagreaderclient.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 QStringList ImageUtils::kSupportedImageMimeTypes;
 QStringList ImageUtils::kSupportedImageFormats;
@@ -37,8 +40,9 @@ QStringList ImageUtils::kSupportedImageFormats;
 QStringList ImageUtils::SupportedImageMimeTypes() {
 
   if (kSupportedImageMimeTypes.isEmpty()) {
-    for (const QByteArray &mimetype : QImageReader::supportedMimeTypes()) {
-      kSupportedImageMimeTypes << mimetype;
+    const QList<QByteArray> supported_mimetypes = QImageReader::supportedMimeTypes();
+    for (const QByteArray &mimetype : supported_mimetypes) {
+      kSupportedImageMimeTypes << QString::fromUtf8(mimetype);
     }
   }
 
@@ -49,8 +53,9 @@ QStringList ImageUtils::SupportedImageMimeTypes() {
 QStringList ImageUtils::SupportedImageFormats() {
 
   if (kSupportedImageFormats.isEmpty()) {
-    for (const QByteArray &filetype : QImageReader::supportedImageFormats()) {
-      kSupportedImageFormats << filetype;
+    const QList<QByteArray> image_formats = QImageReader::supportedImageFormats();
+    for (const QByteArray &filetype : image_formats) {
+      kSupportedImageFormats << QString::fromUtf8(filetype);
     }
   }
 
@@ -78,13 +83,14 @@ QByteArray ImageUtils::FileToJpegData(const QString &filename) {
   if (filename.isEmpty()) return QByteArray();
 
   QByteArray image_data = Utilities::ReadDataFromFile(filename);
-  if (Utilities::MimeTypeFromData(image_data) == "image/jpeg") return image_data;
-  else {
-    QImage image;
-    if (image.loadFromData(image_data)) {
-      if (!image.isNull()) {
-        image_data = SaveImageToJpegData(image);
-      }
+  if (Utilities::MimeTypeFromData(image_data) == u"image/jpeg"_s) {
+    return image_data;
+  }
+
+  QImage image;
+  if (image.loadFromData(image_data)) {
+    if (!image.isNull()) {
+      image_data = SaveImageToJpegData(image);
     }
   }
 
@@ -123,7 +129,7 @@ QImage ImageUtils::ScaleImage(const QImage &image, const QSize desired_size, con
 
 QImage ImageUtils::GenerateNoCoverImage(const QSize size, const qreal device_pixel_ratio) {
 
-  QImage image(":/pictures/cdcase.png");
+  QImage image(u":/pictures/cdcase.png"_s);
   QSize scale_size(static_cast<int>(size.width() * device_pixel_ratio), static_cast<int>(size.height() * device_pixel_ratio));
 
   // Get a square version of the nocover image with some transparency:

@@ -46,8 +46,10 @@
 #include <QtEvents>
 #include <QSettings>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/iconloader.h"
+#include "core/settings.h"
+#include "filterparser/filterparser.h"
 #include "playlist.h"
 #include "playlisttabbar.h"
 #include "playlistview.h"
@@ -56,12 +58,16 @@
 #include "playlistfilter.h"
 #include "playlistparsers/playlistparser.h"
 #include "ui_playlistcontainer.h"
-#include "widgets/qsearchfield.h"
-#include "settings/appearancesettingspage.h"
+#include "widgets/searchfield.h"
+#include "constants/appearancesettings.h"
 
-const char *PlaylistContainer::kSettingsGroup = "Playlist";
-const int PlaylistContainer::kFilterDelayMs = 100;
-const int PlaylistContainer::kFilterDelayPlaylistSizeThreshold = 5000;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr char kSettingsGroup[] = "Playlist";
+constexpr int kFilterDelayMs = 100;
+constexpr int kFilterDelayPlaylistSizeThreshold = 5000;
+}  // namespace
 
 PlaylistContainer::PlaylistContainer(QWidget *parent)
     : QWidget(parent),
@@ -93,7 +99,7 @@ PlaylistContainer::PlaylistContainer(QWidget *parent)
   no_matches_label_->setPalette(no_matches_palette);
 
   // Remove QFrame border
-  ui_->toolbar->setStyleSheet("QFrame { border: 0px; }");
+  ui_->toolbar->setStyleSheet(u"QFrame { border: 0px; }"_s);
 
   // Make it bold
   QFont no_matches_font = no_matches_label_->font();
@@ -119,41 +125,11 @@ PlaylistContainer::PlaylistContainer(QWidget *parent)
   QObject::connect(filter_timer_, &QTimer::timeout, this, &PlaylistContainer::UpdateFilter);
 
   // Replace playlist search filter with native search box.
-  QObject::connect(ui_->search_field, &QSearchField::textChanged, this, &PlaylistContainer::MaybeUpdateFilter);
+  QObject::connect(ui_->search_field, &SearchField::textChanged, this, &PlaylistContainer::MaybeUpdateFilter);
   QObject::connect(ui_->playlist, &PlaylistView::FocusOnFilterSignal, this, &PlaylistContainer::FocusOnFilter);
   ui_->search_field->installEventFilter(this);
 
-  QString available_fields = PlaylistFilter().column_names().keys().join(", ");
-  ui_->search_field->setToolTip(
-    QString("<html><head/><body><p>") +
-    tr("Prefix a search term with a field name to limit the search to that field, e.g.:") +
-    QString(" ") +
-    QString("<span style=\"font-weight:600;\">") +
-    tr("artist") +
-    QString(":</span><span style=\"font-style:italic;\">Strawbs</span> ") +
-    tr("searches the playlist for all artists that contain the word %1. ").arg("Strawbs") +
-    QString("</p><p>") +
-
-    tr("Search terms for numerical fields can be prefixed with %1 or %2 to refine the search, e.g.: ")
-      .arg(" =, !=, &lt;, &gt;, &lt;=", "&gt;=") +
-    QString("<span style=\"font-weight:600;\">") +
-    tr("rating") +
-    QString("</span>") +
-    QString(":>=") +
-    QString("<span style=\"font-weight:italic;\">4</span>") +
-    QString("</p><p>") +
-
-    tr("Multiple search terms can also be combined with \"%1\" (default) and \"%2\", as well as grouped with parentheses. ")
-      .arg("AND", "OR") +
-
-    QString("</p><p><span style=\"font-weight:600;\">") +
-    tr("Available fields") +
-    QString(": ") + QString("</span><span style=\"font-style:italic;\">") +
-    available_fields +
-    QString("</span>.") +
-    QString("</p></body></html>")
-  );
-
+  ui_->search_field->setToolTip(FilterParser::ToolTip());
 
   ReloadSettings();
 
@@ -230,10 +206,10 @@ void PlaylistContainer::SetViewModel(Playlist *playlist, const int scroll_positi
   playlist->IgnoreSorting(false);
 
   QObject::connect(view()->selectionModel(), &QItemSelectionModel::selectionChanged, this, &PlaylistContainer::SelectionChanged);
-  emit ViewSelectionModelChanged();
+  Q_EMIT ViewSelectionModelChanged();
 
   // Update filter
-  ui_->search_field->setText(playlist->filter()->filter_text());
+  ui_->search_field->setText(playlist->filter()->filter_string());
 
   // Update the no matches label
   QObject::connect(playlist_->filter(), &QSortFilterProxyModel::modelReset, this, &PlaylistContainer::UpdateNoMatchesLabel);
@@ -254,23 +230,23 @@ void PlaylistContainer::SetViewModel(Playlist *playlist, const int scroll_positi
   delete redo_;
   undo_ = playlist->undo_stack()->createUndoAction(this, tr("Undo"));
   redo_ = playlist->undo_stack()->createRedoAction(this, tr("Redo"));
-  undo_->setIcon(IconLoader::Load("edit-undo"));
+  undo_->setIcon(IconLoader::Load(u"edit-undo"_s));
   undo_->setShortcut(QKeySequence::Undo);
-  redo_->setIcon(IconLoader::Load("edit-redo"));
+  redo_->setIcon(IconLoader::Load(u"edit-redo"_s));
   redo_->setShortcut(QKeySequence::Redo);
 
   ui_->undo->setDefaultAction(undo_);
   ui_->redo->setDefaultAction(redo_);
 
-  emit UndoRedoActionsChanged(undo_, redo_);
+  Q_EMIT UndoRedoActionsChanged(undo_, redo_);
 
 }
 
 void PlaylistContainer::ReloadSettings() {
 
-  QSettings s;
-  s.beginGroup(AppearanceSettingsPage::kSettingsGroup);
-  int iconsize = s.value(AppearanceSettingsPage::kIconSizePlaylistButtons, 20).toInt();
+  Settings s;
+  s.beginGroup(AppearanceSettings::kSettingsGroup);
+  int iconsize = s.value(AppearanceSettings::kIconSizePlaylistButtons, 20).toInt();
   s.endGroup();
 
   ui_->create_new->setIconSize(QSize(iconsize, iconsize));
@@ -305,11 +281,11 @@ void PlaylistContainer::FocusSearchField() {
 }
 
 void PlaylistContainer::ActivePlaying() {
-  UpdateActiveIcon(QIcon(":/pictures/tiny-play.png"));
+  UpdateActiveIcon(QIcon(u":/pictures/tiny-play.png"_s));
 }
 
 void PlaylistContainer::ActivePaused() {
-  UpdateActiveIcon(QIcon(":/pictures/tiny-pause.png"));
+  UpdateActiveIcon(QIcon(u":/pictures/tiny-pause.png"_s));
 }
 
 void PlaylistContainer::ActiveStopped() { UpdateActiveIcon(QIcon()); }
@@ -451,7 +427,7 @@ void PlaylistContainer::UpdateFilter() {
 
   if (!ui_->toolbar->isVisible()) return;
 
-  manager_->current()->filter()->SetFilterText(ui_->search_field->text());
+  manager_->current()->filter()->SetFilterString(ui_->search_field->text());
   ui_->playlist->JumpToCurrentlyPlayingTrack();
 
   UpdateNoMatchesLabel();

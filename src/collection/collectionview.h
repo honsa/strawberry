@@ -24,26 +24,39 @@
 
 #include "config.h"
 
-#include <QObject>
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QString>
 #include <QPixmap>
 #include <QSet>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "widgets/autoexpandingtreeview.h"
 
-class QWidget;
+class QSortFilterProxyModel;
 class QMenu;
 class QAction;
 class QContextMenuEvent;
 class QMouseEvent;
 class QPaintEvent;
+class QKeyEvent;
 
-class Application;
+class TaskManager;
+class TagReaderClient;
+class NetworkAccessManager;
+class CollectionLibrary;
+class CollectionBackend;
+class CollectionModel;
+class CollectionFilter;
 class CollectionFilterWidget;
+class DeviceManager;
+class StreamingServices;
+class AlbumCoverLoader;
+class CurrentAlbumCoverLoader;
+class CoverProviders;
+class LyricsProviders;
 class EditTagDialog;
 class OrganizeDialog;
 
@@ -58,8 +71,18 @@ class CollectionView : public AutoExpandingTreeView {
   // Please note that the selection is recursive meaning that if for example an album is selected this will return all of it's songs.
   SongList GetSelectedSongs() const;
 
-  void SetApplication(Application *app);
-  void SetFilter(CollectionFilterWidget *filter);
+  void Init(const SharedPtr<TaskManager> task_manager,
+            const SharedPtr<TagReaderClient> tagreader_client,
+            const SharedPtr<NetworkAccessManager> network,
+            const SharedPtr<AlbumCoverLoader> albumcover_loader,
+            const SharedPtr<CurrentAlbumCoverLoader> current_albumcover_loader,
+            const SharedPtr<CoverProviders> cover_providers,
+            const SharedPtr<LyricsProviders> lyrics_providers,
+            const SharedPtr<CollectionLibrary> collection,
+            const SharedPtr<DeviceManager> device_manager,
+            const SharedPtr<StreamingServices> streaming_services);
+
+  void SetFilterWidget(CollectionFilterWidget *filter_widget);
 
   // QTreeView
   void keyboardSearch(const QString &search) override;
@@ -69,7 +92,7 @@ class CollectionView : public AutoExpandingTreeView {
   int TotalArtists() const;
   int TotalAlbums() const;
 
- public slots:
+ public Q_SLOTS:
   void TotalSongCountUpdated(const int count);
   void TotalArtistCountUpdated(const int count);
   void TotalAlbumCountUpdated(const int count);
@@ -82,8 +105,8 @@ class CollectionView : public AutoExpandingTreeView {
 
   void EditTagError(const QString &message);
 
- signals:
-  void ShowConfigDialog();
+ Q_SIGNALS:
+  void ShowSettingsDialog();
 
   void TotalSongCountUpdated_();
   void TotalArtistCountUpdated_();
@@ -93,15 +116,17 @@ class CollectionView : public AutoExpandingTreeView {
  protected:
   // QWidget
   void paintEvent(QPaintEvent *event) override;
+  void keyPressEvent(QKeyEvent *e) override;
   void mouseReleaseEvent(QMouseEvent *e) override;
   void contextMenuEvent(QContextMenuEvent *e) override;
 
- private slots:
+ private Q_SLOTS:
   void Load();
   void AddToPlaylist();
   void AddToPlaylistEnqueue();
   void AddToPlaylistEnqueueNext();
   void OpenInNewPlaylist();
+  void SearchForThis();
   void Organize();
   void CopyToDevice();
   void EditTracks();
@@ -119,8 +144,21 @@ class CollectionView : public AutoExpandingTreeView {
   void SaveContainerPath(const QModelIndex &child);
 
  private:
-  Application *app_;
-  CollectionFilterWidget *filter_;
+  SharedPtr<TaskManager> task_manager_;
+  SharedPtr<TagReaderClient> tagreader_client_;
+  SharedPtr<NetworkAccessManager> network_;
+  SharedPtr<DeviceManager> device_manager_;
+  SharedPtr<AlbumCoverLoader> albumcover_loader_;
+  SharedPtr<CurrentAlbumCoverLoader> current_albumcover_loader_;
+  SharedPtr<CollectionLibrary> collection_;
+  SharedPtr<CoverProviders> cover_providers_;
+  SharedPtr<LyricsProviders> lyrics_providers_;
+  SharedPtr<StreamingServices> streaming_services_;
+
+  SharedPtr<CollectionBackend> backend_;
+  CollectionModel *model_;
+  CollectionFilter *filter_;
+  CollectionFilterWidget *filter_widget_;
 
   int total_song_count_;
   int total_artist_count_;
@@ -136,6 +174,8 @@ class CollectionView : public AutoExpandingTreeView {
   QAction *action_add_to_playlist_enqueue_next_;
   QAction *action_open_in_new_playlist_;
   QAction *action_organize_;
+  QAction *action_search_for_this_;
+
 #ifndef Q_OS_WIN
   QAction *action_copy_to_device_;
 #endif

@@ -40,7 +40,9 @@
 
 #include "core/iconloader.h"
 #include "core/logging.h"
+#include "core/settings.h"
 #include "utilities/envutils.h"
+#include "constants/globalshortcutssettings.h"
 #include "globalshortcuts/globalshortcutgrabber.h"
 #include "globalshortcuts/globalshortcutsmanager.h"
 #include "settingspage.h"
@@ -48,18 +50,21 @@
 #include "globalshortcutssettingspage.h"
 #include "ui_globalshortcutssettingspage.h"
 
-const char *GlobalShortcutsSettingsPage::kSettingsGroup = "GlobalShortcuts";
+using namespace Qt::Literals::StringLiterals;
 
-GlobalShortcutsSettingsPage::GlobalShortcutsSettingsPage(SettingsDialog *dialog, QWidget *parent)
+using namespace GlobalShortcutsSettings;
+
+GlobalShortcutsSettingsPage::GlobalShortcutsSettingsPage(SettingsDialog *dialog, GlobalShortcutsManager *global_shortcuts_manager, QWidget *parent)
     : SettingsPage(dialog, parent),
       ui_(new Ui_GlobalShortcutsSettingsPage),
+      global_shortcuts_manager_(global_shortcuts_manager),
       initialized_(false),
       grabber_(new GlobalShortcutGrabber()) {
 
   ui_->setupUi(this);
   ui_->shortcut_options->setEnabled(false);
   ui_->list->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-  setWindowIcon(IconLoader::Load("keyboard", true, 0, 32));
+  setWindowIcon(IconLoader::Load(u"keyboard"_s, true, 0, 32));
 
   QObject::connect(ui_->list, &QTreeWidget::currentItemChanged, this, &GlobalShortcutsSettingsPage::ItemClicked);
   QObject::connect(ui_->radio_none, &QRadioButton::clicked, this, &GlobalShortcutsSettingsPage::NoneClicked);
@@ -67,27 +72,33 @@ GlobalShortcutsSettingsPage::GlobalShortcutsSettingsPage(SettingsDialog *dialog,
   QObject::connect(ui_->radio_custom, &QRadioButton::clicked, this, &GlobalShortcutsSettingsPage::ChangeClicked);
   QObject::connect(ui_->button_change, &QPushButton::clicked, this, &GlobalShortcutsSettingsPage::ChangeClicked);
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
+#ifdef HAVE_KDE_GLOBALSHORTCUTS
   QObject::connect(ui_->checkbox_kde, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
-  QObject::connect(ui_->checkbox_gnome, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
-  QObject::connect(ui_->checkbox_mate, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
-  QObject::connect(ui_->button_gnome_open, &QPushButton::clicked, this, &GlobalShortcutsSettingsPage::OpenGnomeKeybindingProperties);
-  QObject::connect(ui_->button_mate_open, &QPushButton::clicked, this, &GlobalShortcutsSettingsPage::OpenMateKeybindingProperties);
 #else
   ui_->widget_kde->hide();
+#endif
+#ifdef HAVE_GNOME_GLOBALSHORTCUTS
+  QObject::connect(ui_->checkbox_gnome, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
+  QObject::connect(ui_->button_gnome_open, &QPushButton::clicked, this, &GlobalShortcutsSettingsPage::OpenGnomeKeybindingProperties);
+#else
   ui_->widget_gnome->hide();
+ #endif
+#ifdef HAVE_MATE_GLOBALSHORTCUTS
+  QObject::connect(ui_->checkbox_mate, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
+  QObject::connect(ui_->button_mate_open, &QPushButton::clicked, this, &GlobalShortcutsSettingsPage::OpenMateKeybindingProperties);
+#else
   ui_->widget_mate->hide();
-#endif  // defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
+#endif
 
 #ifdef HAVE_X11_GLOBALSHORTCUTS
   QObject::connect(ui_->checkbox_x11, &QCheckBox::toggled, this, &GlobalShortcutsSettingsPage::ShortcutOptionsChanged);
 #else
   ui_->widget_x11->hide();
-#endif  // HAVE_X11_GLOBALSHORTCUTS
+#endif
 
 #ifndef Q_OS_MACOS
   ui_->widget_macos_access->hide();
-#endif  // Q_OS_MACOS
+#endif
 
 }
 
@@ -95,10 +106,8 @@ GlobalShortcutsSettingsPage::~GlobalShortcutsSettingsPage() { delete ui_; }
 
 void GlobalShortcutsSettingsPage::Load() {
 
-  QSettings s;
+  Settings s;
   s.beginGroup(kSettingsGroup);
-
-  GlobalShortcutsManager *manager = dialog()->global_shortcuts_manager();
 
   if (!initialized_) {
     initialized_ = true;
@@ -107,11 +116,10 @@ void GlobalShortcutsSettingsPage::Load() {
     ui_->widget_warning->hide();
 
 #ifdef Q_OS_MACOS
-    QObject::connect(ui_->button_macos_preferences, &QPushButton::clicked, manager, &GlobalShortcutsManager::ShowMacAccessibilityDialog);
+    QObject::connect(ui_->button_macos_preferences, &QPushButton::clicked, global_shortcuts_manager_, &GlobalShortcutsManager::ShowMacAccessibilityDialog);
 #endif
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
-
+#ifdef HAVE_KDE_GLOBALSHORTCUTS
     if (GlobalShortcutsManager::IsKdeAvailable()) {
       qLog(Debug) << "KDE (KGlobalAccel) backend is available.";
       ui_->widget_kde->show();
@@ -120,7 +128,9 @@ void GlobalShortcutsSettingsPage::Load() {
       qLog(Debug) << "KDE (KGlobalAccel) backend is unavailable.";
       ui_->widget_kde->hide();
     }
+#endif
 
+#ifdef HAVE_GNOME_GLOBALSHORTCUTS
     if (GlobalShortcutsManager::IsGnomeAvailable()) {
       qLog(Debug) << "Gnome (GSD) backend is available.";
       ui_->widget_gnome->show();
@@ -129,7 +139,9 @@ void GlobalShortcutsSettingsPage::Load() {
       qLog(Debug) << "Gnome (GSD) backend is unavailable.";
       ui_->widget_gnome->hide();
     }
+#endif
 
+#ifdef HAVE_MATE_GLOBALSHORTCUTS
     if (GlobalShortcutsManager::IsMateAvailable()) {
       qLog(Debug) << "MATE backend is available.";
       ui_->widget_mate->show();
@@ -138,8 +150,7 @@ void GlobalShortcutsSettingsPage::Load() {
       qLog(Debug) << "MATE backend is unavailable.";
       ui_->widget_mate->hide();
     }
-
-#endif  // defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
+#endif
 
 #ifdef HAVE_X11_GLOBALSHORTCUTS
     if (GlobalShortcutsManager::IsX11Available()) {
@@ -150,9 +161,9 @@ void GlobalShortcutsSettingsPage::Load() {
       qLog(Debug) << "X11 backend is unavailable.";
       ui_->widget_x11->hide();
     }
-#endif  // HAVE_X11_GLOBALSHORTCUTS
+#endif
 
-    QList<GlobalShortcutsManager::Shortcut> shortcuts = manager->shortcuts().values();
+    const QList<GlobalShortcutsManager::Shortcut> shortcuts = global_shortcuts_manager_->shortcuts().values();
     for (const GlobalShortcutsManager::Shortcut &i : shortcuts) {
       Shortcut shortcut;
       shortcut.s = i;
@@ -166,34 +177,36 @@ void GlobalShortcutsSettingsPage::Load() {
     ItemClicked(ui_->list->topLevelItem(0));
   }
 
-  QList<Shortcut> shortcuts = shortcuts_.values();
+  const QList<Shortcut> shortcuts = shortcuts_.values();
   for (const Shortcut &shortcut : shortcuts) {
     SetShortcut(shortcut.s.id, shortcut.s.action->shortcut());
   }
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
-
+#ifdef HAVE_KDE_GLOBALSHORTCUTS
   if (ui_->widget_kde->isVisibleTo(this)) {
-    ui_->checkbox_kde->setChecked(s.value("use_kde", true).toBool());
+    ui_->checkbox_kde->setChecked(s.value(kUseKDE, true).toBool());
   }
+#endif
 
+#ifdef HAVE_GNOME_GLOBALSHORTCUTS
   if (ui_->widget_gnome->isVisibleTo(this)) {
-    ui_->checkbox_gnome->setChecked(s.value("use_gnome", true).toBool());
+    ui_->checkbox_gnome->setChecked(s.value(kUseGnome, true).toBool());
   }
+#endif
 
+#ifdef HAVE_MATE_GLOBALSHORTCUTS
   if (ui_->widget_mate->isVisibleTo(this)) {
-    ui_->checkbox_mate->setChecked(s.value("use_mate", true).toBool());
+    ui_->checkbox_mate->setChecked(s.value(kUseMate, true).toBool());
   }
-
-#endif  // defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
+#endif
 
 #ifdef HAVE_X11_GLOBALSHORTCUTS
   if (ui_->widget_x11->isVisibleTo(this)) {
-    ui_->checkbox_x11->setChecked(s.value("use_x11", false).toBool());
+    ui_->checkbox_x11->setChecked(s.value(kUseX11, false).toBool());
   }
-#endif  // HAVE_X11_GLOBALSHORTCUTS
+#endif
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && (defined(HAVE_DBUS) || defined(HAVE_X11_GLOBALSHORTCUTS))
+#if defined(HAVE_KDE_GLOBALSHORTCUTS) || defined(HAVE_GNOME_GLOBALSHORTCUTS) || defined(HAVE_MATE_GLOBALSHORTCUTS) || defined(HAVE_X11_GLOBALSHORTCUTS)
   ShortcutOptionsChanged();
 #endif
 
@@ -205,35 +218,41 @@ void GlobalShortcutsSettingsPage::Load() {
 
   Init(ui_->layout_globalshortcutssettingspage->parentWidget());
 
-  if (!QSettings().childGroups().contains(kSettingsGroup)) set_changed();
+  if (!Settings().childGroups().contains(QLatin1String(kSettingsGroup))) set_changed();
 
 }
 
 void GlobalShortcutsSettingsPage::Save() {
 
-  QSettings s;
+  Settings s;
   s.beginGroup(kSettingsGroup);
 
-  QList<Shortcut> shortcuts = shortcuts_.values();
+  const QList<Shortcut> shortcuts = shortcuts_.values();
   for (const Shortcut &shortcut : shortcuts) {
     shortcut.s.action->setShortcut(shortcut.key);
     shortcut.s.shortcut->setKey(shortcut.key);
     s.setValue(shortcut.s.id, shortcut.key.toString());
   }
 
-#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
-  s.setValue("use_kde", ui_->checkbox_kde->isChecked());
-  s.setValue("use_gnome", ui_->checkbox_gnome->isChecked());
-  s.setValue("use_mate", ui_->checkbox_mate->isChecked());
-#endif  // defined(Q_OS_UNIX) && !defined(Q_OS_MACOS) && defined(HAVE_DBUS)
+#ifdef HAVE_KDE_GLOBALSHORTCUTS
+  s.setValue(kUseKDE, ui_->checkbox_kde->isChecked());
+#endif
+
+#ifdef HAVE_GNOME_GLOBALSHORTCUTS
+  s.setValue(kUseGnome, ui_->checkbox_gnome->isChecked());
+#endif
+
+#ifdef HAVE_MATE_GLOBALSHORTCUTS
+  s.setValue(kUseMate, ui_->checkbox_mate->isChecked());
+#endif
 
 #ifdef HAVE_X11_GLOBALSHORTCUTS
-  s.setValue("use_x11", ui_->checkbox_x11->isChecked());
-#endif  // HAVE_X11_GLOBALSHORTCUTS
+  s.setValue(kUseX11, ui_->checkbox_x11->isChecked());
+#endif
 
   s.endGroup();
 
-  dialog()->global_shortcuts_manager()->ReloadSettings();
+  global_shortcuts_manager_->ReloadSettings();
 
 }
 
@@ -257,9 +276,9 @@ void GlobalShortcutsSettingsPage::ShortcutOptionsChanged() {
 
 void GlobalShortcutsSettingsPage::OpenGnomeKeybindingProperties() {
 
-  if (!QProcess::startDetached("gnome-keybinding-properties", QStringList())) {
-    if (!QProcess::startDetached("gnome-control-center", QStringList() << "keyboard")) {
-      QMessageBox::warning(this, "Error", tr("The \"%1\" command could not be started.").arg("gnome-keybinding-properties"));
+  if (!QProcess::startDetached(u"gnome-keybinding-properties"_s, QStringList())) {
+    if (!QProcess::startDetached(u"gnome-control-center"_s, QStringList() << u"keyboard"_s)) {
+      QMessageBox::warning(this, u"Error"_s, tr("The \"%1\" command could not be started.").arg("gnome-keybinding-properties"_L1));
     }
   }
 
@@ -267,9 +286,9 @@ void GlobalShortcutsSettingsPage::OpenGnomeKeybindingProperties() {
 
 void GlobalShortcutsSettingsPage::OpenMateKeybindingProperties() {
 
-  if (!QProcess::startDetached("mate-keybinding-properties", QStringList())) {
-    if (!QProcess::startDetached("mate-control-center", QStringList() << "keyboard")) {
-      QMessageBox::warning(this, "Error", tr("The \"%1\" command could not be started.").arg("mate-keybinding-properties"));
+  if (!QProcess::startDetached(u"mate-keybinding-properties"_s, QStringList())) {
+    if (!QProcess::startDetached(u"mate-control-center"_s, QStringList() << u"keyboard"_s)) {
+      QMessageBox::warning(this, u"Error"_s, tr("The \"%1\" command could not be started.").arg("mate-keybinding-properties"_L1));
     }
   }
 
@@ -277,17 +296,19 @@ void GlobalShortcutsSettingsPage::OpenMateKeybindingProperties() {
 
 void GlobalShortcutsSettingsPage::SetShortcut(const QString &id, const QKeySequence &key) {
 
-  Shortcut &shortcut = shortcuts_[id];
+  Shortcut shortcut = shortcuts_.value(id);
 
   shortcut.key = key;
   shortcut.item->setText(1, key.toString(QKeySequence::NativeText));
+
+  shortcuts_[id] = shortcut;
 
 }
 
 void GlobalShortcutsSettingsPage::ItemClicked(QTreeWidgetItem *item) {
 
   current_id_ = item->data(0, Qt::UserRole).toString();
-  Shortcut &shortcut = shortcuts_[current_id_];
+  const Shortcut shortcut = shortcuts_.value(current_id_);
 
   // Enable options
   ui_->shortcut_options->setEnabled(true);
@@ -321,15 +342,14 @@ void GlobalShortcutsSettingsPage::DefaultClicked() {
 
 void GlobalShortcutsSettingsPage::ChangeClicked() {
 
-  GlobalShortcutsManager *manager = dialog()->global_shortcuts_manager();
-  manager->Unregister();
-  QKeySequence key = grabber_->GetKey(shortcuts_[current_id_].s.action->text());
-  manager->Register();
+  global_shortcuts_manager_->Unregister();
+  QKeySequence key = grabber_->GetKey(shortcuts_.value(current_id_).s.action->text());
+  global_shortcuts_manager_->Register();
 
   if (key.isEmpty()) return;
 
   // Check if this key sequence is used by any other actions
-  QStringList ids = shortcuts_.keys();
+  const QStringList ids = shortcuts_.keys();
   for (const QString &id : ids) {
     if (shortcuts_[id].key == key) SetShortcut(id, QKeySequence());
   }
@@ -344,18 +364,18 @@ void GlobalShortcutsSettingsPage::ChangeClicked() {
 void GlobalShortcutsSettingsPage::X11Warning() {
 
   QString de = de_.toLower();
-  if (de == "kde" || de == "gnome" || de == "x-cinnamon" || de == "mate") {
+  if (de == "kde"_L1 || de == "gnome"_L1 || de == "x-cinnamon"_L1 || de == "mate"_L1) {
     QString text(tr("Using X11 shortcuts on %1 is not recommended and can cause keyboard to become unresponsive!").arg(de_));
-    if (de == "kde") {
+    if (de == "kde"_L1) {
       text += tr(" Shortcuts on %1 are usually used through MPRIS and KGlobalAccel.").arg(de_);
     }
-    else if (de == "gnome") {
+    else if (de == "gnome"_L1) {
       text += tr(" Shortcuts on %1 are usually used through Gnome Settings Daemon and should be configured in gnome-settings-daemon instead.").arg(de_);
     }
-    else if (de == "x-cinnamon") {
+    else if (de == "x-cinnamon"_L1) {
       text += tr(" Shortcuts on %1 are usually used through Gnome Settings Daemon and should be configured in cinnamon-settings-daemon instead.").arg(de_);
     }
-    else if (de == "mate") {
+    else if (de == "mate"_L1) {
       text += tr(" Shortcuts on %1 are usually used through MATE Settings Daemon and should be configured there instead.").arg(de_);
     }
     ui_->label_warn_text->setText(text);

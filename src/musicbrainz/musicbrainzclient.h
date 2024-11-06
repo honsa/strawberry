@@ -33,7 +33,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class QNetworkReply;
 class QTimer;
@@ -101,13 +101,13 @@ class MusicBrainzClient : public QObject {
   // Cancels all requests.  Finished() will never be emitted for any pending requests.
   void CancelAll();
 
- signals:
+ Q_SIGNALS:
   // Finished signal emitted when fechting songs tags
   void Finished(const int id, const MusicBrainzClient::ResultList &result, const QString &error = QString());
   // Finished signal emitted when fechting album's songs tags using DiscId
   void DiscIdFinished(const QString &artist, const QString &album, const MusicBrainzClient::ResultList &result, const QString &error = QString());
 
- private slots:
+ private Q_SLOTS:
   void FlushRequests();
   // id identifies the track, and request_number means it's the 'request_number'th request for this track
   void RequestFinished(QNetworkReply *reply, const int id, const int request_number);
@@ -152,16 +152,16 @@ class MusicBrainzClient : public QObject {
     }
 
     void SetStatusFromString(const QString &s) {
-      if (s.compare("Official", Qt::CaseInsensitive) == 0) {
+      if (s.compare(QLatin1String("Official"), Qt::CaseInsensitive) == 0) {
         status_ = Status::Official;
       }
-      else if (s.compare("Promotion", Qt::CaseInsensitive) == 0) {
+      else if (s.compare(QLatin1String("Promotion"), Qt::CaseInsensitive) == 0) {
         status_ = Status::Promotional;
       }
-      else if (s.compare("Bootleg", Qt::CaseInsensitive) == 0) {
+      else if (s.compare(QLatin1String("Bootleg"), Qt::CaseInsensitive) == 0) {
         status_ = Status::Bootleg;
       }
-      else if (s.compare("Pseudo-release", Qt::CaseInsensitive) == 0) {
+      else if (s.compare(QLatin1String("Pseudo-release"), Qt::CaseInsensitive) == 0) {
         status_ = Status::PseudoRelease;
       }
       else {
@@ -202,14 +202,6 @@ class MusicBrainzClient : public QObject {
   static void Error(const QString &error, const QVariant &debug = QVariant());
 
  private:
-
-  static const char *kTrackUrl;
-  static const char *kDiscUrl;
-  static const char *kDateRegex;
-  static const int kRequestsDelay;
-  static const int kDefaultTimeout;
-  static const int kMaxRequestPerTrack;
-
   SharedPtr<NetworkAccessManager> network_;
   NetworkTimeouts *timeouts_;
   QMultiMap<int, Request> requests_pending_;
@@ -220,11 +212,7 @@ class MusicBrainzClient : public QObject {
 
 };
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 inline size_t qHash(const MusicBrainzClient::Result &result) {
-#else
-inline uint qHash(const MusicBrainzClient::Result &result) {
-#endif
   return qHash(result.album_) ^ qHash(result.artist_) ^ result.duration_msec_ ^ qHash(result.title_) ^ result.track_ ^ result.year_;
 }
 

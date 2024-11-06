@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <QtGlobal>
 #include <QObject>
@@ -35,22 +36,24 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-#include "core/shared_ptr.h"
-#include "core/application.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/logging.h"
 #include "core/song.h"
-#include "internet/internetservices.h"
 #include "qobuz/qobuzservice.h"
 #include "albumcoverfetcher.h"
 #include "jsoncoverprovider.h"
 #include "qobuzcoverprovider.h"
 
-constexpr int QobuzCoverProvider::kLimit = 10;
+using namespace Qt::Literals::StringLiterals;
 
-QobuzCoverProvider::QobuzCoverProvider(Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent)
-    : JsonCoverProvider("Qobuz", true, true, 2.0, true, true, app, network, parent),
-      service_(app->internet_services()->Service<QobuzService>()) {}
+namespace {
+constexpr int kLimit = 10;
+}
+
+QobuzCoverProvider::QobuzCoverProvider(const QobuzServicePtr service, SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : JsonCoverProvider(u"Qobuz"_s, true, true, 2.0, true, true, network, parent),
+      service_(service) {}
 
 QobuzCoverProvider::~QobuzCoverProvider() {
 
@@ -70,35 +73,35 @@ bool QobuzCoverProvider::StartSearch(const QString &artist, const QString &album
   QString resource;
   QString query = artist;
   if (album.isEmpty() && !title.isEmpty()) {
-    resource = "track/search";
-    if (!query.isEmpty()) query.append(" ");
+    resource = "track/search"_L1;
+    if (!query.isEmpty()) query.append(u' ');
     query.append(title);
   }
   else {
-    resource = "album/search";
+    resource = "album/search"_L1;
     if (!album.isEmpty()) {
-      if (!query.isEmpty()) query.append(" ");
+      if (!query.isEmpty()) query.append(u' ');
       query.append(album);
     }
   }
 
-  ParamList params = ParamList() << Param("query", query)
-                                 << Param("limit", QString::number(kLimit))
-                                 << Param("app_id", service_->app_id().toUtf8());
+  ParamList params = ParamList() << Param(u"query"_s, query)
+                                 << Param(u"limit"_s, QString::number(kLimit))
+                                 << Param(u"app_id"_s, service_->app_id());
 
   std::sort(params.begin(), params.end());
 
   QUrlQuery url_query;
-  for (const Param &param : params) {
-    url_query.addQueryItem(QUrl::toPercentEncoding(param.first), QUrl::toPercentEncoding(param.second));
+  for (const Param &param : std::as_const(params)) {
+    url_query.addQueryItem(QString::fromLatin1(QUrl::toPercentEncoding(param.first)), QString::fromLatin1(QUrl::toPercentEncoding(param.second)));
   }
 
-  QUrl url(QString(QobuzService::kApiUrl) + QString("/") + resource);
+  QUrl url(QLatin1String(QobuzService::kApiUrl) + QLatin1Char('/') + resource);
   url.setQuery(url_query);
 
   QNetworkRequest req(url);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-  req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  req.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   req.setRawHeader("X-App-Id", service_->app_id().toUtf8());
   req.setRawHeader("X-User-Auth-Token", service_->user_auth_token().toUtf8());
   QNetworkReply *reply = network_->get(req);
@@ -121,7 +124,7 @@ QByteArray QobuzCoverProvider::GetReplyData(QNetworkReply *reply) {
   else {
     if (reply->error() != QNetworkReply::NoError && reply->error() < 200) {
       // This is a network error, there is nothing more to do.
-      Error(QString("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
+      Error(QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
     }
     else {
       // See if there is Json data containing "status", "code" and "message" - then use that instead.
@@ -131,18 +134,18 @@ QByteArray QobuzCoverProvider::GetReplyData(QNetworkReply *reply) {
       QJsonDocument json_doc = QJsonDocument::fromJson(data, &parse_error);
       if (parse_error.error == QJsonParseError::NoError && !json_doc.isEmpty() && json_doc.isObject()) {
         QJsonObject json_obj = json_doc.object();
-        if (!json_obj.isEmpty() && json_obj.contains("status") && json_obj.contains("code") && json_obj.contains("message")) {
-          int code = json_obj["code"].toInt();
-          QString message = json_obj["message"].toString();
-          error = QString("%1 (%2)").arg(message).arg(code);
+        if (!json_obj.isEmpty() && json_obj.contains("status"_L1) && json_obj.contains("code"_L1) && json_obj.contains("message"_L1)) {
+          int code = json_obj["code"_L1].toInt();
+          QString message = json_obj["message"_L1].toString();
+          error = QStringLiteral("%1 (%2)").arg(message).arg(code);
         }
       }
       if (error.isEmpty()) {
         if (reply->error() != QNetworkReply::NoError) {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
+          error = QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error());
         }
         else {
-          error = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
+          error = QStringLiteral("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
         }
       }
       Error(error);
@@ -165,115 +168,112 @@ void QobuzCoverProvider::HandleSearchReply(QNetworkReply *reply, const int id) {
 
   QByteArray data = GetReplyData(reply);
   if (data.isEmpty()) {
-    emit SearchFinished(id, results);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
 
   QJsonObject json_obj = ExtractJsonObj(data);
   if (json_obj.isEmpty()) {
-    emit SearchFinished(id, results);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
 
   QJsonValue value_type;
-  if (json_obj.contains("albums")) {
-    value_type = json_obj["albums"];
+  if (json_obj.contains("albums"_L1)) {
+    value_type = json_obj["albums"_L1];
   }
-  else if (json_obj.contains("tracks")) {
-    value_type = json_obj["tracks"];
+  else if (json_obj.contains("tracks"_L1)) {
+    value_type = json_obj["tracks"_L1];
   }
   else {
-    Error("Json reply is missing albums and tracks object.", json_obj);
-    emit SearchFinished(id, results);
+    Error(u"Json reply is missing albums and tracks object."_s, json_obj);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
 
   if (!value_type.isObject()) {
-    Error("Json albums or tracks is not a object.", value_type);
-    emit SearchFinished(id, results);
+    Error(u"Json albums or tracks is not a object."_s, value_type);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
   QJsonObject obj_type = value_type.toObject();
 
-  if (!obj_type.contains("items")) {
-    Error("Json albums or tracks object does not contain items.", obj_type);
-    emit SearchFinished(id, results);
+  if (!obj_type.contains("items"_L1)) {
+    Error(u"Json albums or tracks object does not contain items."_s, obj_type);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
-  QJsonValue value_items = obj_type["items"];
+  QJsonValue value_items = obj_type["items"_L1];
 
   if (!value_items.isArray()) {
-    Error("Json albums or track object items is not a array.", value_items);
-    emit SearchFinished(id, results);
+    Error(u"Json albums or track object items is not a array."_s, value_items);
+    Q_EMIT SearchFinished(id, results);
     return;
   }
-  QJsonArray array_items = value_items.toArray();
+  const QJsonArray array_items = value_items.toArray();
 
-  for (const QJsonValueRef value : array_items) {
+  for (const QJsonValue &value : array_items) {
 
     if (!value.isObject()) {
-      Error("Invalid Json reply, value in items is not a object.");
+      Error(u"Invalid Json reply, value in items is not a object."_s);
       continue;
     }
     QJsonObject item_obj = value.toObject();
 
     QJsonObject obj_album;
-    if (item_obj.contains("album")) {
-      if (!item_obj["album"].isObject()) {
-        Error("Invalid Json reply, items album is not a object.", item_obj);
+    if (item_obj.contains("album"_L1)) {
+      if (!item_obj["album"_L1].isObject()) {
+        Error(u"Invalid Json reply, items album is not a object."_s, item_obj);
         continue;
       }
-      obj_album = item_obj["album"].toObject();
+      obj_album = item_obj["album"_L1].toObject();
     }
     else {
       obj_album = item_obj;
     }
 
-    if (!obj_album.contains("artist") || !obj_album.contains("image") || !obj_album.contains("title")) {
-      Error("Invalid Json reply, item is missing artist, title or image.", obj_album);
+    if (!obj_album.contains("artist"_L1) || !obj_album.contains("image"_L1) || !obj_album.contains("title"_L1)) {
+      Error(u"Invalid Json reply, item is missing artist, title or image."_s, obj_album);
       continue;
     }
 
-    QString album = obj_album["title"].toString();
+    QString album = obj_album["title"_L1].toString();
 
     // Artist
-    QJsonValue value_artist = obj_album["artist"];
+    QJsonValue value_artist = obj_album["artist"_L1];
     if (!value_artist.isObject()) {
-      Error("Invalid Json reply, items (album) artist is not a object.", value_artist);
+      Error(u"Invalid Json reply, items (album) artist is not a object."_s, value_artist);
       continue;
     }
     QJsonObject obj_artist = value_artist.toObject();
-    if (!obj_artist.contains("name")) {
-      Error("Invalid Json reply, items (album) artist is missing name.", obj_artist);
+    if (!obj_artist.contains("name"_L1)) {
+      Error(u"Invalid Json reply, items (album) artist is missing name."_s, obj_artist);
       continue;
     }
-    QString artist = obj_artist["name"].toString();
+    QString artist = obj_artist["name"_L1].toString();
 
     // Image
-    QJsonValue value_image = obj_album["image"];
+    QJsonValue value_image = obj_album["image"_L1];
     if (!value_image.isObject()) {
-      Error("Invalid Json reply, items (album) image is not a object.", value_image);
+      Error(u"Invalid Json reply, items (album) image is not a object."_s, value_image);
       continue;
     }
     QJsonObject obj_image = value_image.toObject();
-    if (!obj_image.contains("large")) {
-      Error("Invalid Json reply, items (album) image is missing large.", obj_image);
+    if (!obj_image.contains("large"_L1)) {
+      Error(u"Invalid Json reply, items (album) image is missing large."_s, obj_image);
       continue;
     }
-    QUrl cover_url(obj_image["large"].toString());
-
-    album = album.remove(Song::kAlbumRemoveDisc);
-    album = album.remove(Song::kAlbumRemoveMisc);
+    QUrl cover_url(obj_image["large"_L1].toString());
 
     CoverProviderSearchResult cover_result;
     cover_result.artist = artist;
-    cover_result.album = album;
+    cover_result.album = Song::AlbumRemoveDiscMisc(album);
     cover_result.image_url = cover_url;
     cover_result.image_size = QSize(600, 600);
     results << cover_result;
 
   }
-  emit SearchFinished(id, results);
+  Q_EMIT SearchFinished(id, results);
 
 }
 

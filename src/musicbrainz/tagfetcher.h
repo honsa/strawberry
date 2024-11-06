@@ -29,7 +29,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "musicbrainzclient.h"
 
@@ -46,14 +46,14 @@ class TagFetcher : public QObject {
 
   void StartFetch(const SongList &songs);
 
- public slots:
+ public Q_SLOTS:
   void Cancel();
 
- signals:
+ Q_SIGNALS:
   void Progress(const Song &original_song, const QString &stage);
   void ResultAvailable(const Song &original_song, const SongList &songs_guessed, const QString &error = QString());
 
- private slots:
+ private Q_SLOTS:
   void FingerprintFound(const int index);
   void PuidsFound(const int index, const QStringList &puid_list, const QString &error = QString());
   void TagsFetched(const int index, const MusicBrainzClient::ResultList &results, const QString &error = QString());

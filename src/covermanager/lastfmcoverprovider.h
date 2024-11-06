@@ -29,23 +29,22 @@
 #include <QString>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsoncoverprovider.h"
 
 class NetworkAccessManager;
 class QNetworkReply;
-class Application;
 
 class LastFmCoverProvider : public JsonCoverProvider {
   Q_OBJECT
 
  public:
-  explicit LastFmCoverProvider(Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit LastFmCoverProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~LastFmCoverProvider() override;
 
   bool StartSearch(const QString &artist, const QString &album, const QString &title, const int id) override;
 
- private slots:
+ private Q_SLOTS:
   void QueryFinished(QNetworkReply *reply, const int id, const QString &type);
 
  private:
@@ -62,10 +61,6 @@ class LastFmCoverProvider : public JsonCoverProvider {
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
  private:
-  static const char *kUrl;
-  static const char *kApiKey;
-  static const char *kSecret;
-
   QList<QNetworkReply*> replies_;
 };
 

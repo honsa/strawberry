@@ -28,7 +28,7 @@
 #include <QObject>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/taskmanager.h"
 #include "core/song.h"
 #include "collection/collectionbackend.h"
@@ -37,7 +37,7 @@
 
 using std::make_unique;
 
-MtpLoader::MtpLoader(const QUrl &url, SharedPtr<TaskManager> task_manager, SharedPtr<CollectionBackend> backend, QObject *parent)
+MtpLoader::MtpLoader(const QUrl &url, const SharedPtr<TaskManager> task_manager, const SharedPtr<CollectionBackend> backend, QObject *parent)
     : QObject(parent),
       url_(url),
       task_manager_(task_manager),
@@ -53,14 +53,14 @@ bool MtpLoader::Init() { return true; }
 void MtpLoader::LoadDatabase() {
 
   int task_id = task_manager_->StartTask(tr("Loading MTP device"));
-  emit TaskStarted(task_id);
+  Q_EMIT TaskStarted(task_id);
 
   bool success = TryLoad();
 
   moveToThread(original_thread_);
 
   task_manager_->SetTaskFinished(task_id);
-  emit LoadFinished(success, connection_.release());
+  Q_EMIT LoadFinished(success, connection_.release());
 
 }
 
@@ -68,8 +68,13 @@ bool MtpLoader::TryLoad() {
 
   connection_ = make_unique<MtpConnection>(url_);
 
-  if (!connection_ || !connection_->is_valid()) {
-    emit Error(tr("Error connecting MTP device %1").arg(url_.toString()));
+  if (!connection_) {
+    Q_EMIT Error(tr("Error connecting MTP device %1").arg(url_.toString()));
+    return false;
+  }
+
+  if (!connection_->is_valid()) {
+    Q_EMIT Error(tr("Error connecting MTP device %1: %2").arg(url_.toString(), connection_->error_text()));
     return false;
   }
 
@@ -84,7 +89,7 @@ bool MtpLoader::TryLoad() {
 
     Song song(Song::Source::Device);
     song.InitFromMTP(track, url_.host());
-    if (song.is_valid() && !song.artist().isEmpty() && !song.title().isEmpty()) {
+    if (song.is_valid() && !song.title().isEmpty()) {
       song.set_directory_id(1);
       songs << song;
     }

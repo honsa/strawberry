@@ -33,6 +33,12 @@
 #include "playlistlistview.h"
 #include "playlist.h"
 
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr int kDragHoverTimeout = 500;
+}
+
 PlaylistListView::PlaylistListView(QWidget *parent) : AutoExpandingTreeView(parent) {}
 
 void PlaylistListView::paintEvent(QPaintEvent *event) {
@@ -47,11 +53,12 @@ void PlaylistListView::paintEvent(QPaintEvent *event) {
     bold_font.setBold(true);
     p.setFont(bold_font);
 
-    p.drawText(rect, Qt::AlignHCenter | Qt::TextWordWrap,
-               tr("\n\n"
-                  "You can favorite playlists by clicking the star icon next "
-                  "to a playlist name\n\n"
-                  "Favorited playlists will be saved here"));
+    p.drawText(rect,
+               Qt::AlignHCenter | Qt::TextWordWrap,
+               "\n\n"_L1 +
+               tr("You can favorite playlists by clicking the star icon next to a playlist name") +
+               "\n\n"_L1 +
+               tr("Favorited playlists will be saved here"));
   }
   else {
     AutoExpandingTreeView::paintEvent(event);
@@ -63,13 +70,18 @@ bool PlaylistListView::ItemsSelected() const {
   return selectionModel()->selectedRows().count() > 0;
 }
 
-void PlaylistListView::selectionChanged(const QItemSelection&, const QItemSelection&) {
-  emit ItemsSelectedChanged(selectionModel()->selectedRows().count() > 0);
+void PlaylistListView::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected) {
+
+  Q_UNUSED(selected)
+  Q_UNUSED(deselected)
+
+  Q_EMIT ItemsSelectedChanged(selectionModel()->selectedRows().count() > 0);
+
 }
 
 void PlaylistListView::dragEnterEvent(QDragEnterEvent *e) {
 
-  if (e->mimeData()->hasFormat(Playlist::kRowsMimetype)) {
+  if (e->mimeData()->hasFormat(QLatin1String(Playlist::kRowsMimetype))) {
     e->acceptProposedAction();
   }
   else {
@@ -80,13 +92,9 @@ void PlaylistListView::dragEnterEvent(QDragEnterEvent *e) {
 
 void PlaylistListView::dragMoveEvent(QDragMoveEvent *e) {
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    QModelIndex drag_hover_tab_ = indexAt(e->position().toPoint());
-#else
-    QModelIndex drag_hover_tab_ = indexAt(e->pos());
-#endif
+  QModelIndex drag_hover_tab_ = indexAt(e->position().toPoint());
 
-  if (e->mimeData()->hasFormat(Playlist::kRowsMimetype)) {
+  if (e->mimeData()->hasFormat(QLatin1String(Playlist::kRowsMimetype))) {
     if (drag_hover_tab_ != currentIndex()) {
       e->setDropAction(Qt::CopyAction);
       e->accept(visualRect(drag_hover_tab_));
@@ -117,18 +125,18 @@ void PlaylistListView::timerEvent(QTimerEvent *e) {
   QTreeView::timerEvent(e);
   if (e->timerId() == drag_hover_timer_.timerId()) {
     drag_hover_timer_.stop();
-    emit doubleClicked(currentIndex());
+    Q_EMIT doubleClicked(currentIndex());
   }
 
 }
 
 void PlaylistListView::dropEvent(QDropEvent *e) {
 
-  if (e->mimeData()->hasFormat(Playlist::kRowsMimetype)) {
+  if (e->mimeData()->hasFormat(QLatin1String(Playlist::kRowsMimetype))) {
     if (drag_hover_timer_.isActive()) {
       drag_hover_timer_.stop();
     }
-    emit ItemMimeDataDroppedSignal(currentIndex(), e->mimeData());
+    Q_EMIT ItemMimeDataDroppedSignal(currentIndex(), e->mimeData());
   }
   else  {
     AutoExpandingTreeView::dropEvent(e);

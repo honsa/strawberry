@@ -31,14 +31,22 @@
 #include <QSettings>
 
 #include "utilities/envutils.h"
-#include "utilities/timeconstants.h"
+#include "constants/timeconstants.h"
+#include "core/logging.h"
+#include "core/settings.h"
 #include "core/networkproxyfactory.h"
 #include "enginebase.h"
-#include "settings/backendsettingspage.h"
-#include "settings/networkproxysettingspage.h"
+#include "constants/backendsettings.h"
+#include "constants/networkproxysettings.h"
+#ifdef HAVE_SPOTIFY
+#  include "constants/spotifysettings.h"
+#endif
+
+using namespace Qt::Literals::StringLiterals;
 
 EngineBase::EngineBase(QObject *parent)
     : QObject(parent),
+      exclusive_mode_(false),
       volume_control_(true),
       volume_(100),
       beginning_nanosec_(0),
@@ -54,9 +62,9 @@ EngineBase::EngineBase(QObject *parent)
       rg_compression_(true),
       ebur128_loudness_normalization_(false),
       ebur128_target_level_lufs_(-23.0),
-      buffer_duration_nanosec_(BackendSettingsPage::kDefaultBufferDuration * kNsecPerMsec),
-      buffer_low_watermark_(BackendSettingsPage::kDefaultBufferLowWatermark),
-      buffer_high_watermark_(BackendSettingsPage::kDefaultBufferHighWatermark),
+      buffer_duration_nanosec_(BackendSettings::kDefaultBufferDuration * kNsecPerMsec),
+      buffer_low_watermark_(BackendSettings::kDefaultBufferLowWatermark),
+      buffer_high_watermark_(BackendSettings::kDefaultBufferHighWatermark),
       fadeout_enabled_(true),
       crossfade_enabled_(true),
       autocrossfade_enabled_(false),
@@ -78,8 +86,7 @@ EngineBase::~EngineBase() = default;
 
 EngineBase::Type EngineBase::TypeFromName(const QString &name) {
 
-  if (name.compare("gstreamer", Qt::CaseInsensitive) == 0) return Type::GStreamer;
-  if (name.compare("vlc", Qt::CaseInsensitive) == 0)  return Type::VLC;
+  if (name.compare("gstreamer"_L1, Qt::CaseInsensitive) == 0) return Type::GStreamer;
 
   return Type::None;
 
@@ -88,10 +95,9 @@ EngineBase::Type EngineBase::TypeFromName(const QString &name) {
 QString EngineBase::Name(const Type type) {
 
   switch (type) {
-    case Type::GStreamer:  return QString("gstreamer");
-    case Type::VLC:        return QString("vlc");
+    case Type::GStreamer:  return u"gstreamer"_s;
     case Type::None:
-    default:               return QString("None");
+    default:               return u"None"_s;
   }
 
 }
@@ -99,16 +105,16 @@ QString EngineBase::Name(const Type type) {
 QString EngineBase::Description(const Type type) {
 
   switch (type) {
-    case Type::GStreamer:  return QString("GStreamer");
-    case Type::VLC:        return QString("VLC");
+    case Type::GStreamer:  return u"GStreamer"_s;
     case Type::None:
-    default:               return QString("None");
+    default:               return u"None"_s;
   }
 
 }
 
-bool EngineBase::Load(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
+bool EngineBase::Load(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags track_change_flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
 
+  Q_UNUSED(track_change_flags)
   Q_UNUSED(force_stop_at_end);
 
   media_url_ = media_url;
@@ -134,20 +140,20 @@ bool EngineBase::Load(const QUrl &media_url, const QUrl &stream_url, const Track
 
 }
 
-bool EngineBase::Play(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
+bool EngineBase::Play(const QUrl &media_url, const QUrl &stream_url, const bool pause, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs) {
 
   if (!Load(media_url, stream_url, flags, force_stop_at_end, beginning_nanosec, end_nanosec, ebur128_integrated_loudness_lufs)) {
     return false;
   }
 
-  return Play(offset_nanosec);
+  return Play(pause, offset_nanosec);
 
 }
 
 void EngineBase::UpdateVolume(const uint volume) {
 
   volume_ = volume;
-  emit VolumeChanged(volume);
+  Q_EMIT VolumeChanged(volume);
 
 }
 
@@ -160,59 +166,61 @@ void EngineBase::SetVolume(const uint volume) {
 
 void EngineBase::ReloadSettings() {
 
-  QSettings s;
+  Settings s;
 
-  s.beginGroup(BackendSettingsPage::kSettingsGroup);
+  s.beginGroup(BackendSettings::kSettingsGroup);
 
-  output_ = s.value("output").toString();
-  device_ = s.value("device");
+  output_ = s.value(BackendSettings::kOutput).toString();
+  device_ = s.value(BackendSettings::kDevice);
 
-  volume_control_ = s.value("volume_control", true).toBool();
+  exclusive_mode_ = s.value(BackendSettings::kExclusiveMode, false).toBool();
 
-  channels_enabled_ = s.value("channels_enabled", false).toBool();
-  channels_ = s.value("channels", 0).toInt();
+  volume_control_ = s.value(BackendSettings::kVolumeControl, true).toBool();
 
-  buffer_duration_nanosec_ = s.value("bufferduration", BackendSettingsPage::kDefaultBufferDuration).toLongLong() * kNsecPerMsec;
-  buffer_low_watermark_ = s.value("bufferlowwatermark", BackendSettingsPage::kDefaultBufferLowWatermark).toDouble();
-  buffer_high_watermark_ = s.value("bufferhighwatermark", BackendSettingsPage::kDefaultBufferHighWatermark).toDouble();
+  channels_enabled_ = s.value(BackendSettings::kChannelsEnabled, false).toBool();
+  channels_ = s.value(BackendSettings::kChannels, 0).toInt();
 
-  rg_enabled_ = s.value("rgenabled", false).toBool();
-  rg_mode_ = s.value("rgmode", 0).toInt();
-  rg_preamp_ = s.value("rgpreamp", 0.0).toDouble();
-  rg_fallbackgain_ = s.value("rgfallbackgain", 0.0).toDouble();
-  rg_compression_ = s.value("rgcompression", true).toBool();
+  buffer_duration_nanosec_ = s.value(BackendSettings::kBufferDuration, BackendSettings::kDefaultBufferDuration).toLongLong() * kNsecPerMsec;
+  buffer_low_watermark_ = s.value(BackendSettings::kBufferLowWatermark, BackendSettings::kDefaultBufferLowWatermark).toDouble();
+  buffer_high_watermark_ = s.value(BackendSettings::kBufferHighWatermark, BackendSettings::kDefaultBufferHighWatermark).toDouble();
 
-  ebur128_loudness_normalization_ = s.value("ebur128_loudness_normalization", false).toBool();
-  ebur128_target_level_lufs_ = s.value("ebur128_target_level_lufs", -23.0).toDouble();
+  rg_enabled_ = s.value(BackendSettings::kRgEnabled, false).toBool();
+  rg_mode_ = s.value(BackendSettings::kRgMode, 0).toInt();
+  rg_preamp_ = s.value(BackendSettings::kRgPreamp, 0.0).toDouble();
+  rg_fallbackgain_ = s.value(BackendSettings::kRgFallbackGain, 0.0).toDouble();
+  rg_compression_ = s.value(BackendSettings::kRgCompression, true).toBool();
 
-  fadeout_enabled_ = s.value("FadeoutEnabled", false).toBool();
-  crossfade_enabled_ = s.value("CrossfadeEnabled", false).toBool();
-  autocrossfade_enabled_ = s.value("AutoCrossfadeEnabled", false).toBool();
-  crossfade_same_album_ = !s.value("NoCrossfadeSameAlbum", true).toBool();
-  fadeout_pause_enabled_ = s.value("FadeoutPauseEnabled", false).toBool();
-  fadeout_duration_ = s.value("FadeoutDuration", 2000).toLongLong();
+  ebur128_loudness_normalization_ = s.value(BackendSettings::kEBUR128LoudnessNormalization, false).toBool();
+  ebur128_target_level_lufs_ = s.value(BackendSettings::kEBUR128TargetLevelLUFS, -23.0).toDouble();
+
+  fadeout_enabled_ = s.value(BackendSettings::kFadeoutEnabled, false).toBool();
+  crossfade_enabled_ = s.value(BackendSettings::kCrossfadeEnabled, false).toBool();
+  autocrossfade_enabled_ = s.value(BackendSettings::kAutoCrossfadeEnabled, false).toBool();
+  crossfade_same_album_ = !s.value(BackendSettings::kNoCrossfadeSameAlbum, true).toBool();
+  fadeout_pause_enabled_ = s.value(BackendSettings::kFadeoutPauseEnabled, false).toBool();
+  fadeout_duration_ = s.value(BackendSettings::kFadeoutDuration, 2000).toLongLong();
   fadeout_duration_nanosec_ = (fadeout_duration_ * kNsecPerMsec);
-  fadeout_pause_duration_ = s.value("FadeoutPauseDuration", 250).toLongLong();
+  fadeout_pause_duration_ = s.value(BackendSettings::kFadeoutPauseDuration, 250).toLongLong();
   fadeout_pause_duration_nanosec_ = (fadeout_pause_duration_ * kNsecPerMsec);
 
-  bs2b_enabled_ = s.value("bs2b", false).toBool();
+  bs2b_enabled_ = s.value(BackendSettings::kBS2B, false).toBool();
 
-  bool http2_enabled = s.value("http2", false).toBool();
+  bool http2_enabled = s.value(BackendSettings::kHTTP2, false).toBool();
   if (http2_enabled != http2_enabled_) {
     http2_enabled_ = http2_enabled;
-    Utilities::SetEnv("SOUP_FORCE_HTTP1", http2_enabled_ ? "" : "1");
+    Utilities::SetEnv("SOUP_FORCE_HTTP1", http2_enabled_ ? ""_L1 : u"1"_s);
     qLog(Debug) << "SOUP_FORCE_HTTP1:" << (http2_enabled_ ? "OFF" : "ON");
   }
 
-  strict_ssl_enabled_ = s.value("strict_ssl", false).toBool();
+  strict_ssl_enabled_ = s.value(BackendSettings::kStrictSSL, false).toBool();
 
   s.endGroup();
 
-  s.beginGroup(NetworkProxySettingsPage::kSettingsGroup);
+  s.beginGroup(NetworkProxySettings::kSettingsGroup);
   const NetworkProxyFactory::Mode proxy_mode = static_cast<NetworkProxyFactory::Mode>(s.value("mode", static_cast<int>(NetworkProxyFactory::Mode::System)).toInt());
-  if (proxy_mode == NetworkProxyFactory::Mode::Manual && s.contains("engine") && s.value("engine").toBool()) {
-    QString proxy_host = s.value("hostname").toString();
-    int proxy_port = s.value("port").toInt();
+  if (proxy_mode == NetworkProxyFactory::Mode::Manual && s.contains(NetworkProxySettings::kEngine) && s.value(NetworkProxySettings::kEngine).toBool()) {
+    QString proxy_host = s.value(NetworkProxySettings::kHostname).toString();
+    int proxy_port = s.value(NetworkProxySettings::kPort).toInt();
     if (proxy_host.isEmpty() || proxy_port <= 0) {
       proxy_address_.clear();
       proxy_authentication_ = false;
@@ -220,10 +228,10 @@ void EngineBase::ReloadSettings() {
       proxy_pass_.clear();
     }
     else {
-      proxy_address_ = QString("%1:%2").arg(proxy_host).arg(proxy_port);
-      proxy_authentication_ = s.value("use_authentication").toBool();
-      proxy_user_ = s.value("username").toString();
-      proxy_pass_ = s.value("password").toString();
+      proxy_address_ = QStringLiteral("%1:%2").arg(proxy_host).arg(proxy_port);
+      proxy_authentication_ = s.value(NetworkProxySettings::kUseAuthentication).toBool();
+      proxy_user_ = s.value(NetworkProxySettings::kUsername).toString();
+      proxy_pass_ = s.value(NetworkProxySettings::kPassword).toString();
     }
   }
   else {
@@ -235,6 +243,12 @@ void EngineBase::ReloadSettings() {
 
   s.endGroup();
 
+#ifdef HAVE_SPOTIFY
+  s.beginGroup(SpotifySettings::kSettingsGroup);
+  spotify_access_token_ = s.value(SpotifySettings::kAccessToken).toString();
+  s.endGroup();
+#endif
+
 }
 
 void EngineBase::EmitAboutToFinish() {
@@ -245,7 +259,7 @@ void EngineBase::EmitAboutToFinish() {
 
   about_to_end_emitted_ = true;
 
-  emit TrackAboutToEnd();
+  Q_EMIT TrackAboutToEnd();
 
 }
 

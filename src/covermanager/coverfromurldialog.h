@@ -28,7 +28,7 @@
 #include <QDialog>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "albumcoverimageresult.h"
 
 class QWidget;
@@ -47,7 +47,7 @@ class CoverFromURLDialog : public QDialog {
   // Opens the dialog. This returns an image found at the URL chosen by user or null image if the dialog got rejected.
   AlbumCoverImageResult Exec();
 
- private slots:
+ private Q_SLOTS:
   void accept() override;
   void LoadCoverFromURLFinished();
 

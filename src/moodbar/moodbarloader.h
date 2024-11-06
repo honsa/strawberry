@@ -1,19 +1,23 @@
-/* This file was part of Clementine.
-   Copyright 2012, David Sansome <me@davidsansome.com>
-
-   Strawberry is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Strawberry is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * Strawberry Music Player
+ * This file was part of Clementine.
+ * Copyright 2012, David Sansome <me@davidsansome.com>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
+ *
+ * Strawberry is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Strawberry is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef MOODBARLOADER_H
 #define MOODBARLOADER_H
@@ -29,14 +33,13 @@
 class QThread;
 class QByteArray;
 class QNetworkDiskCache;
-class Application;
 class MoodbarPipeline;
 
 class MoodbarLoader : public QObject {
   Q_OBJECT
 
  public:
-  explicit MoodbarLoader(Application *app, QObject *parent = nullptr);
+  explicit MoodbarLoader(QObject *parent = nullptr);
   ~MoodbarLoader() override;
 
   enum class Result {
@@ -52,17 +55,22 @@ class MoodbarLoader : public QObject {
     WillLoadAsync
   };
 
-  Result Load(const QUrl &url, const bool has_cue, QByteArray *data, MoodbarPipeline **async_pipeline);
-
- private slots:
   void ReloadSettings();
 
+  Result Load(const QUrl &url, const bool has_cue, QByteArray *data, MoodbarPipeline **async_pipeline);
+
+ private Q_SLOTS:
   void RequestFinished(MoodbarPipeline *request, const QUrl &url);
   void MaybeTakeNextRequest();
 
  private:
   static QStringList MoodFilenames(const QString &song_filename);
   static QUrl CacheUrlEntry(const QString &filename);
+
+ Q_SIGNALS:
+  void MoodbarEnabled(const bool enabled);
+  void StyleChanged();
+  void SettingsReloaded();
 
  private:
   QNetworkDiskCache *cache_;

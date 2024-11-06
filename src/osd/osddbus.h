@@ -33,20 +33,19 @@
 #include <QDBusArgument>
 #include <QVersionNumber>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
 #include "osdbase.h"
 
 class OrgFreedesktopNotificationsInterface;
 class QDBusPendingCallWatcher;
 
-class Application;
 class SystemTrayIcon;
 
 class OSDDBus : public OSDBase {
   Q_OBJECT
 
  public:
-  explicit OSDDBus(SharedPtr<SystemTrayIcon> tray_icon, Application *app, QObject *parent = nullptr);
+  explicit OSDDBus(const SharedPtr<SystemTrayIcon> tray_icon, QObject *parent = nullptr);
   ~OSDDBus() override;
 
   static const char *kSettingsGroup;
@@ -58,7 +57,7 @@ class OSDDBus : public OSDBase {
   void Init();
   void ShowMessageNative(const QString &summary, const QString &message, const QString &icon = QString(), const QImage &image = QImage()) override;
 
- private slots:
+ private Q_SLOTS:
   void CallFinished(QDBusPendingCallWatcher *watcher);
 
  private:

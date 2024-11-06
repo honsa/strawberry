@@ -34,10 +34,11 @@
 #include "playlistitem.h"
 #include "songplaylistitem.h"
 
-#include "internet/internetplaylistitem.h"
+#include "streaming/streamplaylistitem.h"
 #include "radios/radioplaylistitem.h"
 
 using std::make_shared;
+using namespace Qt::Literals::StringLiterals;
 
 PlaylistItemPtr PlaylistItem::NewFromSource(const Song::Source source) {
 
@@ -46,8 +47,9 @@ PlaylistItemPtr PlaylistItem::NewFromSource(const Song::Source source) {
       return make_shared<CollectionPlaylistItem>();
     case Song::Source::Subsonic:
     case Song::Source::Tidal:
+    case Song::Source::Spotify:
     case Song::Source::Qobuz:
-      return make_shared<InternetPlaylistItem>(source);
+      return make_shared<StreamPlaylistItem>(source);
     case Song::Source::Stream:
     case Song::Source::RadioParadise:
     case Song::Source::SomaFM:
@@ -70,8 +72,9 @@ PlaylistItemPtr PlaylistItem::NewFromSong(const Song &song) {
       return make_shared<CollectionPlaylistItem>(song);
     case Song::Source::Subsonic:
     case Song::Source::Tidal:
+    case Song::Source::Spotify:
     case Song::Source::Qobuz:
-      return make_shared<InternetPlaylistItem>(song);
+      return make_shared<StreamPlaylistItem>(song);
     case Song::Source::Stream:
     case Song::Source::RadioParadise:
     case Song::Source::SomaFM:
@@ -91,8 +94,8 @@ PlaylistItem::~PlaylistItem() = default;
 
 void PlaylistItem::BindToQuery(SqlQuery *query) const {
 
-  query->BindValue(":type", static_cast<int>(source_));
-  query->BindValue(":collection_id", DatabaseValue(Column_CollectionId));
+  query->BindValue(u":type"_s, static_cast<int>(source_));
+  query->BindValue(u":collection_id"_s, DatabaseValue(Column_CollectionId));
 
   DatabaseSongMetadata().BindToQuery(query);
 
@@ -106,7 +109,7 @@ void PlaylistItem::UpdateTemporaryMetadata(const Song &metadata) {
 
   if (!temp_metadata_.is_valid()) return;
 
-  Song old_metadata = temp_metadata_;
+  const Song old_metadata = temp_metadata_;
   temp_metadata_ = metadata;
 
   // Keep samplerate, bitdepth and bitrate from the old metadata if it's not present in the new.
@@ -142,10 +145,9 @@ QColor PlaylistItem::GetCurrentBackgroundColor() const {
   if (background_colors_.isEmpty()) {
     return QColor();
   }
-  else {
-    QList<short> background_colors_keys = background_colors_.keys();
-    return background_colors_[background_colors_keys.last()];
-  }
+
+  QList<short> background_colors_keys = background_colors_.keys();
+  return background_colors_[background_colors_keys.last()];
 
 }
 bool PlaylistItem::HasCurrentBackgroundColor() const {
@@ -164,10 +166,9 @@ void PlaylistItem::RemoveForegroundColor(const short priority) {
 QColor PlaylistItem::GetCurrentForegroundColor() const {
 
   if (foreground_colors_.isEmpty()) return QColor();
-  else {
-    QList<short> foreground_colors_keys = foreground_colors_.keys();
-    return foreground_colors_[foreground_colors_keys.last()];
-  }
+
+  QList<short> foreground_colors_keys = foreground_colors_.keys();
+  return foreground_colors_[foreground_colors_keys.last()];
 
 }
 bool PlaylistItem::HasCurrentForegroundColor() const {

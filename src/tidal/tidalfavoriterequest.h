@@ -27,7 +27,7 @@
 #include <QVariant>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 
 #include "tidalbaserequest.h"
@@ -40,10 +40,10 @@ class TidalFavoriteRequest : public TidalBaseRequest {
   Q_OBJECT
 
  public:
-  explicit TidalFavoriteRequest(TidalService *service, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit TidalFavoriteRequest(TidalService *service, const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~TidalFavoriteRequest() override;
 
-  bool need_login() { return need_login_; }
+  bool need_login() const { return need_login_; }
   void set_need_login() override { need_login_ = true; }
 
  private:
@@ -53,7 +53,7 @@ class TidalFavoriteRequest : public TidalBaseRequest {
     Songs
   };
 
- signals:
+ Q_SIGNALS:
   void ArtistsAdded(const SongList &songs);
   void AlbumsAdded(const SongList &songs);
   void SongsAdded(const SongList &songs);
@@ -61,11 +61,11 @@ class TidalFavoriteRequest : public TidalBaseRequest {
   void AlbumsRemoved(const SongList &songs);
   void SongsRemoved(const SongList &songs);
 
- private slots:
+ private Q_SLOTS:
   void AddFavoritesReply(QNetworkReply *reply, const TidalFavoriteRequest::FavoriteType type, const SongList &songs);
   void RemoveFavoritesReply(QNetworkReply *reply, const TidalFavoriteRequest::FavoriteType type, const SongList &songs);
 
- public slots:
+ public Q_SLOTS:
   void AddArtists(const SongList &songs);
   void AddAlbums(const SongList &songs);
   void AddSongs(const SongList &songs);
@@ -87,7 +87,7 @@ class TidalFavoriteRequest : public TidalBaseRequest {
   void RemoveFavoritesRequest(const FavoriteType type, const QString &id, const SongList &songs);
 
   TidalService *service_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   QList <QNetworkReply*> replies_;
   bool need_login_;
 };

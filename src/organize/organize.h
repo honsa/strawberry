@@ -31,12 +31,11 @@
 #include <QFileInfo>
 #include <QSet>
 #include <QList>
-#include <QVector>
 #include <QMap>
 #include <QString>
 #include <QStringList>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "organizeformat.h"
 
@@ -44,11 +43,10 @@ class QThread;
 class QTimer;
 class QTimerEvent;
 
-class MusicStorage;
 class TaskManager;
-#ifdef HAVE_GSTREAMER
+class TagReaderClient;
+class MusicStorage;
 class Transcoder;
-#endif
 
 class Organize : public QObject {
   Q_OBJECT
@@ -63,17 +61,23 @@ class Organize : public QObject {
   };
   using NewSongInfoList = QList<NewSongInfo>;
 
-  explicit Organize(SharedPtr<TaskManager> task_manager, SharedPtr<MusicStorage> destination, const OrganizeFormat &format, const bool copy, const bool overwrite, const bool albumcover, const NewSongInfoList &songs, const bool eject_after, const QString &playlist = QString(), QObject *parent = nullptr);
-  ~Organize() override;
+  explicit Organize(const SharedPtr<TaskManager> task_manager,
+                    const SharedPtr<TagReaderClient> tagreader_client,
+                    const SharedPtr<MusicStorage> destination,
+                    const OrganizeFormat &format,
+                    const bool copy,
+                    const bool overwrite,
+                    const bool albumcover,
+                    const NewSongInfoList &songs,
+                    const bool eject_after,
+                    const QString &playlist = QString(),
+                    QObject *parent = nullptr);
 
-  static const int kBatchSize;
-#ifdef HAVE_GSTREAMER
-  static const int kTranscodeProgressInterval;
-#endif
+  ~Organize() override;
 
   void Start();
 
- signals:
+ Q_SIGNALS:
   void Finished(const QStringList &files_with_errors, const QStringList&);
   void FileCopied(const int database_id);
   void SongPathChanged(const Song &song, const QFileInfo &new_file, const std::optional<int> new_collection_directory_id);
@@ -81,7 +85,7 @@ class Organize : public QObject {
  protected:
   void timerEvent(QTimerEvent *e) override;
 
- private slots:
+ private Q_SLOTS:
   void ProcessSomeFiles();
   void FileTranscoded(const QString &input, const QString &output, bool success);
   void LogLine(const QString &message);
@@ -89,9 +93,7 @@ class Organize : public QObject {
  private:
   void SetSongProgress(float progress, bool transcoded = false);
   void UpdateProgress();
-#ifdef HAVE_GSTREAMER
   Song::FileType CheckTranscode(Song::FileType original_type) const;
-#endif
 
  private:
   struct Task {
@@ -108,12 +110,11 @@ class Organize : public QObject {
 
   QThread *thread_;
   QThread *original_thread_;
-  SharedPtr<TaskManager> task_manager_;
-#ifdef HAVE_GSTREAMER
+  const SharedPtr<TaskManager> task_manager_;
+  const SharedPtr<TagReaderClient> tagreader_client_;
   Transcoder *transcoder_;
-#endif
   QTimer *process_files_timer_;
-  SharedPtr<MusicStorage> destination_;
+  const SharedPtr<MusicStorage> destination_;
   QList<Song::FileType> supported_filetypes_;
 
   const OrganizeFormat format_;
@@ -125,7 +126,7 @@ class Organize : public QObject {
   const QString playlist_;
 
   QBasicTimer transcode_progress_timer_;
-  QVector<Task> tasks_pending_;
+  QList<Task> tasks_pending_;
   QMap<QString, Task> tasks_transcoding_;
   int tasks_complete_;
 

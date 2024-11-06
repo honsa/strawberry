@@ -34,19 +34,18 @@
 
 class NetworkAccessManager;
 class QNetworkReply;
-class Application;
 
 class DeezerCoverProvider : public JsonCoverProvider {
   Q_OBJECT
 
  public:
-  explicit DeezerCoverProvider(Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit DeezerCoverProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~DeezerCoverProvider() override;
 
   bool StartSearch(const QString &artist, const QString &album, const QString &title, const int id) override;
   void CancelSearch(const int id) override;
 
- private slots:
+ private Q_SLOTS:
   void HandleSearchReply(QNetworkReply *reply, const int id);
 
  private:
@@ -55,9 +54,6 @@ class DeezerCoverProvider : public JsonCoverProvider {
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
  private:
-  static const char *kApiUrl;
-  static const int kLimit;
-
   QList<QNetworkReply*> replies_;
 };
 

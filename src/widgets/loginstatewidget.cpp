@@ -22,6 +22,8 @@
 #include "ui_loginstatewidget.h"
 #include "core/iconloader.h"
 
+#include <utility>
+
 #include <QWidget>
 #include <QLocale>
 #include <QDate>
@@ -30,6 +32,8 @@
 #include <QLineEdit>
 #include <QEvent>
 #include <QKeyEvent>
+
+using namespace Qt::Literals::StringLiterals;
 
 LoginStateWidget::LoginStateWidget(QWidget *parent)
     : QWidget(parent),
@@ -42,10 +46,10 @@ LoginStateWidget::LoginStateWidget(QWidget *parent)
   ui_->account_type->hide();
   ui_->busy->hide();
 
-  ui_->sign_out->setIcon(IconLoader::Load("list-remove"));
-  ui_->signed_in_icon_label->setPixmap(IconLoader::Load("dialog-ok-apply").pixmap(22));
-  ui_->expires_icon_label->setPixmap(IconLoader::Load("dialog-password").pixmap(22));
-  ui_->account_type_icon_label->setPixmap(IconLoader::Load("dialog-warning").pixmap(22));
+  ui_->sign_out->setIcon(IconLoader::Load(u"list-remove"_s));
+  ui_->signed_in_icon_label->setPixmap(IconLoader::Load(u"dialog-ok-apply"_s).pixmap(22));
+  ui_->expires_icon_label->setPixmap(IconLoader::Load(u"dialog-password"_s).pixmap(22));
+  ui_->account_type_icon_label->setPixmap(IconLoader::Load(u"dialog-warning"_s).pixmap(22));
 
   QFont bold_font(font());
   bold_font.setBold(true);
@@ -59,7 +63,7 @@ LoginStateWidget::~LoginStateWidget() { delete ui_; }
 
 void LoginStateWidget::Logout() {
   SetLoggedIn(State::LoggedOut);
-  emit LogoutClicked();
+  Q_EMIT LogoutClicked();
 }
 
 void LoginStateWidget::SetAccountTypeText(const QString &text) {
@@ -79,10 +83,10 @@ void LoginStateWidget::SetLoggedIn(const State state, const QString &account_nam
   ui_->signed_out->setVisible(state != State::LoggedIn);
   ui_->busy->setVisible(state == State::LoginInProgress);
 
-  if (account_name.isEmpty()) ui_->signed_in_label->setText("<b>" + tr("You are signed in.") + "</b>");
-  else ui_->signed_in_label->setText(tr("You are signed in as %1.").arg("<b>" + account_name + "</b>"));
+  if (account_name.isEmpty()) ui_->signed_in_label->setText(u"<b>"_s + tr("You are signed in.") + u"</b>"_s);
+  else ui_->signed_in_label->setText(tr("You are signed in as %1.").arg(u"<b>"_s + account_name + u"</b>"_s));
 
-  for (QWidget *widget : credential_groups_) {
+  for (QWidget *widget : std::as_const(credential_groups_)) {
     widget->setVisible(state != State::LoggedIn);
     widget->setEnabled(state != State::LoginInProgress);
   }
@@ -99,7 +103,7 @@ void LoginStateWidget::SetLoggedIn(const State state, const QString &account_nam
 void LoginStateWidget::FocusLastCredentialField() {
 
   if (!credential_fields_.isEmpty()) {
-    QObject *object = credential_fields_.last();
+    QObject *object = credential_fields_.constLast();
     QWidget *widget = qobject_cast<QWidget*>(object);
     QLineEdit *line_edit = qobject_cast<QLineEdit*>(object);
 
@@ -136,7 +140,7 @@ bool LoginStateWidget::eventFilter(QObject *object, QEvent *event) {
   if (event->type() == QEvent::KeyPress) {
     QKeyEvent *key_event = static_cast<QKeyEvent*>(event);
     if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
-      emit LoginClicked();
+      Q_EMIT LoginClicked();
       return true;
     }
   }
@@ -151,7 +155,7 @@ void LoginStateWidget::SetExpires(const QDate expires) {
 
   if (expires.isValid()) {
     const QString expires_text = QLocale().toString(expires, QLocale::LongFormat);
-    ui_->expires_label->setText(tr("Expires on %1").arg("<b>" + expires_text + "</b>"));
+    ui_->expires_label->setText(tr("Expires on %1").arg(u"<b>"_s + expires_text + u"</b>"_s));
   }
 
 }

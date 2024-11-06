@@ -29,14 +29,18 @@
 #include <QSizePolicy>
 #include <QPaintEvent>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/taskmanager.h"
 #include "multiloadingindicator.h"
 #include "widgets/busyindicator.h"
 
-const int MultiLoadingIndicator::kVerticalPadding = 4;
-const int MultiLoadingIndicator::kHorizontalPadding = 6;
-const int MultiLoadingIndicator::kSpacing = 6;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr int kVerticalPadding = 4;
+constexpr int kHorizontalPadding = 6;
+constexpr int kSpacing = 6;
+}
 
 MultiLoadingIndicator::MultiLoadingIndicator(QWidget *parent)
     : QWidget(parent),
@@ -66,7 +70,7 @@ void MultiLoadingIndicator::SetTaskManager(SharedPtr<TaskManager> task_manager) 
 
 void MultiLoadingIndicator::UpdateText() {
 
-  QList<TaskManager::Task> tasks = task_manager_->GetTasks();
+  const QList<TaskManager::Task> tasks = task_manager_->GetTasks();
 
   QStringList strings;
   strings.reserve(tasks.count());
@@ -76,25 +80,27 @@ void MultiLoadingIndicator::UpdateText() {
 
     if (task.progress_max > 0) {
       int percentage = static_cast<int>(static_cast<float>(task.progress) / static_cast<float>(task.progress_max) * 100.0F);
-      task_text += QString(" %1%").arg(percentage);
+      task_text += QStringLiteral(" %1%").arg(percentage);
     }
 
     strings << task_text;
   }
 
-  text_ = strings.join(", ");
+  text_ = strings.join(", "_L1);
   if (!text_.isEmpty()) {
     text_[0] = text_[0].toUpper();
-    text_ += "...";
+    text_ += "..."_L1;
   }
 
-  emit TaskCountChange(static_cast<int>(tasks.count()));
+  Q_EMIT TaskCountChange(static_cast<int>(tasks.count()));
   update();
   updateGeometry();
 
 }
 
-void MultiLoadingIndicator::paintEvent(QPaintEvent*) {
+void MultiLoadingIndicator::paintEvent(QPaintEvent *e) {
+
+  Q_UNUSED(e)
 
   QPainter p(this);
 

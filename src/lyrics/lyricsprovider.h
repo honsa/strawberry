@@ -29,7 +29,7 @@
 #include <QString>
 #include <QRegularExpression>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
@@ -38,7 +38,7 @@ class LyricsProvider : public QObject {
   Q_OBJECT
 
  public:
-  explicit LyricsProvider(const QString &name, const bool enabled, const bool authentication_required, SharedPtr<NetworkAccessManager> network, QObject *parent);
+  explicit LyricsProvider(const QString &name, const bool enabled, const bool authentication_required, const SharedPtr<NetworkAccessManager> network, QObject *parent);
 
   QString name() const { return name_; }
   bool is_enabled() const { return enabled_; }
@@ -47,8 +47,8 @@ class LyricsProvider : public QObject {
   void set_enabled(const bool enabled) { enabled_ = enabled; }
   void set_order(const int order) { order_ = order; }
 
-  virtual bool StartSearch(const int id, const LyricsSearchRequest &request) = 0;
-  virtual void CancelSearch(const int id) { Q_UNUSED(id); }
+  virtual bool StartSearchAsync(const int id, const LyricsSearchRequest &request);
+  virtual void CancelSearchAsync(const int id) { Q_UNUSED(id); }
   virtual bool AuthenticationRequired() const { return authentication_required_; }
   virtual void Authenticate() {}
   virtual bool IsAuthenticated() const { return !authentication_required_; }
@@ -56,14 +56,17 @@ class LyricsProvider : public QObject {
 
   virtual void Error(const QString &error, const QVariant &debug = QVariant()) = 0;
 
- signals:
+ protected Q_SLOTS:
+  virtual void StartSearch(const int id, const LyricsSearchRequest &request) = 0;
+
+ Q_SIGNALS:
   void AuthenticationComplete(const bool success, const QStringList &errors = QStringList());
   void AuthenticationSuccess();
   void AuthenticationFailure(const QStringList &errors);
   void SearchFinished(const int id, const LyricsSearchResults &results = LyricsSearchResults());
 
  protected:
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   const QString name_;
   bool enabled_;
   int order_;

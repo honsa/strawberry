@@ -35,7 +35,7 @@
 #include <gst/gstelement.h>
 #include <gst/audio/gstaudiocdsrc.h>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #ifdef HAVE_MUSICBRAINZ
 #  include "musicbrainz/musicbrainzclient.h"
@@ -59,13 +59,13 @@ class CddaSongLoader : public QObject {
   void Error(const QString &error);
   QUrl GetUrlFromTrack(const int track_number) const;
 
- signals:
+ Q_SIGNALS:
   void SongsLoadError(const QString &error);
   void SongsLoaded(const SongList &songs);
   void SongsDurationLoaded(const SongList &songs, const QString &error = QString());
   void SongsMetadataLoaded(const SongList &songs);
 
- private slots:
+ private Q_SLOTS:
 #ifdef HAVE_MUSICBRAINZ
   void AudioCDTagsLoaded(const QString &artist, const QString &album, const MusicBrainzClient::ResultList &results);
 #endif

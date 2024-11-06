@@ -17,35 +17,41 @@
  *
  */
 
-#include <QObject>
-#include <QByteArray>
-#include <QVariant>
+#include <QApplication>
+#include <QThread>
 #include <QString>
 #include <QUrl>
 #include <QRegularExpression>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "utilities/transliterate.h"
 #include "lyricssearchrequest.h"
 #include "azlyricscomlyricsprovider.h"
 
-const char AzLyricsComLyricsProvider::kUrl[] = "https://www.azlyrics.com/lyrics/";
-const char AzLyricsComLyricsProvider::kStartTag[] = "<div>";
-const char AzLyricsComLyricsProvider::kEndTag[] = "</div>";
-const char AzLyricsComLyricsProvider::kLyricsStart[] = "<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->";
+using namespace Qt::Literals::StringLiterals;
 
-AzLyricsComLyricsProvider::AzLyricsComLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent)
-    : HtmlLyricsProvider("azlyrics.com", true, kStartTag, kEndTag, kLyricsStart, false, network, parent) {}
+namespace {
+constexpr char kUrl[] = "https://www.azlyrics.com/lyrics/";
+constexpr char kStartTag[] = "<div>";
+constexpr char kEndTag[] = "</div>";
+constexpr char kLyricsStart[] = "<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->";
+}  // namespace
+
+AzLyricsComLyricsProvider::AzLyricsComLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : HtmlLyricsProvider(u"azlyrics.com"_s, true, QLatin1String(kStartTag), QLatin1String(kEndTag), QLatin1String(kLyricsStart), false, network, parent) {}
 
 QUrl AzLyricsComLyricsProvider::Url(const LyricsSearchRequest &request) {
 
-  return QUrl(kUrl + StringFixup(request.artist) + "/" + StringFixup(request.title) + ".html");
+  return QUrl(QLatin1String(kUrl) + StringFixup(request.artist) + QLatin1Char('/') + StringFixup(request.title) + u".html"_s);
 
 }
 
 QString AzLyricsComLyricsProvider::StringFixup(const QString &text) {
 
-  return Utilities::Transliterate(text).remove(QRegularExpression("[^\\w0-9\\-]")).toLower();
+  Q_ASSERT(QThread::currentThread() != qApp->thread());
+
+  static const QRegularExpression regex_words_numbers_and_dash(u"[^\\w0-9\\-]"_s);
+  return Utilities::Transliterate(text).remove(regex_words_numbers_and_dash).toLower();
 
 }

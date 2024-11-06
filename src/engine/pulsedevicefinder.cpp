@@ -33,7 +33,9 @@
 #include "pulsedevicefinder.h"
 #include "enginedevice.h"
 
-PulseDeviceFinder::PulseDeviceFinder() : DeviceFinder("pulseaudio", { "pulseaudio", "pulse", "pulsesink" }), mainloop_(nullptr), context_(nullptr) {}
+using namespace Qt::Literals::StringLiterals;
+
+PulseDeviceFinder::PulseDeviceFinder() : DeviceFinder(u"pulseaudio"_s, { u"pulseaudio"_s, u"pulse"_s, u"pulsesink"_s }), mainloop_(nullptr), context_(nullptr) {}
 
 bool PulseDeviceFinder::Initialize() {
 
@@ -65,7 +67,7 @@ bool PulseDeviceFinder::Reconnect() {
   }
 
   // Wait for the context to be connected.
-  forever {
+  Q_FOREVER {
     const pa_context_state state = pa_context_get_state(context_);
     if (state == PA_CONTEXT_FAILED || state == PA_CONTEXT_TERMINATED) {
       qLog(Warning) << "Connection to pulseaudio failed";
@@ -90,7 +92,7 @@ retry:
   ListDevicesState state;
   pa_context_get_sink_info_list(context_, &PulseDeviceFinder::GetSinkInfoCallback, &state);
 
-  forever {
+  Q_FOREVER {
     if (state.finished) {
       return state.devices;
     }

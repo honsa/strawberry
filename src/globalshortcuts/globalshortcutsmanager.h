@@ -36,6 +36,8 @@
 
 #include "globalshortcutsbackend.h"
 
+#include "core/settings.h"
+
 class QShortcut;
 class QAction;
 
@@ -71,11 +73,11 @@ class GlobalShortcutsManager : public QWidget {
   bool Register();
   void Unregister();
 
- public slots:
+ public Q_SLOTS:
   void ReloadSettings();
   void ShowMacAccessibilityDialog();
 
- signals:
+ Q_SIGNALS:
   void Play();
   void Pause();
   void PlayPause();
@@ -83,6 +85,7 @@ class GlobalShortcutsManager : public QWidget {
   void StopAfter();
   void Next();
   void Previous();
+  void RestartOrPrevious();
   void IncVolume();
   void DecVolume();
   void Mute();
@@ -103,7 +106,7 @@ class GlobalShortcutsManager : public QWidget {
 
  private:
   QList<GlobalShortcutsBackend*> backends_;
-  QSettings settings_;
+  Settings settings_;
   QList<GlobalShortcutsBackend::Type> backends_enabled_;
   QMap<QString, Shortcut> shortcuts_;
 };

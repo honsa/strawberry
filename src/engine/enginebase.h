@@ -39,7 +39,7 @@
 #include <QUrl>
 
 #include "devicefinders.h"
-#include "enginemetadata.h"
+#include "core/enginemetadata.h"
 #include "core/song.h"
 
 class EngineBase : public QObject {
@@ -104,8 +104,8 @@ class EngineBase : public QObject {
   virtual bool Init() = 0;
   virtual State state() const = 0;
   virtual void StartPreloading(const QUrl&, const QUrl&, const bool, const qint64, const qint64) {}
-  virtual bool Load(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags change, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs);
-  virtual bool Play(const quint64 offset_nanosec) = 0;
+  virtual bool Load(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags track_change_flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs);
+  virtual bool Play(const bool pause, const quint64 offset_nanosec) = 0;
   virtual void Stop(const bool stop_after = false) = 0;
   virtual void Pause() = 0;
   virtual void Unpause() = 0;
@@ -126,16 +126,17 @@ class EngineBase : public QObject {
 
   virtual OutputDetailsList GetOutputsList() const = 0;
   virtual bool ValidOutput(const QString &output) = 0;
-  virtual QString DefaultOutput() = 0;
-  virtual bool CustomDeviceSupport(const QString &output) = 0;
-  virtual bool ALSADeviceSupport(const QString &output) = 0;
+  virtual QString DefaultOutput() const = 0;
+  virtual bool CustomDeviceSupport(const QString &output) const = 0;
+  virtual bool ALSADeviceSupport(const QString &output) const = 0;
+  virtual bool ExclusiveModeSupport(const QString &output) const = 0;
 
   // Plays a media stream represented with the URL 'u' from the given 'beginning' to the given 'end' (usually from 0 to a song's length).
   // Both markers should be passed in nanoseconds. 'end' can be negative, indicating that the real length of 'u' stream is unknown.
-  bool Play(const QUrl &media_url, const QUrl &stream_url, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs);
+  bool Play(const QUrl &media_url, const QUrl &stream_url, const bool pause, const TrackChangeFlags flags, const bool force_stop_at_end, const quint64 beginning_nanosec, const qint64 end_nanosec, const quint64 offset_nanosec, const std::optional<double> ebur128_integrated_loudness_lufs);
   void SetVolume(const uint volume);
 
- public slots:
+ public Q_SLOTS:
   virtual void ReloadSettings();
   void UpdateVolume(const uint volume);
   void EmitAboutToFinish();
@@ -155,19 +156,17 @@ class EngineBase : public QObject {
 
   QVariant device() { return device_; }
 
- public slots:
+ public Q_SLOTS:
   virtual void SetStereoBalancerEnabled(const bool) {}
   virtual void SetStereoBalance(const float) {}
   virtual void SetEqualizerEnabled(const bool) {}
   virtual void SetEqualizerParameters(const int, const QList<int>&) {}
 
- signals:
+ Q_SIGNALS:
   // Emitted when crossfading is enabled and the track is crossfade_duration_ away from finishing
   void TrackAboutToEnd();
 
   void TrackEnded();
-
-  void FadeoutFinishedSignal();
 
   void StatusText(const QString &text);
   void Error(const QString &text);
@@ -183,11 +182,14 @@ class EngineBase : public QObject {
 
   // Signals that the engine's state has changed (a stream was stopped for example).
   // Always use the state from event, because it's not guaranteed that immediate subsequent call to state() won't return a stale value.
-  void StateChanged(const State state);
+  void StateChanged(const EngineBase::State state);
 
   void VolumeChanged(const uint volume);
 
+  void Finished();
+
  protected:
+  bool exclusive_mode_;
   bool volume_control_;
   uint volume_;
   quint64 beginning_nanosec_;
@@ -244,6 +246,11 @@ class EngineBase : public QObject {
   bool bs2b_enabled_;
   bool http2_enabled_;
   bool strict_ssl_enabled_;
+
+  // Spotify
+#ifdef HAVE_SPOTIFY
+  QString spotify_access_token_;
+#endif
 
   bool about_to_end_emitted_;
 

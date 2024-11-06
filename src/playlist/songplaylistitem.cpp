@@ -23,9 +23,10 @@
 
 #include <QUrl>
 
-#include "core/tagreaderclient.h"
+#include "core/logging.h"
 #include "core/song.h"
 #include "core/sqlrow.h"
+#include "tagreader/tagreaderclient.h"
 #include "playlistitem.h"
 #include "songplaylistitem.h"
 
@@ -33,7 +34,7 @@ SongPlaylistItem::SongPlaylistItem(const Song::Source source) : PlaylistItem(sou
 SongPlaylistItem::SongPlaylistItem(const Song &song) : PlaylistItem(song.source()), song_(song) {}
 
 bool SongPlaylistItem::InitFromQuery(const SqlRow &query) {
-  song_.InitFromQuery(query, false);
+  song_.InitFromQuery(query, false, static_cast<int>(Song::kRowIdColumns.count()));
   return true;
 }
 
@@ -42,7 +43,12 @@ QUrl SongPlaylistItem::Url() const { return song_.url(); }
 void SongPlaylistItem::Reload() {
 
   if (!song_.url().isLocalFile()) return;
-  TagReaderClient::Instance()->ReadFileBlocking(song_.url().toLocalFile(), &song_);
+
+  const TagReaderResult result = TagReaderClient::Instance()->ReadFileBlocking(song_.url().toLocalFile(), &song_);
+  if (!result.success()) {
+    qLog(Error) << "Could not reload file" << song_.url() << result.error_string();
+  }
+
   UpdateTemporaryMetadata(song_);
 
 }

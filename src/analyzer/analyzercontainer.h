@@ -30,7 +30,7 @@
 #include <QAction>
 #include <QActionGroup>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "engine/enginebase.h"
 
 class QTimer;
@@ -46,30 +46,24 @@ class AnalyzerContainer : public QWidget {
   explicit AnalyzerContainer(QWidget *parent);
 
   void SetEngine(SharedPtr<EngineBase> engine);
-  void SetActions(QAction *visualisation);
 
   static const char *kSettingsGroup;
   static const char *kSettingsFramerate;
 
- signals:
+ Q_SIGNALS:
   void WheelEvent(const int delta);
 
  protected:
-  void mouseReleaseEvent(QMouseEvent*) override;
+  void mouseReleaseEvent(QMouseEvent *e) override;
   void wheelEvent(QWheelEvent *e) override;
 
- private slots:
+ private Q_SLOTS:
   void ChangeAnalyzer(const int id);
   void ChangeFramerate(int new_framerate);
   void DisableAnalyzer();
   void ShowPopupMenu();
 
  private:
-  static const int kLowFramerate;
-  static const int kMediumFramerate;
-  static const int kHighFramerate;
-  static const int kSuperHighFramerate;
-
   void Load();
   void Save();
   void SaveFramerate(const int framerate);

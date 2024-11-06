@@ -21,28 +21,36 @@
 
 #include "config.h"
 
-#include <QtConcurrent>
+#include <utility>
+
+#include <QtConcurrentRun>
 #include <QtAlgorithms>
 #include <QList>
 #include <QUrl>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
-#include "core/songloader.h"
+#include "core/urlhandlers.h"
 #include "core/taskmanager.h"
+#include "core/songloader.h"
 #include "playlist.h"
 #include "songloaderinserter.h"
 
-SongLoaderInserter::SongLoaderInserter(SharedPtr<TaskManager> task_manager, SharedPtr<CollectionBackendInterface> collection_backend, const SharedPtr<Player> player, QObject *parent)
+SongLoaderInserter::SongLoaderInserter(const SharedPtr<TaskManager> task_manager,
+                                       const SharedPtr<TagReaderClient> tagreader_client,
+                                       const SharedPtr<UrlHandlers> url_handlers,
+                                       const SharedPtr<CollectionBackendInterface> collection_backend,
+                                       QObject *parent)
     : QObject(parent),
       task_manager_(task_manager),
+      tagreader_client_(tagreader_client),
+      url_handlers_(url_handlers),
+      collection_backend_(collection_backend),
       destination_(nullptr),
       row_(-1),
       play_now_(true),
       enqueue_(false),
-      enqueue_next_(false),
-      collection_backend_(collection_backend),
-      player_(player) {}
+      enqueue_next_(false) {}
 
 SongLoaderInserter::~SongLoaderInserter() { qDeleteAll(pending_); }
 
@@ -59,7 +67,7 @@ void SongLoaderInserter::Load(Playlist *destination, int row, bool play_now, boo
   QObject::connect(this, &SongLoaderInserter::EffectiveLoadFinished, destination, &Playlist::UpdateItems);
 
   for (const QUrl &url : urls) {
-    SongLoader *loader = new SongLoader(collection_backend_, player_, this);
+    SongLoader *loader = new SongLoader(url_handlers_, collection_backend_, tagreader_client_, this);
 
     SongLoader::Result ret = loader->Load(url);
 
@@ -72,8 +80,9 @@ void SongLoaderInserter::Load(Playlist *destination, int row, bool play_now, boo
       songs_ << loader->songs();
     }
     else {
-      for (const QString &error : loader->errors()) {
-        emit Error(error);
+      const QStringList errors = loader->errors();
+      for (const QString &error : errors) {
+        Q_EMIT Error(error);
       }
     }
     delete loader;
@@ -84,11 +93,7 @@ void SongLoaderInserter::Load(Playlist *destination, int row, bool play_now, boo
     deleteLater();
   }
   else {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     (void)QtConcurrent::run(&SongLoaderInserter::AsyncLoad, this);
-#else
-    (void)QtConcurrent::run(this, &SongLoaderInserter::AsyncLoad);
-#endif
   }
 }
 
@@ -104,17 +109,18 @@ void SongLoaderInserter::LoadAudioCD(Playlist *destination, int row, bool play_n
   enqueue_ = enqueue;
   enqueue_next_ = enqueue_next;
 
-  SongLoader *loader = new SongLoader(collection_backend_, player_, this);
+  SongLoader *loader = new SongLoader(url_handlers_, collection_backend_, tagreader_client_, this);
   QObject::connect(loader, &SongLoader::AudioCDTracksLoadFinished, this, [this, loader]() { AudioCDTracksLoadFinished(loader); });
   QObject::connect(loader, &SongLoader::LoadAudioCDFinished, this, &SongLoaderInserter::AudioCDTagsLoaded);
   qLog(Info) << "Loading audio CD...";
   SongLoader::Result ret = loader->LoadAudioCD();
   if (ret == SongLoader::Result::Error) {
     if (loader->errors().isEmpty())
-      emit Error(tr("Error while loading audio CD."));
+      Q_EMIT Error(tr("Error while loading audio CD."));
     else {
-      for (const QString &error : loader->errors()) {
-        emit Error(error);
+      const QStringList errors = loader->errors();
+      for (const QString &error : errors) {
+        Q_EMIT Error(error);
       }
     }
     delete loader;
@@ -129,8 +135,9 @@ void SongLoaderInserter::AudioCDTracksLoadFinished(SongLoader *loader) {
 
   songs_ = loader->songs();
   if (songs_.isEmpty()) {
-    for (const QString &error : loader->errors()) {
-      emit Error(error);
+    const QStringList errors = loader->errors();
+    for (const QString &error : errors) {
+      Q_EMIT Error(error);
     }
   }
   else {
@@ -172,13 +179,14 @@ void SongLoaderInserter::AsyncLoad() {
   task_manager_->SetTaskProgress(async_load_id, async_progress, pending_.count());
   bool first_loaded = false;
   for (int i = 0; i < pending_.count(); ++i) {
-    SongLoader *loader = pending_[i];
+    SongLoader *loader = pending_.value(i);
     SongLoader::Result res = loader->LoadFilenamesBlocking();
     task_manager_->SetTaskProgress(async_load_id, ++async_progress);
 
     if (res == SongLoader::Result::Error) {
-      for (const QString &error : loader->errors()) {
-        emit Error(error);
+      const QStringList errors = loader->errors();
+      for (const QString &error : errors) {
+        Q_EMIT Error(error);
       }
       continue;
     }
@@ -194,7 +202,7 @@ void SongLoaderInserter::AsyncLoad() {
 
   }
   task_manager_->SetTaskFinished(async_load_id);
-  emit PreloadFinished();
+  Q_EMIT PreloadFinished();
 
   // Songs are inserted in playlist, now load them completely.
   async_progress = 0;
@@ -202,7 +210,7 @@ void SongLoaderInserter::AsyncLoad() {
   task_manager_->SetTaskProgress(async_load_id, async_progress, songs_.count());
   SongList songs;
   for (int i = 0; i < pending_.count(); ++i) {
-    SongLoader *loader = pending_[i];
+    SongLoader *loader = pending_.value(i);
     if (i != 0) {
       // We already did this earlier for the first song.
       loader->LoadMetadataBlocking();
@@ -213,7 +221,7 @@ void SongLoaderInserter::AsyncLoad() {
   task_manager_->SetTaskFinished(async_load_id);
 
   // Replace the partially-loaded items by the new ones, fully loaded.
-  emit EffectiveLoadFinished(songs);
+  Q_EMIT EffectiveLoadFinished(songs);
 
   deleteLater();
 

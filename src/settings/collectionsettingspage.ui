@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>519</width>
-    <height>920</height>
+    <width>565</width>
+    <height>1003</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,7 +39,7 @@
      <item>
       <layout class="QVBoxLayout" name="layout_collection_folder_buttons">
        <item>
-        <widget class="QPushButton" name="add">
+        <widget class="QPushButton" name="add_directory">
          <property name="text">
           <string>Add new folder...</string>
          </property>
@@ -49,7 +49,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="remove">
+        <widget class="QPushButton" name="remove_directory">
          <property name="text">
           <string>Remove folder</string>
          </property>
@@ -58,7 +58,7 @@
        <item>
         <spacer name="spacer_collection_buttons">
          <property name="orientation">
-          <enum>Qt::Vertical</enum>
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -167,7 +167,7 @@
          <item>
           <spacer name="spacer_expire_unavailable_songs">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -212,6 +212,13 @@ If there are no matches then it will use the largest image in the directory.</st
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="show_dividers">
+        <property name="text">
+         <string>Show dividers</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="pretty_covers">
         <property name="text">
          <string>Show album cover art in collection</string>
@@ -219,9 +226,16 @@ If there are no matches then it will use the largest image in the directory.</st
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="show_dividers">
+       <widget class="QCheckBox" name="various_artists">
         <property name="text">
-         <string>Show dividers</string>
+         <string>Use various artists for compilation albums</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="sort_skips_articles">
+        <property name="text">
+         <string>Skip leading articles (&quot;the&quot;, &quot;a&quot;, &quot;an&quot;) when sorting artist names</string>
         </property>
        </widget>
       </item>
@@ -281,7 +295,7 @@ If there are no matches then it will use the largest image in the directory.</st
         <item row="0" column="4">
          <spacer name="spacer_cache_size">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -305,7 +319,7 @@ If there are no matches then it will use the largest image in the directory.</st
         <item>
          <spacer name="spacer_disk_cache">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -364,7 +378,7 @@ If there are no matches then it will use the largest image in the directory.</st
         <item row="0" column="4">
          <spacer name="spacer_disk_cache_size">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -408,7 +422,7 @@ If there are no matches then it will use the largest image in the directory.</st
         <item>
          <spacer name="spacer_disk_cache_in_use">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -469,7 +483,7 @@ If there are no matches then it will use the largest image in the directory.</st
         <item>
          <spacer name="spacer_save_stats">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -495,23 +509,31 @@ If there are no matches then it will use the largest image in the directory.</st
  </widget>
  <tabstops>
   <tabstop>list</tabstop>
-  <tabstop>add</tabstop>
-  <tabstop>remove</tabstop>
+  <tabstop>add_directory</tabstop>
+  <tabstop>remove_directory</tabstop>
   <tabstop>startup_scan</tabstop>
   <tabstop>monitor</tabstop>
   <tabstop>song_tracking</tabstop>
   <tabstop>mark_songs_unavailable</tabstop>
+  <tabstop>song_ebur128_loudness_analysis</tabstop>
   <tabstop>expire_unavailable_songs_days</tabstop>
   <tabstop>cover_art_patterns</tabstop>
   <tabstop>auto_open</tabstop>
-  <tabstop>pretty_covers</tabstop>
   <tabstop>show_dividers</tabstop>
+  <tabstop>pretty_covers</tabstop>
+  <tabstop>various_artists</tabstop>
+  <tabstop>sort_skips_articles</tabstop>
   <tabstop>spinbox_cache_size</tabstop>
   <tabstop>combobox_cache_size</tabstop>
   <tabstop>checkbox_disk_cache</tabstop>
   <tabstop>spinbox_disk_cache_size</tabstop>
   <tabstop>combobox_disk_cache_size</tabstop>
   <tabstop>button_clear_disk_cache</tabstop>
+  <tabstop>checkbox_save_playcounts</tabstop>
+  <tabstop>checkbox_save_ratings</tabstop>
+  <tabstop>checkbox_overwrite_playcount</tabstop>
+  <tabstop>checkbox_overwrite_rating</tabstop>
+  <tabstop>button_save_stats</tabstop>
   <tabstop>checkbox_delete_files</tabstop>
  </tabstops>
  <resources/>

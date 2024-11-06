@@ -1,21 +1,26 @@
-/* This file was part of Clementine.
-   Copyright 2012, David Sansome <me@davidsansome.com>
-
-   Strawberry is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Strawberry is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * Strawberry Music Player
+ * This file was part of Clementine.
+ * Copyright 2012, David Sansome <me@davidsansome.com>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
+ *
+ * Strawberry is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Strawberry is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <algorithm>
+#include <utility>
 
 #include <QApplication>
 #include <QtConcurrentRun>
@@ -31,7 +36,7 @@
 #include <QPainter>
 #include <QRect>
 
-#include "core/application.h"
+#include "core/settings.h"
 #include "playlist/playlist.h"
 #include "playlist/playlistview.h"
 #include "playlist/playlistfilter.h"
@@ -41,28 +46,30 @@
 #include "moodbarpipeline.h"
 #include "moodbarrenderer.h"
 
-#include "settings/moodbarsettingspage.h"
+#include "constants/moodbarsettings.h"
 
 MoodbarItemDelegate::Data::Data() : state_(State::None) {}
 
-MoodbarItemDelegate::MoodbarItemDelegate(Application *app, PlaylistView *view, QObject *parent)
+MoodbarItemDelegate::MoodbarItemDelegate(const SharedPtr<MoodbarLoader> moodbar_loader, PlaylistView *playlist_view, QObject *parent)
     : QItemDelegate(parent),
-      app_(app),
-      view_(view),
+      moodbar_loader_(moodbar_loader),
+      playlist_view_(playlist_view),
       enabled_(false),
-      style_(MoodbarRenderer::MoodbarStyle::Normal) {
+      style_(MoodbarSettings::Style::Normal) {
 
-  QObject::connect(app_, &Application::SettingsChanged, this, &MoodbarItemDelegate::ReloadSettings);
+  QObject::connect(&*moodbar_loader, &MoodbarLoader::SettingsReloaded, this, &MoodbarItemDelegate::ReloadSettings);
+  QObject::connect(&*moodbar_loader, &MoodbarLoader::StyleChanged, this, &MoodbarItemDelegate::ReloadSettings);
+
   ReloadSettings();
 
 }
 
 void MoodbarItemDelegate::ReloadSettings() {
 
-  QSettings s;
-  s.beginGroup(MoodbarSettingsPage::kSettingsGroup);
-  enabled_ = s.value("enabled", false).toBool();
-  const MoodbarRenderer::MoodbarStyle new_style = static_cast<MoodbarRenderer::MoodbarStyle>(s.value("style", static_cast<int>(MoodbarRenderer::MoodbarStyle::Normal)).toInt());
+  Settings s;
+  s.beginGroup(MoodbarSettings::kSettingsGroup);
+  enabled_ = s.value(MoodbarSettings::kEnabled, false).toBool();
+  const MoodbarSettings::Style new_style = static_cast<MoodbarSettings::Style>(s.value(MoodbarSettings::kStyle, static_cast<int>(MoodbarSettings::Style::Normal)).toInt());
   s.endGroup();
 
   if (!enabled_) {
@@ -97,8 +104,8 @@ void MoodbarItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &o
 QPixmap MoodbarItemDelegate::PixmapForIndex(const QModelIndex &idx, const QSize size) {
 
   // Pixmaps are keyed off URL.
-  const QUrl url = idx.sibling(idx.row(), Playlist::Column_Filename).data().toUrl();
-  const bool has_cue = idx.sibling(idx.row(), Playlist::Column_HasCUE).data().toBool();
+  const QUrl url = idx.sibling(idx.row(), static_cast<int>(Playlist::Column::Filename)).data().toUrl();
+  const bool has_cue = idx.sibling(idx.row(), static_cast<int>(Playlist::Column::HasCUE)).data().toBool();
 
   Data *data = nullptr;
   if (data_.contains(url)) {
@@ -145,7 +152,7 @@ void MoodbarItemDelegate::StartLoadingData(const QUrl &url, const bool has_cue, 
   // Load a mood file for this song and generate some colors from it
   QByteArray bytes;
   MoodbarPipeline *pipeline = nullptr;
-  switch (app_->moodbar_loader()->Load(url, has_cue, &bytes, &pipeline)) {
+  switch (moodbar_loader_->Load(url, has_cue, &bytes, &pipeline)) {
     case MoodbarLoader::Result::CannotLoad:
       data->state_ = Data::State::CannotLoad;
       break;
@@ -176,7 +183,8 @@ bool MoodbarItemDelegate::RemoveFromCacheIfIndexesInvalid(const QUrl &url, Data 
 
 void MoodbarItemDelegate::ReloadAllColors() {
 
-  for (const QUrl &url : data_.keys()) {
+  const QList<QUrl> urls = data_.keys();
+  for (const QUrl &url : urls) {
     Data *data = data_[url];
 
     if (data->state_ == Data::State::Loaded) {
@@ -271,12 +279,12 @@ void MoodbarItemDelegate::ImageLoaded(const QUrl &url, const QImage &image) {
   data->pixmap_ = QPixmap::fromImage(image);
   data->state_ = Data::State::Loaded;
 
-  Playlist *playlist = view_->playlist();
+  Playlist *playlist = playlist_view_->playlist();
   const PlaylistFilter *filter = playlist->filter();
 
   // Update all the indices with the new pixmap.
   for (const QPersistentModelIndex &idx : std::as_const(data->indexes_)) {
-    if (idx.isValid() && idx.sibling(idx.row(), Playlist::Column_Filename).data().toUrl() == url) {
+    if (idx.isValid() && idx.sibling(idx.row(), static_cast<int>(Playlist::Column::Filename)).data().toUrl() == url) {
       QModelIndex source_index = idx;
       if (idx.model() == filter) {
         source_index = filter->mapToSource(source_index);

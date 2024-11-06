@@ -33,14 +33,16 @@
 #include <QPolygon>
 #include <QPaintEvent>
 
-#include "core/qt_blurimage.h"
+#include "includes/qt_blurimage.h"
 #include "tracksliderpopup.h"
 
-const int TrackSliderPopup::kTextMargin = 4;
-const int TrackSliderPopup::kPointLength = 16;
-const int TrackSliderPopup::kPointWidth = 4;
-const int TrackSliderPopup::kBorderRadius = 4;
-const qreal TrackSliderPopup::kBlurRadius = 20.0;
+namespace {
+constexpr int kTextMargin = 4;
+constexpr int kPointLength = 16;
+constexpr int kPointWidth = 4;
+constexpr int kBorderRadius = 4;
+constexpr qreal kBlurRadius = 20.0;
+}  // namespace
 
 TrackSliderPopup::TrackSliderPopup(QWidget *parent)
     : QWidget(parent),
@@ -73,7 +75,8 @@ void TrackSliderPopup::SetPopupPosition(const QPoint pos) {
   UpdatePosition();
 }
 
-void TrackSliderPopup::paintEvent(QPaintEvent*) {
+void TrackSliderPopup::paintEvent(QPaintEvent *e) {
+  Q_UNUSED(e)
   QPainter p(this);
   p.drawPixmap(0, 0, pixmap_);
 }

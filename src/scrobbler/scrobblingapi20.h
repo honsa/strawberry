@@ -30,7 +30,7 @@
 #include <QString>
 #include <QTimer>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "scrobblerservice.h"
 #include "scrobblercache.h"
@@ -38,7 +38,7 @@
 
 class QNetworkReply;
 
-class ScrobblerSettings;
+class ScrobblerSettingsService;
 class NetworkAccessManager;
 class LocalRedirectServer;
 
@@ -46,7 +46,7 @@ class ScrobblingAPI20 : public ScrobblerService {
   Q_OBJECT
 
  public:
-  explicit ScrobblingAPI20(const QString &name, const QString &settings_group, const QString &auth_url, const QString &api_url, const bool batch, const QString &cache_file, SharedPtr<ScrobblerSettings> settings, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit ScrobblingAPI20(const QString &name, const QString &settings_group, const QString &auth_url, const QString &api_url, const bool batch, const QString &cache_file, const SharedPtr<ScrobblerSettingsService> settings, const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~ScrobblingAPI20() override;
 
   static const char *kApiKey;
@@ -68,13 +68,13 @@ class ScrobblingAPI20 : public ScrobblerService {
   void Submit() override;
   void Love() override;
 
- signals:
+ Q_SIGNALS:
   void AuthenticationComplete(const bool success, const QString &error = QString());
 
- public slots:
+ public Q_SLOTS:
   void WriteCache() override { cache_->WriteCache(); }
 
- private slots:
+ private Q_SLOTS:
   void RedirectArrived();
   void AuthenticateReplyFinished(QNetworkReply *reply);
   void UpdateNowPlayingRequestFinished(QNetworkReply *reply);
@@ -120,9 +120,6 @@ class ScrobblingAPI20 : public ScrobblerService {
     RateLimitExceeded = 29,
   };
 
-  static const char *kSecret;
-  static const int kScrobblesPerRequest;
-
   QNetworkReply *CreateRequest(const ParamList &request_params);
   ReplyResult GetJsonObject(QNetworkReply *reply, QJsonObject &json_obj, QString &error_description);
 
@@ -141,8 +138,7 @@ class ScrobblingAPI20 : public ScrobblerService {
   QString api_url_;
   bool batch_;
 
-  SharedPtr<ScrobblerSettings> settings_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   ScrobblerCache *cache_;
   LocalRedirectServer *server_;
 

@@ -17,6 +17,8 @@
  *
  */
 
+#include <utility>
+
 #include <QCoreApplication>
 #include <QList>
 #include <QString>
@@ -27,9 +29,7 @@
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 #include <QKeySequence>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#  include <QKeyCombination>
-#endif
+#include <QKeyCombination>
 
 #include "core/logging.h"
 
@@ -38,8 +38,12 @@
 #include "kglobalaccel.h"
 #include "kglobalaccelcomponent.h"
 
-const char *GlobalShortcutsBackendKDE::kKdeService = "org.kde.kglobalaccel";
-const char *GlobalShortcutsBackendKDE::kKdePath = "/kglobalaccel";
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr char kKdeService[] = "org.kde.kglobalaccel";
+constexpr char kKdePath[] = "/kglobalaccel";
+}
 
 GlobalShortcutsBackendKDE::GlobalShortcutsBackendKDE(GlobalShortcutsManager *manager, QObject *parent)
     : GlobalShortcutsBackend(manager, GlobalShortcutsBackend::Type::KDE, parent),
@@ -48,7 +52,7 @@ GlobalShortcutsBackendKDE::GlobalShortcutsBackendKDE(GlobalShortcutsManager *man
 
 bool GlobalShortcutsBackendKDE::IsKDEAvailable() {
 
-  return QDBusConnection::sessionBus().interface()->isServiceRegistered(kKdeService);
+  return QDBusConnection::sessionBus().interface()->isServiceRegistered(QLatin1String(kKdeService));
 
 }
 
@@ -72,16 +76,16 @@ bool GlobalShortcutsBackendKDE::DoRegister() {
 
   qLog(Debug) << "Registering";
 
-  if (!QDBusConnection::sessionBus().interface()->isServiceRegistered(kKdeService)) {
+  if (!QDBusConnection::sessionBus().interface()->isServiceRegistered(QLatin1String(kKdeService))) {
     qLog(Warning) << "KGlobalAccel is not registered";
     return false;
   }
 
   if (!interface_) {
-    interface_ = new OrgKdeKGlobalAccelInterface(kKdeService, kKdePath, QDBusConnection::sessionBus(), this);
+    interface_ = new OrgKdeKGlobalAccelInterface(QLatin1String(kKdeService), QLatin1String(kKdePath), QDBusConnection::sessionBus(), this);
   }
 
-  QList<GlobalShortcutsManager::Shortcut> shortcuts = manager_->shortcuts().values();
+  const QList<GlobalShortcutsManager::Shortcut> shortcuts = manager_->shortcuts().values();
   for (const GlobalShortcutsManager::Shortcut &shortcut : shortcuts) {
     RegisterShortcut(shortcut);
   }
@@ -100,14 +104,14 @@ void GlobalShortcutsBackendKDE::RegisterFinished(QDBusPendingCallWatcher *watche
   watcher->deleteLater();
 
   if (!reply.isValid()) {
-    if (reply.error().name() != "org.kde.kglobalaccel.NoSuchComponent") {
+    if (reply.error().name() != u"org.kde.kglobalaccel.NoSuchComponent"_s) {
       qLog(Error) << "Failed to register:" << reply.error().name() << reply.error().message();
     }
     return;
   }
 
   if (!component_) {
-    component_ = new org::kde::kglobalaccel::Component(kKdeService, reply.value().path(), QDBusConnection::sessionBus(), interface_);
+    component_ = new org::kde::kglobalaccel::Component(QLatin1String(kKdeService), reply.value().path(), QDBusConnection::sessionBus(), interface_);
   }
 
   if (!component_->isValid()) {
@@ -127,7 +131,7 @@ void GlobalShortcutsBackendKDE::DoUnregister() {
 
   qLog(Debug) << "Unregistering";
 
-  QMap<QString, GlobalShortcutsManager::Shortcut> shortcuts = manager_->shortcuts();
+  const QMap<QString, GlobalShortcutsManager::Shortcut> shortcuts = manager_->shortcuts();
   for (const GlobalShortcutsManager::Shortcut &shortcut : shortcuts) {
     if (actions_.contains(shortcut.id)) {
       interface_->unRegister(GetActionId(shortcut.id, shortcut.action));
@@ -174,7 +178,7 @@ QStringList GlobalShortcutsBackendKDE::GetActionId(const QString &id, const QAct
   ret << QCoreApplication::applicationName();
   ret << id;
   ret << QCoreApplication::applicationName();
-  ret << action->text().remove('&');
+  ret << action->text().remove(u'&');
   if (ret.back().isEmpty()) ret.back() = id;
 
   return ret;
@@ -186,11 +190,7 @@ QList<int> GlobalShortcutsBackendKDE::ToIntList(const QList<QKeySequence> &seque
   QList<int> ret;
   ret.reserve(sequence_list.count());
   for (const QKeySequence &sequence : sequence_list) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     ret.append(sequence[0].toCombined());
-#else
-    ret.append(sequence[0]);
-#endif
   }
 
   return ret;
@@ -209,10 +209,13 @@ QList<QKeySequence> GlobalShortcutsBackendKDE::ToKeySequenceList(const QList<int
 
 }
 
-void GlobalShortcutsBackendKDE::GlobalShortcutPressed(const QString &component_unique, const QString &shortcut_unique, qint64) {
+void GlobalShortcutsBackendKDE::GlobalShortcutPressed(const QString &component_unique, const QString &shortcut_unique, const qint64 timestamp) {
+
+  Q_UNUSED(timestamp)
 
   if (QCoreApplication::applicationName() == component_unique && actions_.contains(shortcut_unique)) {
-    for (QAction *action : actions_.values(shortcut_unique)) {
+    const QList<QAction*> actions = actions_.values(shortcut_unique);
+    for (QAction *action : actions) {
       qLog(Debug) << "Key" << action->shortcut() << "pressed.";
       if (action->isEnabled()) action->trigger();
     }

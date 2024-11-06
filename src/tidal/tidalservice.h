@@ -36,46 +36,54 @@
 #include <QDateTime>
 #include <QSslError>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
-#include "internet/internetservice.h"
-#include "internet/internetsearchview.h"
-#include "settings/tidalsettingspage.h"
+#include "streaming/streamingservice.h"
+#include "streaming/streamingsearchview.h"
+#include "constants/tidalsettings.h"
 
-class QSortFilterProxyModel;
 class QNetworkReply;
 class QTimer;
 
-class Application;
+class TaskManager;
+class Database;
+class UrlHandlers;
 class NetworkAccessManager;
+class AlbumCoverLoader;
 class TidalUrlHandler;
 class TidalRequest;
 class TidalFavoriteRequest;
 class TidalStreamURLRequest;
 class CollectionBackend;
 class CollectionModel;
+class CollectionFilter;
 
-class TidalService : public InternetService {
+class TidalService : public StreamingService {
   Q_OBJECT
 
  public:
-  explicit TidalService(Application *app, QObject *parent = nullptr);
+  explicit TidalService(const SharedPtr<TaskManager> task_manager,
+                        const SharedPtr<Database> database,
+                        const SharedPtr<NetworkAccessManager> network,
+                        const SharedPtr<UrlHandlers> url_handlers,
+                        const SharedPtr<AlbumCoverLoader> albumcover_loader,
+                        QObject *parent = nullptr);
+
   ~TidalService() override;
 
   static const Song::Source kSource;
   static const char kApiUrl[];
   static const char kResourcesUrl[];
+  static const int kLoginAttempts;
 
   void Exit() override;
   void ReloadSettings() override;
 
   void Logout();
-  int Search(const QString &text, InternetSearchView::SearchType type) override;
+  int Search(const QString &text, StreamingSearchView::SearchType type) override;
   void CancelSearch() override;
 
   int max_login_attempts() const { return kLoginAttempts; }
-
-  Application *app() const { return app_; }
 
   bool oauth() const override { return oauth_; }
   QString client_id() const { return client_id_; }
@@ -91,7 +99,7 @@ class TidalService : public InternetService {
   bool fetchalbums() const { return fetchalbums_; }
   QString coversize() const { return coversize_; }
   bool download_album_covers() const { return download_album_covers_; }
-  TidalSettingsPage::StreamUrlMethod stream_url_method() const { return stream_url_method_; }
+  TidalSettings::StreamUrlMethod stream_url_method() const { return stream_url_method_; }
   bool album_explicit() const { return album_explicit_; }
 
   QString access_token() const { return access_token_; }
@@ -111,12 +119,11 @@ class TidalService : public InternetService {
   CollectionModel *albums_collection_model() override { return albums_collection_model_; }
   CollectionModel *songs_collection_model() override { return songs_collection_model_; }
 
-  QSortFilterProxyModel *artists_collection_sort_model() override { return artists_collection_sort_model_; }
-  QSortFilterProxyModel *albums_collection_sort_model() override { return albums_collection_sort_model_; }
-  QSortFilterProxyModel *songs_collection_sort_model() override { return songs_collection_sort_model_; }
+  CollectionFilter *artists_collection_filter_model() override { return artists_collection_model_->filter(); }
+  CollectionFilter *albums_collection_filter_model() override { return albums_collection_model_->filter(); }
+  CollectionFilter *songs_collection_filter_model() override { return songs_collection_model_->filter(); }
 
- public slots:
-  void ShowConfig() override;
+ public Q_SLOTS:
   void StartAuthorization(const QString &client_id);
   void TryLogin();
   void SendLogin();
@@ -129,7 +136,7 @@ class TidalService : public InternetService {
   void ResetSongsRequest() override;
   void AuthorizationUrlReceived(const QUrl &url);
 
- private slots:
+ private Q_SLOTS:
   void ExitReceived();
   void RequestNewAccessToken() { RequestAccessToken(); }
   void HandleLoginSSLErrors(const QList<QSslError> &ssl_errors);
@@ -159,24 +166,7 @@ class TidalService : public InternetService {
   void SendSearch();
   void LoginError(const QString &error = QString(), const QVariant &debug = QVariant());
 
-  static const char kOAuthUrl[];
-  static const char kOAuthAccessTokenUrl[];
-  static const char kOAuthRedirectUrl[];
-  static const char kAuthUrl[];
-
-  static const int kLoginAttempts;
-  static const int kTimeResetLoginAttempts;
-
-  static const char kArtistsSongsTable[];
-  static const char kAlbumsSongsTable[];
-  static const char kSongsTable[];
-
-  static const char kArtistsSongsFtsTable[];
-  static const char kAlbumsSongsFtsTable[];
-  static const char kSongsFtsTable[];
-
-  Application *app_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   TidalUrlHandler *url_handler_;
 
   SharedPtr<CollectionBackend> artists_collection_backend_;
@@ -186,10 +176,6 @@ class TidalService : public InternetService {
   CollectionModel *artists_collection_model_;
   CollectionModel *albums_collection_model_;
   CollectionModel *songs_collection_model_;
-
-  QSortFilterProxyModel *artists_collection_sort_model_;
-  QSortFilterProxyModel *albums_collection_sort_model_;
-  QSortFilterProxyModel *songs_collection_sort_model_;
 
   QTimer *timer_search_delay_;
   QTimer *timer_login_attempt_;
@@ -216,7 +202,7 @@ class TidalService : public InternetService {
   bool fetchalbums_;
   QString coversize_;
   bool download_album_covers_;
-  TidalSettingsPage::StreamUrlMethod stream_url_method_;
+  TidalSettings::StreamUrlMethod stream_url_method_;
   bool album_explicit_;
 
   QString access_token_;
@@ -228,7 +214,7 @@ class TidalService : public InternetService {
   int pending_search_id_;
   int next_pending_search_id_;
   QString pending_search_text_;
-  InternetSearchView::SearchType pending_search_type_;
+  StreamingSearchView::SearchType pending_search_type_;
 
   int search_id_;
   QString search_text_;

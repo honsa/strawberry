@@ -37,8 +37,10 @@ extern HICON qt_pixmapToWinHICON(const QPixmap &p);
 #include "core/logging.h"
 #include "windows7thumbbar.h"
 
-const int Windows7ThumbBar::kIconSize = 16;
-const int Windows7ThumbBar::kMaxButtonCount = 7;
+namespace {
+constexpr int kIconSize = 16;
+constexpr int kMaxButtonCount = 7;
+}  // namespace
 
 Windows7ThumbBar::Windows7ThumbBar(QWidget *widget)
     : QObject(widget),
@@ -96,7 +98,7 @@ ITaskbarList3 *Windows7ThumbBar::CreateTaskbarList() {
 void Windows7ThumbBar::SetupButton(const QAction *action, THUMBBUTTON *button) {
 
   if (action) {
-    button->hIcon = qt_pixmapToWinHICON(action->icon().pixmap(Windows7ThumbBar::kIconSize));
+    button->hIcon = qt_pixmapToWinHICON(action->icon().pixmap(kIconSize));
     button->dwFlags = action->isEnabled() ? THBF_ENABLED : THBF_DISABLED;
     // This is unsafe - doesn't obey 260-char restriction
     action->text().toWCharArray(button->szTip);

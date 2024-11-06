@@ -28,13 +28,13 @@
 #include <QObject>
 #include <QString>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
 #include "collectionmodel.h"
-#include "ui_groupbydialog.h"
 
 class QWidget;
 
 class GroupByDialogPrivate;
+class Ui_GroupByDialog;
 
 class GroupByDialog : public QDialog {
   Q_OBJECT
@@ -43,14 +43,14 @@ class GroupByDialog : public QDialog {
   explicit GroupByDialog(QWidget *parent = nullptr);
   ~GroupByDialog() override;
 
- public slots:
+ public Q_SLOTS:
   void CollectionGroupingChanged(const CollectionModel::Grouping g, const bool separate_albums_by_grouping);
   void accept() override;
 
- signals:
+ Q_SIGNALS:
   void Accepted(const CollectionModel::Grouping g, const bool separate_albums_by_grouping);
 
- private slots:
+ private Q_SLOTS:
   void Reset();
 
  private:

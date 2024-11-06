@@ -32,19 +32,18 @@
 #include <QJsonValue>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsoncoverprovider.h"
 #include "tidal/tidalservice.h"
 
 class QNetworkReply;
-class Application;
 class NetworkAccessManager;
 
 class TidalCoverProvider : public JsonCoverProvider {
   Q_OBJECT
 
  public:
-  explicit TidalCoverProvider(Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit TidalCoverProvider(const TidalServicePtr service, const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~TidalCoverProvider() override;
 
   bool StartSearch(const QString &artist, const QString &album, const QString &title, const int id) override;
@@ -55,7 +54,7 @@ class TidalCoverProvider : public JsonCoverProvider {
     if (service_) service_->Logout();
   }
 
- private slots:
+ private Q_SLOTS:
   void HandleSearchReply(QNetworkReply *reply, const int id);
 
  private:
@@ -63,9 +62,7 @@ class TidalCoverProvider : public JsonCoverProvider {
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
  private:
-  static const int kLimit;
-
-  TidalServicePtr service_;
+  const TidalServicePtr service_;
   QList<QNetworkReply*> replies_;
 };
 

@@ -30,14 +30,18 @@
 
 #include "favoritewidget.h"
 
-const int FavoriteWidget::kStarSize = 15;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr int kStarSize = 15;
+}
 
 FavoriteWidget::FavoriteWidget(const int tab_index, const bool favorite, QWidget *parent)
     : QWidget(parent),
       tab_index_(tab_index),
       favorite_(favorite),
-      on_(IconLoader::Load("star")),
-      off_(IconLoader::Load("star-grey")),
+      on_(IconLoader::Load(u"star"_s)),
+      off_(IconLoader::Load(u"star-grey"_s)),
       rect_(0, 0, kStarSize, kStarSize) {}
 
 void FavoriteWidget::SetFavorite(const bool favorite) {
@@ -45,7 +49,7 @@ void FavoriteWidget::SetFavorite(const bool favorite) {
   if (favorite_ != favorite) {
     favorite_ = favorite;
     update();
-    emit FavoriteStateChanged(tab_index_, favorite_);
+    Q_EMIT FavoriteStateChanged(tab_index_, favorite_);
   }
 
 }
@@ -61,28 +65,21 @@ void FavoriteWidget::paintEvent(QPaintEvent *e) {
 
   QStylePainter p(this);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
   if (favorite_) {
     p.drawPixmap(rect_, on_.pixmap(rect_.size(), devicePixelRatioF()));
   }
   else {
     p.drawPixmap(rect_, off_.pixmap(rect_.size(), devicePixelRatioF()));
   }
-#else
-  if (favorite_) {
-    p.drawPixmap(rect_, on_.pixmap(rect_.size()));
-  }
-  else {
-    p.drawPixmap(rect_, off_.pixmap(rect_.size()));
-  }
-#endif
 
 }
 
-void FavoriteWidget::mouseDoubleClickEvent(QMouseEvent*) {
+void FavoriteWidget::mouseDoubleClickEvent(QMouseEvent *e) {
+
+  Q_UNUSED(e)
 
   favorite_ = !favorite_;
   update();
-  emit FavoriteStateChanged(tab_index_, favorite_);
+  Q_EMIT FavoriteStateChanged(tab_index_, favorite_);
 
 }

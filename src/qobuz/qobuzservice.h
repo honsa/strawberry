@@ -37,43 +37,52 @@
 #include <QUrl>
 #include <QSslError>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
-#include "internet/internetservice.h"
-#include "internet/internetsearchview.h"
+#include "streaming/streamingservice.h"
+#include "streaming/streamingsearchview.h"
 
 class QTimer;
 class QNetworkReply;
-class QSortFilterProxyModel;
-class Application;
+class TaskManager;
+class Database;
+class UrlHandlers;
 class NetworkAccessManager;
+class AlbumCoverLoader;
 class QobuzUrlHandler;
 class QobuzRequest;
 class QobuzFavoriteRequest;
 class QobuzStreamURLRequest;
 class CollectionBackend;
 class CollectionModel;
+class CollectionFilter;
 
-class QobuzService : public InternetService {
+class QobuzService : public StreamingService {
   Q_OBJECT
 
  public:
-  explicit QobuzService(Application *app, QObject *parent = nullptr);
+  explicit QobuzService(const SharedPtr<TaskManager> task_manager,
+                        const SharedPtr<Database> database,
+                        const SharedPtr<NetworkAccessManager> network,
+                        const SharedPtr<UrlHandlers> url_handlers,
+                        const SharedPtr<AlbumCoverLoader> albumcover_loader,
+                        QObject *parent = nullptr);
+
   ~QobuzService();
 
   static const Song::Source kSource;
   static const char kApiUrl[];
+  static const int kLoginAttempts;
 
   void Exit() override;
   void ReloadSettings() override;
 
   void Logout();
-  int Search(const QString &text, InternetSearchView::SearchType type) override;
+  int Search(const QString &text, StreamingSearchView::SearchType type) override;
   void CancelSearch() override;
 
-  int max_login_attempts() { return kLoginAttempts; }
+  int max_login_attempts() const { return kLoginAttempts; }
 
-  Application *app() const { return app_; }
   QString app_id() const { return app_id_; }
   QString app_secret() const { return app_secret_; }
   QString username() const { return username_; }
@@ -104,12 +113,11 @@ class QobuzService : public InternetService {
   CollectionModel *albums_collection_model() override { return albums_collection_model_; }
   CollectionModel *songs_collection_model() override { return songs_collection_model_; }
 
-  QSortFilterProxyModel *artists_collection_sort_model() override { return artists_collection_sort_model_; }
-  QSortFilterProxyModel *albums_collection_sort_model() override { return albums_collection_sort_model_; }
-  QSortFilterProxyModel *songs_collection_sort_model() override { return songs_collection_sort_model_; }
+  CollectionFilter *artists_collection_filter_model() override { return artists_collection_model_->filter(); }
+  CollectionFilter *albums_collection_filter_model() override { return albums_collection_model_->filter(); }
+  CollectionFilter *songs_collection_filter_model() override { return songs_collection_model_->filter(); }
 
- public slots:
-  void ShowConfig() override;
+ public Q_SLOTS:
   void TryLogin();
   void SendLogin();
   void SendLoginWithCredentials(const QString &app_id, const QString &username, const QString &password);
@@ -120,7 +128,7 @@ class QobuzService : public InternetService {
   void ResetAlbumsRequest() override;
   void ResetSongsRequest() override;
 
- private slots:
+ private Q_SLOTS:
   void ExitReceived();
   void HandleLoginSSLErrors(const QList<QSslError> &ssl_errors);
   void HandleAuthReply(QNetworkReply *reply);
@@ -147,21 +155,7 @@ class QobuzService : public InternetService {
   void SendSearch();
   void LoginError(const QString &error = QString(), const QVariant &debug = QVariant());
 
-  static const char kAuthUrl[];
-
-  static const int kLoginAttempts;
-  static const int kTimeResetLoginAttempts;
-
-  static const char kArtistsSongsTable[];
-  static const char kAlbumsSongsTable[];
-  static const char kSongsTable[];
-
-  static const char kArtistsSongsFtsTable[];
-  static const char kAlbumsSongsFtsTable[];
-  static const char kSongsFtsTable[];
-
-  Application *app_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   QobuzUrlHandler *url_handler_;
 
   SharedPtr<CollectionBackend> artists_collection_backend_;
@@ -171,10 +165,6 @@ class QobuzService : public InternetService {
   CollectionModel *artists_collection_model_;
   CollectionModel *albums_collection_model_;
   CollectionModel *songs_collection_model_;
-
-  QSortFilterProxyModel *artists_collection_sort_model_;
-  QSortFilterProxyModel *albums_collection_sort_model_;
-  QSortFilterProxyModel *songs_collection_sort_model_;
 
   QTimer *timer_search_delay_;
   QTimer *timer_login_attempt_;
@@ -204,7 +194,7 @@ class QobuzService : public InternetService {
   int pending_search_id_;
   int next_pending_search_id_;
   QString pending_search_text_;
-  InternetSearchView::SearchType pending_search_type_;
+  StreamingSearchView::SearchType pending_search_type_;
 
   int search_id_;
   QString search_text_;

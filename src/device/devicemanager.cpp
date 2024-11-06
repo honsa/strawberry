@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#include <utility>
 #include <functional>
 #include <memory>
 
@@ -29,7 +30,7 @@
 #include <QObject>
 #include <QMetaObject>
 #include <QThread>
-#include <QtConcurrent>
+#include <QtConcurrentRun>
 #include <QAbstractItemModel>
 #include <QDir>
 #include <QList>
@@ -44,10 +45,9 @@
 
 #include "devicemanager.h"
 
+#include "includes/scoped_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/scoped_ptr.h"
-#include "core/shared_ptr.h"
-#include "core/application.h"
 #include "core/database.h"
 #include "core/iconloader.h"
 #include "core/musicstorage.h"
@@ -61,84 +61,88 @@
 #include "devicestatefiltermodel.h"
 #include "deviceinfo.h"
 
-#if defined(HAVE_AUDIOCD) && defined(HAVE_GSTREAMER)
+#ifdef HAVE_GIO
+#  include "giolister.h"
+#endif
+#ifdef HAVE_AUDIOCD
 #  include "cddalister.h"
 #  include "cddadevice.h"
 #endif
-#ifdef HAVE_DBUS
-#  ifdef HAVE_UDISKS2
-#    include "udisks2lister.h"
-#  endif
+#ifdef HAVE_UDISKS2
+#  include "udisks2lister.h"
 #endif
-#ifdef HAVE_LIBMTP
+#ifdef HAVE_MTP
 #  include "mtpdevice.h"
 #endif
-#if defined(Q_OS_MACOS) and defined(HAVE_LIBMTP)
+#ifdef Q_OS_MACOS
 #  include "macosdevicelister.h"
 #endif
-#ifdef HAVE_LIBGPOD
+#ifdef HAVE_GPOD
 #  include "gpoddevice.h"
 #endif
-#ifdef HAVE_GIO
-#  include "giolister.h"  // Needs to be last because of #undef signals.
-#endif
 
+using namespace Qt::Literals::StringLiterals;
 using std::make_unique;
 
 const int DeviceManager::kDeviceIconSize = 32;
 const int DeviceManager::kDeviceIconOverlaySize = 16;
 
-DeviceManager::DeviceManager(Application *app, QObject *parent)
+DeviceManager::DeviceManager(const SharedPtr<TaskManager> task_manager,
+                             const SharedPtr<Database> database,
+                             const SharedPtr<TagReaderClient> tagreader_client,
+                             const SharedPtr<AlbumCoverLoader> albumcover_loader,
+                             QObject *parent)
     : SimpleTreeModel<DeviceInfo>(new DeviceInfo(this), parent),
-      app_(app),
-      not_connected_overlay_(IconLoader::Load("edit-delete")) {
+      task_manager_(task_manager),
+      database_(database),
+      tagreader_client_(tagreader_client),
+      albumcover_loader_(albumcover_loader),
+      not_connected_overlay_(IconLoader::Load(u"edit-delete"_s)) {
+
+  setObjectName(QLatin1String(metaObject()->className()));
 
   thread_pool_.setMaxThreadCount(1);
-  QObject::connect(&*app_->task_manager(), &TaskManager::TasksChanged, this, &DeviceManager::TasksChanged);
+  QObject::connect(&*task_manager, &TaskManager::TasksChanged, this, &DeviceManager::TasksChanged);
 
   // Create the backend in the database thread
   backend_ = make_unique<DeviceDatabaseBackend>();
-  backend_->moveToThread(app_->database()->thread());
-  backend_->Init(app_->database());
+  backend_->moveToThread(database->thread());
+  backend_->Init(database);
 
   QObject::connect(this, &DeviceManager::DeviceCreatedFromDB, this, &DeviceManager::AddDeviceFromDB);
 
   // This reads from the database and contents on the database mutex, which can be very slow on startup.
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   (void)QtConcurrent::run(&thread_pool_, &DeviceManager::LoadAllDevices, this);
-#else
-  (void)QtConcurrent::run(&thread_pool_, this, &DeviceManager::LoadAllDevices);
-#endif
 
   // This proxy model only shows connected devices
   connected_devices_model_ = new DeviceStateFilterModel(this);
   connected_devices_model_->setSourceModel(this);
 
 // CD devices are detected via the DiskArbitration framework instead on MacOs.
-#if defined(HAVE_AUDIOCD) && defined(HAVE_GSTREAMER) && !defined(Q_OS_MACOS)
+#if defined(HAVE_AUDIOCD) && !defined(Q_OS_MACOS)
   AddLister(new CddaLister);
 #endif
-#if defined(HAVE_DBUS) && defined(HAVE_UDISKS2)
+#ifdef HAVE_UDISKS2
   AddLister(new Udisks2Lister);
 #endif
 #ifdef HAVE_GIO
   AddLister(new GioLister);
 #endif
-#if defined(Q_OS_MACOS) and defined(HAVE_LIBMTP)
+#ifdef Q_OS_MACOS
   AddLister(new MacOsDeviceLister);
 #endif
 
-#if defined(HAVE_AUDIOCD) && defined(HAVE_GSTREAMER)
+#ifdef HAVE_AUDIOCD
   AddDeviceClass<CddaDevice>();
 #endif
 
   AddDeviceClass<FilesystemDevice>();
 
-#ifdef HAVE_LIBGPOD
+#ifdef HAVE_GPOD
   AddDeviceClass<GPodDevice>();
 #endif
 
-#ifdef HAVE_LIBMTP
+#ifdef HAVE_MTP
   AddDeviceClass<MtpDevice>();
 #endif
 
@@ -146,7 +150,7 @@ DeviceManager::DeviceManager(Application *app, QObject *parent)
 
 DeviceManager::~DeviceManager() {
 
-  for (DeviceLister *lister : listers_) {
+  for (DeviceLister *lister : std::as_const(listers_)) {
     lister->ShutDown();
     delete lister;
   }
@@ -163,7 +167,7 @@ void DeviceManager::Exit() {
 
 void DeviceManager::CloseDevices() {
 
-  for (DeviceInfo *info : devices_) {
+  for (DeviceInfo *info : std::as_const(devices_)) {
     if (!info->device_) continue;
     if (wait_for_exit_.contains(&*info->device_)) continue;
     wait_for_exit_ << &*info->device_;
@@ -176,7 +180,7 @@ void DeviceManager::CloseDevices() {
 
 void DeviceManager::CloseListers() {
 
-  for (DeviceLister *lister : listers_) {
+  for (DeviceLister *lister : std::as_const(listers_)) {
     if (wait_for_exit_.contains(lister)) continue;
     wait_for_exit_ << lister;
     QObject::connect(lister, &DeviceLister::ExitFinished, this, &DeviceManager::ListerClosed);
@@ -201,7 +205,7 @@ void DeviceManager::BackendClosed() {
   QObject::disconnect(obj, nullptr, this, nullptr);
   qLog(Debug) << obj << "successfully closed.";
   wait_for_exit_.removeAll(obj);
-  if (wait_for_exit_.isEmpty()) emit ExitFinished();
+  if (wait_for_exit_.isEmpty()) Q_EMIT ExitFinished();
 
 }
 
@@ -227,15 +231,16 @@ void DeviceManager::DeviceDestroyed() {
   if (wait_for_exit_.isEmpty()) CloseListers();
 
 }
+
 void DeviceManager::LoadAllDevices() {
 
   Q_ASSERT(QThread::currentThread() != qApp->thread());
 
-  DeviceDatabaseBackend::DeviceList devices = backend_->GetAllDevices();
+  const DeviceDatabaseBackend::DeviceList devices = backend_->GetAllDevices();
   for (const DeviceDatabaseBackend::Device &device : devices) {
-    DeviceInfo *info = new DeviceInfo(DeviceInfo::Type_Device, root_);
+    DeviceInfo *info = new DeviceInfo(DeviceInfo::Type::Device, root_);
     info->InitFromDb(device);
-    emit DeviceCreatedFromDB(info);
+    Q_EMIT DeviceCreatedFromDB(info);
   }
 
   // This is done in a concurrent thread so close the unique DB connection.
@@ -245,7 +250,7 @@ void DeviceManager::LoadAllDevices() {
 
 void DeviceManager::AddDeviceFromDB(DeviceInfo *info) {
 
-  QStringList icon_names = info->icon_name_.split(',');
+  const QStringList icon_names = info->icon_name_.split(u',');
   QVariantList icons;
   icons.reserve(icon_names.count());
   for (const QString &icon_name : icon_names) {
@@ -259,7 +264,7 @@ void DeviceManager::AddDeviceFromDB(DeviceInfo *info) {
     existing->icon_name_ = info->icon_name_;
     existing->icon_ = info->icon_;
     QModelIndex idx = ItemToIndex(existing);
-    if (idx.isValid()) emit dataChanged(idx, idx);
+    if (idx.isValid()) Q_EMIT dataChanged(idx, idx);
     root_->Delete(info->row);
   }
   else {
@@ -279,7 +284,7 @@ QVariant DeviceManager::data(const QModelIndex &idx, int role) const {
   if (!info) return QVariant();
 
   switch (role) {
-    case Qt::DisplayRole: {
+    case Qt::DisplayRole:{
       QString text;
       if (!info->friendly_name_.isEmpty()) {
         text = info->friendly_name_;
@@ -289,13 +294,13 @@ QVariant DeviceManager::data(const QModelIndex &idx, int role) const {
       }
 
       if (info->size_ > 0) {
-        text = text + QString(" (%1)").arg(Utilities::PrettySize(info->size_));
+        text = text + QStringLiteral(" (%1)").arg(Utilities::PrettySize(info->size_));
       }
       if (info->device_) info->device_->Refresh();
       return text;
     }
 
-    case Qt::DecorationRole: {
+    case Qt::DecorationRole:{
       QPixmap pixmap = info->icon_.pixmap(kDeviceIconSize);
 
       if (info->backends_.isEmpty() || !info->BestBackend() || !info->BestBackend()->lister_) {
@@ -360,12 +365,12 @@ QVariant DeviceManager::data(const QModelIndex &idx, int role) const {
       if (!info->device_) return QVariant();
       return QVariant::fromValue<SharedPtr<MusicStorage>>(info->device_);
 
-    case Role_MountPath: {
+    case Role_MountPath:{
       if (!info->device_) return QVariant();
 
       QString ret = info->device_->url().path();
 #ifdef Q_OS_WIN32
-      if (ret.startsWith('/')) ret.remove(0, 1);
+      if (ret.startsWith(u'/')) ret.remove(0, 1);
 #endif
       return QDir::toNativeSeparators(ret);
     }
@@ -404,7 +409,7 @@ void DeviceManager::AddLister(DeviceLister *lister) {
 DeviceInfo *DeviceManager::FindDeviceById(const QString &id) const {
 
   for (int i = 0; i < devices_.count(); ++i) {
-    for (const DeviceInfo::Backend &backend : devices_[i]->backends_) {
+    for (const DeviceInfo::Backend &backend : std::as_const(devices_[i]->backends_)) {
       if (backend.unique_id_ == id) return devices_[i];
     }
   }
@@ -418,10 +423,10 @@ DeviceInfo *DeviceManager::FindDeviceByUrl(const QList<QUrl> &urls) const {
   if (urls.isEmpty()) return nullptr;
 
   for (int i = 0; i < devices_.count(); ++i) {
-    for (const DeviceInfo::Backend &backend : devices_[i]->backends_) {
+    for (const DeviceInfo::Backend &backend : std::as_const(devices_[i]->backends_)) {
       if (!backend.lister_) continue;
 
-      QList<QUrl> device_urls = backend.lister_->MakeDeviceUrls(backend.unique_id_);
+      const QList<QUrl> device_urls = backend.lister_->MakeDeviceUrls(backend.unique_id_);
       for (const QUrl &url : device_urls) {
         if (urls.contains(url)) return devices_[i];
       }
@@ -434,7 +439,7 @@ DeviceInfo *DeviceManager::FindDeviceByUrl(const QList<QUrl> &urls) const {
 
 DeviceInfo *DeviceManager::FindEquivalentDevice(DeviceInfo *info) const {
 
-  for (const DeviceInfo::Backend &backend : info->backends_) {
+  for (const DeviceInfo::Backend &backend : std::as_const(info->backends_)) {
     DeviceInfo *match = FindDeviceById(backend.unique_id_);
     if (match) return match;
   }
@@ -459,7 +464,7 @@ void DeviceManager::PhysicalDeviceAdded(const QString &id) {
       }
     }
     QModelIndex idx = ItemToIndex(info);
-    if (idx.isValid()) emit dataChanged(idx, idx);
+    if (idx.isValid()) Q_EMIT dataChanged(idx, idx);
   }
   else {
     // Check if we have another device with the same URL
@@ -475,11 +480,11 @@ void DeviceManager::PhysicalDeviceAdded(const QString &id) {
         info->LoadIcon(lister->DeviceIcons(id), info->friendly_name_);
       }
       QModelIndex idx = ItemToIndex(info);
-      if (idx.isValid()) emit dataChanged(idx, idx);
+      if (idx.isValid()) Q_EMIT dataChanged(idx, idx);
     }
     else {
       // It's a completely new device
-      info = new DeviceInfo(DeviceInfo::Type_Device, root_);
+      info = new DeviceInfo(DeviceInfo::Type::Device, root_);
       info->backends_ << DeviceInfo::Backend(lister, id);
       info->friendly_name_ = lister->MakeFriendlyName(id);
       info->size_ = lister->DeviceCapacity(id);
@@ -517,9 +522,9 @@ void DeviceManager::PhysicalDeviceRemoved(const QString &id) {
       info->device_->Close();
     }
 
-    if (!info->device_) emit DeviceDisconnected(idx);
+    if (!info->device_) Q_EMIT DeviceDisconnected(idx);
 
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
   }
   else {
     // If this was the last lister for the device then remove it from the model
@@ -588,7 +593,7 @@ SharedPtr<ConnectedDevice> DeviceManager::Connect(DeviceInfo *info) {
   }
 
   // Get the device URLs
-  QList<QUrl> urls = info->BestBackend()->lister_->MakeDeviceUrls(info->BestBackend()->unique_id_);
+  const QList<QUrl> urls = info->BestBackend()->lister_->MakeDeviceUrls(info->BestBackend()->unique_id_);
   if (urls.isEmpty()) return ret;
 
   // Take the first URL that we have a handler for
@@ -604,17 +609,17 @@ SharedPtr<ConnectedDevice> DeviceManager::Connect(DeviceInfo *info) {
 
     // If we get here it means that this URL scheme wasn't supported.
     // If it was "ipod" or "mtp" then the user compiled out support and the device won't work properly.
-    if (url.scheme() == "mtp" || url.scheme() == "gphoto2") {
+    if (url.scheme() == "mtp"_L1 || url.scheme() == "gphoto2"_L1) {
       if (QMessageBox::critical(nullptr, tr("This device will not work properly"),
-          tr("This is an MTP device, but you compiled Strawberry without libmtp support.") + "  " +
+          tr("This is an MTP device, but you compiled Strawberry without libmtp support.") + u"  "_s +
           tr("If you continue, this device will work slowly and songs copied to it may not work."),
               QMessageBox::Abort, QMessageBox::Ignore) == QMessageBox::Abort)
         return ret;
     }
 
-    if (url.scheme() == "ipod") {
+    if (url.scheme() == "ipod"_L1) {
       if (QMessageBox::critical(nullptr, tr("This device will not work properly"),
-          tr("This is an iPod, but you compiled Strawberry without libgpod support.") + "  " +
+          tr("This is an iPod, but you compiled Strawberry without libgpod support.") + "  "_L1 +
           tr("If you continue, this device will work slowly and songs copied to it may not work."),
               QMessageBox::Abort, QMessageBox::Ignore) == QMessageBox::Abort)
         return ret;
@@ -629,7 +634,7 @@ SharedPtr<ConnectedDevice> DeviceManager::Connect(DeviceInfo *info) {
       url_strings << url.toString();
     }
 
-    app_->AddError(tr("This type of device is not supported: %1").arg(url_strings.join(", ")));
+    Q_EMIT DeviceError(tr("This type of device is not supported: %1").arg(url_strings.join(", "_L1)));
     return ret;
   }
 
@@ -638,8 +643,11 @@ SharedPtr<ConnectedDevice> DeviceManager::Connect(DeviceInfo *info) {
       Q_ARG(QUrl, device_url),
       Q_ARG(DeviceLister*, info->BestBackend()->lister_),
       Q_ARG(QString, info->BestBackend()->unique_id_),
-      Q_ARG(SharedPtr<DeviceManager>, app_->device_manager()),
-      Q_ARG(Application*, app_),
+      Q_ARG(DeviceManager*, this),
+      Q_ARG(SharedPtr<TaskManager>, task_manager_),
+      Q_ARG(SharedPtr<Database>, database_),
+      Q_ARG(SharedPtr<TagReaderClient>, tagreader_client_),
+      Q_ARG(SharedPtr<AlbumCoverLoader>, albumcover_loader_),
       Q_ARG(int, info->database_id_),
       Q_ARG(bool, first_time));
 
@@ -660,13 +668,16 @@ SharedPtr<ConnectedDevice> DeviceManager::Connect(DeviceInfo *info) {
   QModelIndex idx = ItemToIndex(info);
   if (!idx.isValid()) return ret;
 
-  emit dataChanged(idx, idx);
+  Q_EMIT dataChanged(idx, idx);
 
   QObject::connect(&*info->device_, &ConnectedDevice::TaskStarted, this, &DeviceManager::DeviceTaskStarted);
   QObject::connect(&*info->device_, &ConnectedDevice::SongCountUpdated, this, &DeviceManager::DeviceSongCountUpdated);
   QObject::connect(&*info->device_, &ConnectedDevice::DeviceConnectFinished, this, &DeviceManager::DeviceConnectFinished);
   QObject::connect(&*info->device_, &ConnectedDevice::DeviceCloseFinished, this, &DeviceManager::DeviceCloseFinished);
+  QObject::connect(&*info->device_, &ConnectedDevice::Error, this, &DeviceManager::DeviceError);
+
   ret->ConnectAsync();
+
   return ret;
 
 }
@@ -680,7 +691,7 @@ void DeviceManager::DeviceConnectFinished(const QString &id, const bool success)
   if (!idx.isValid()) return;
 
   if (success) {
-    emit DeviceConnected(idx);
+    Q_EMIT DeviceConnected(idx);
   }
   else {
     info->device_->Close();
@@ -698,8 +709,8 @@ void DeviceManager::DeviceCloseFinished(const QString &id) {
   QModelIndex idx = ItemToIndex(info);
   if (!idx.isValid()) return;
 
-  emit DeviceDisconnected(idx);
-  emit dataChanged(idx, idx);
+  Q_EMIT DeviceDisconnected(idx);
+  Q_EMIT dataChanged(idx, idx);
 
   if (info->unmount_ && info->BestBackend() && info->BestBackend()->lister_) {
     info->BestBackend()->lister_->UnmountDeviceAsync(info->BestBackend()->unique_id_);
@@ -798,7 +809,7 @@ void DeviceManager::RemoveFromDB(DeviceInfo *info, const QModelIndex &idx) {
 
     info->friendly_name_ = info->BestBackend()->lister_->MakeFriendlyName(id);
     info->LoadIcon(info->BestBackend()->lister_->DeviceIcons(id), info->friendly_name_);
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
   }
 
 }
@@ -815,7 +826,7 @@ void DeviceManager::SetDeviceOptions(const QModelIndex &idx, const QString &frie
   info->transcode_mode_ = mode;
   info->transcode_format_ = format;
 
-  emit dataChanged(idx, idx);
+  Q_EMIT dataChanged(idx, idx);
 
   if (info->database_id_ != -1) {
     backend_->SetDeviceOptions(info->database_id_, friendly_name, icon_name, mode, format);
@@ -829,13 +840,13 @@ void DeviceManager::DeviceTaskStarted(const int id) {
   if (!device) return;
 
   for (int i = 0; i < devices_.count(); ++i) {
-    DeviceInfo *info = devices_[i];
+    DeviceInfo *info = devices_.value(i);
     if (info->device_ && &*info->device_ == device) {
       QModelIndex index = ItemToIndex(info);
       if (!index.isValid()) continue;
       active_tasks_[id] = index;
       info->task_percentage_ = 0;
-      emit dataChanged(index, index);
+      Q_EMIT dataChanged(index, index);
       return;
     }
   }
@@ -844,13 +855,13 @@ void DeviceManager::DeviceTaskStarted(const int id) {
 
 void DeviceManager::TasksChanged() {
 
-  QList<TaskManager::Task> tasks = app_->task_manager()->GetTasks();
+  const QList<TaskManager::Task> tasks = task_manager_->GetTasks();
   QList<QPersistentModelIndex> finished_tasks = active_tasks_.values();
 
   for (const TaskManager::Task &task : tasks) {
     if (!active_tasks_.contains(task.id)) continue;
 
-    QPersistentModelIndex idx = active_tasks_[task.id];
+    const QPersistentModelIndex idx = active_tasks_.value(task.id);
     if (!idx.isValid()) continue;
 
     DeviceInfo *info = IndexToItem(idx);
@@ -861,12 +872,12 @@ void DeviceManager::TasksChanged() {
       info->task_percentage_ = 0;
     }
 
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
     finished_tasks.removeAll(idx);
 
   }
 
-  for (const QPersistentModelIndex &idx : finished_tasks) {
+  for (const QPersistentModelIndex &idx : std::as_const(finished_tasks)) {
 
     if (!idx.isValid()) continue;
 
@@ -874,7 +885,7 @@ void DeviceManager::TasksChanged() {
     if (!info) continue;
 
     info->task_percentage_ = -1;
-    emit dataChanged(idx, idx);
+    Q_EMIT dataChanged(idx, idx);
 
     active_tasks_.remove(active_tasks_.key(idx));
   }
@@ -917,7 +928,7 @@ void DeviceManager::DeviceSongCountUpdated(const int count) {
   QModelIndex idx = ItemToIndex(info);
   if (!idx.isValid()) return;
 
-  emit dataChanged(idx, idx);
+  Q_EMIT dataChanged(idx, idx);
 
 }
 

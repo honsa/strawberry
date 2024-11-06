@@ -31,7 +31,7 @@
 #include <QQueue>
 #include <QDateTime>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class QTimer;
 class QNetworkReply;
@@ -42,7 +42,7 @@ class LastFMImport : public QObject {
   Q_OBJECT
 
  public:
-  explicit LastFMImport(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit LastFMImport(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~LastFMImport() override;
 
   void ReloadSettings();
@@ -80,7 +80,7 @@ class LastFMImport : public QObject {
 
   void FinishCheck();
 
- signals:
+ Q_SIGNALS:
   void UpdatePlayCount(const QString&, const QString&, const int, const bool = false);
   void UpdateLastPlayed(const QString&, const QString&, const QString&, const qint64);
   void UpdateTotal(const int, const int);
@@ -88,14 +88,12 @@ class LastFMImport : public QObject {
   void Finished();
   void FinishedWithError(const QString&);
 
- private slots:
+ private Q_SLOTS:
   void FlushRequests();
   void GetRecentTracksRequestFinished(QNetworkReply *reply, const int page);
   void GetTopTracksRequestFinished(QNetworkReply *reply, const int page);
 
  private:
-  static const int kRequestsDelay;
-
   SharedPtr<NetworkAccessManager> network_;
   QTimer *timer_flush_requests_;
 

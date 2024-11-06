@@ -29,6 +29,8 @@
 #include "smartplaylistsearchterm.h"
 #include "playlist/playlist.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 SmartPlaylistSearchTerm::SmartPlaylistSearchTerm() : field_(Field::Title), operator_(Operator::Equals), datetype_(DateType::Hour) {}
 
 SmartPlaylistSearchTerm::SmartPlaylistSearchTerm(Field field, Operator op, const QVariant &value)
@@ -39,7 +41,7 @@ QString SmartPlaylistSearchTerm::ToSql() const {
   QString col = FieldColumnName(field_);
   QString date = DateName(datetype_, true);
   QString value = value_.toString();
-  value.replace('\'', "''");
+  value.replace(u'\'', "''"_L1);
 
   if (field_ == Field::Filetype) {
     Song::FileType filetype = Song::FiletypeByExtension(value);
@@ -62,12 +64,12 @@ QString SmartPlaylistSearchTerm::ToSql() const {
   if (TypeOf(field_) == Type::Date) {
     if (special_date_query) {
       // We have a numeric date, consider also the time for more precision
-      col = "DATETIME(" + col + ", 'unixepoch', 'localtime')";
+      col = "DATETIME("_L1 + col + ", 'unixepoch', 'localtime')"_L1;
       second_value = second_value_.toString();
-      second_value.replace('\'', "''");
-      if (date == "weeks") {
+      second_value.replace(u'\'', "''"_L1);
+      if (date == "weeks"_L1) {
         // Sqlite doesn't know weeks, transform them to days
-        date = "days";
+        date = "days"_L1;
         value = QString::number(value_.toInt() * 7);
         second_value = QString::number(second_value_.toInt() * 7);
       }
@@ -76,80 +78,80 @@ QString SmartPlaylistSearchTerm::ToSql() const {
       // We have the exact date
       // The calendar widget specifies no time so ditch the possible time part
       // from integers representing the dates.
-      col = "DATE(" + col + ", 'unixepoch', 'localtime')";
-      value = "DATE(" + value + ", 'unixepoch', 'localtime')";
+      col = "DATE("_L1 + col + ", 'unixepoch', 'localtime')"_L1;
+      value = "DATE("_L1 + value + ", 'unixepoch', 'localtime')"_L1;
     }
   }
   else if (TypeOf(field_) == Type::Time) {
     // Convert seconds to nanoseconds
-    value = "CAST (" + value + " *1000000000 AS INTEGER)";
+    value = "CAST ("_L1 + value + " *1000000000 AS INTEGER)"_L1;
   }
 
   // File paths need some extra processing since they are stored as encoded urls in the database.
   if (field_ == Field::Filepath) {
     if (operator_ == Operator::StartsWith || operator_ == Operator::Equals) {
-      value = QUrl::fromLocalFile(value).toEncoded();
+      value = QString::fromUtf8(QUrl::fromLocalFile(value).toEncoded());
     }
     else {
-      value = QUrl(value).toEncoded();
+      value = QString::fromUtf8(QUrl(value).toEncoded());
     }
   }
   else if (TypeOf(field_) == Type::Rating) {
-    col = "CAST ((replace(" + col + ", -1, 0) + 0.05) * 10 AS INTEGER)";
-    value = "CAST ((" + value + " + 0.05) * 10 AS INTEGER)";
+    col = "CAST ((replace("_L1 + col + ", -1, 0) + 0.05) * 10 AS INTEGER)"_L1;
+    value = "CAST (("_L1 + value + " + 0.05) * 10 AS INTEGER)"_L1;
   }
 
   switch (operator_) {
     case Operator::Contains:
-      return col + " LIKE '%" + value + "%'";
+      return col + " LIKE '%"_L1 + value + "%'"_L1;
     case Operator::NotContains:
-      return col + " NOT LIKE '%" + value + "%'";
+      return col + " NOT LIKE '%"_L1 + value + "%'"_L1;
     case Operator::StartsWith:
-      return col + " LIKE '" + value + "%'";
+      return col + " LIKE '"_L1 + value + "%'"_L1;
     case Operator::EndsWith:
-      return col + " LIKE '%" + value + "'";
+      return col + " LIKE '%"_L1 + value + u'\'';
     case Operator::Equals:
       if (TypeOf(field_) == Type::Text) {
-        return col + " LIKE '" + value + "'";
+        return col + " LIKE '"_L1 + value + u'\'';
       }
       else if (TypeOf(field_) == Type::Date || TypeOf(field_) == Type::Time || TypeOf(field_) == Type::Rating) {
-        return col + " = " + value;
+        return col + " = "_L1 + value;
       }
       else {
-        return col + " = '" + value + "'";
+        return col + " = '"_L1 + value + u'\'';
       }
     case Operator::GreaterThan:
       if (TypeOf(field_) == Type::Date || TypeOf(field_) == Type::Time || TypeOf(field_) == Type::Rating) {
-        return col + " > " + value;
+        return col + " > "_L1 + value;
       }
       else {
-        return col + " > '" + value + "'";
+        return col + " > '"_L1 + value + u'\'';
       }
     case Operator::LessThan:
       if (TypeOf(field_) == Type::Date || TypeOf(field_) == Type::Time || TypeOf(field_) == Type::Rating) {
-        return col + " < " + value;
+        return col + " < "_L1 + value;
       }
       else {
-        return col + " < '" + value + "'";
+        return col + " < '"_L1 + value + u'\'';
       }
     case Operator::NumericDate:
-      return col + " > " + "DATETIME('now', '-" + value + " " + date + "', 'localtime')";
+      return col + " > "_L1 + "DATETIME('now', '-"_L1 + value + u' ' + date + "', 'localtime')"_L1;
     case Operator::NumericDateNot:
-      return col + " < " + "DATETIME('now', '-" + value + " " + date + "', 'localtime')";
+      return col + " < "_L1 + "DATETIME('now', '-"_L1 + value + u' ' + date + "', 'localtime')"_L1;
     case Operator::RelativeDate:
       // Consider the time range before the first date but after the second one
-      return "(" + col + " < " + "DATETIME('now', '-" + value + " " + date + "', 'localtime') AND " + col + " > " + "DATETIME('now', '-" + second_value + " " + date + "', 'localtime'))";
+      return "("_L1 + col + " < "_L1 + "DATETIME('now', '-"_L1 + value + u' ' + date + "', 'localtime') AND "_L1 + col + " > "_L1 + "DATETIME('now', '-"_L1 + second_value + u' ' + date + "', 'localtime'))"_L1;
     case Operator::NotEquals:
       if (TypeOf(field_) == Type::Text) {
-        return col + " <> '" + value + "'";
+        return col + " <> '"_L1 + value + u'\'';
       }
       else {
-        return col + " <> " + value;
+        return col + " <> "_L1 + value;
       }
     case Operator::Empty:
-      return col + " = ''";
+      return col + " = ''"_L1;
     case Operator::NotEmpty:
-      return col + " <> ''";
+      return col + " <> ''"_L1;
   }
 
   return QString();
@@ -161,7 +163,7 @@ bool SmartPlaylistSearchTerm::is_valid() const {
   if (operator_ == Operator::NumericDate) {
     return value_.toInt() >= 0;
   }
-  else if (operator_ == Operator::RelativeDate) {
+  if (operator_ == Operator::RelativeDate) {
     return (value_.toInt() >= 0 && value_.toInt() < second_value_.toInt());
   }
 
@@ -302,57 +304,57 @@ QString SmartPlaylistSearchTerm::FieldColumnName(const Field field) {
 
   switch (field) {
     case Field::AlbumArtist:
-      return "albumartist";
+      return u"albumartist"_s;
     case Field::Artist:
-      return "artist";
+      return u"artist"_s;
     case Field::Album:
-      return "album";
+      return u"album"_s;
     case Field::Title:
-      return "title";
+      return u"title"_s;
     case Field::Track:
-      return "track";
+      return u"track"_s;
     case Field::Disc:
-      return "disc";
+      return u"disc"_s;
     case Field::Year:
-      return "year";
+      return u"year"_s;
     case Field::OriginalYear:
-      return "originalyear";
+      return u"originalyear"_s;
     case Field::Genre:
-      return "genre";
+      return u"genre"_s;
     case Field::Composer:
-      return "composer";
+      return u"composer"_s;
     case Field::Performer:
-      return "performer";
+      return u"performer"_s;
     case Field::Grouping:
-      return "grouping";
+      return u"grouping"_s;
     case Field::Comment:
-      return "comment";
+      return u"comment"_s;
     case Field::Length:
-      return "length";
+      return u"length"_s;
     case Field::Filepath:
-      return "url";
+      return u"url"_s;
     case Field::Filetype:
-      return "filetype";
+      return u"filetype"_s;
     case Field::Filesize:
-      return "filesize";
+      return u"filesize"_s;
     case Field::DateCreated:
-      return "ctime";
+      return u"ctime"_s;
     case Field::DateModified:
-      return "mtime";
+      return u"mtime"_s;
     case Field::PlayCount:
-      return "playcount";
+      return u"playcount"_s;
     case Field::SkipCount:
-      return "skipcount";
+      return u"skipcount"_s;
     case Field::LastPlayed:
-      return "lastplayed";
+      return u"lastplayed"_s;
     case Field::Rating:
-      return "rating";
+      return u"rating"_s;
     case Field::Samplerate:
-      return "samplerate";
+      return u"samplerate"_s;
     case Field::Bitdepth:
-      return "bitdepth";
+      return u"bitdepth"_s;
     case Field::Bitrate:
-      return "bitrate";
+      return u"bitrate"_s;
     case Field::FieldCount:
       Q_ASSERT(0);
   }
@@ -364,60 +366,61 @@ QString SmartPlaylistSearchTerm::FieldName(const Field field) {
 
   switch (field) {
     case Field::AlbumArtist:
-      return Playlist::column_name(Playlist::Column_AlbumArtist);
+      return Playlist::column_name(Playlist::Column::AlbumArtist);
     case Field::Artist:
-      return Playlist::column_name(Playlist::Column_Artist);
+      return Playlist::column_name(Playlist::Column::Artist);
     case Field::Album:
-      return Playlist::column_name(Playlist::Column_Album);
+      return Playlist::column_name(Playlist::Column::Album);
     case Field::Title:
-      return Playlist::column_name(Playlist::Column_Title);
+      return Playlist::column_name(Playlist::Column::Title);
     case Field::Track:
-      return Playlist::column_name(Playlist::Column_Track);
+      return Playlist::column_name(Playlist::Column::Track);
     case Field::Disc:
-      return Playlist::column_name(Playlist::Column_Disc);
+      return Playlist::column_name(Playlist::Column::Disc);
     case Field::Year:
-      return Playlist::column_name(Playlist::Column_Year);
+      return Playlist::column_name(Playlist::Column::Year);
     case Field::OriginalYear:
-      return Playlist::column_name(Playlist::Column_OriginalYear);
+      return Playlist::column_name(Playlist::Column::OriginalYear);
     case Field::Genre:
-      return Playlist::column_name(Playlist::Column_Genre);
+      return Playlist::column_name(Playlist::Column::Genre);
     case Field::Composer:
-      return Playlist::column_name(Playlist::Column_Composer);
+      return Playlist::column_name(Playlist::Column::Composer);
     case Field::Performer:
-      return Playlist::column_name(Playlist::Column_Performer);
+      return Playlist::column_name(Playlist::Column::Performer);
     case Field::Grouping:
-      return Playlist::column_name(Playlist::Column_Grouping);
+      return Playlist::column_name(Playlist::Column::Grouping);
     case Field::Comment:
       return QObject::tr("Comment");
     case Field::Length:
-      return Playlist::column_name(Playlist::Column_Length);
+      return Playlist::column_name(Playlist::Column::Length);
     case Field::Filepath:
-      return Playlist::column_name(Playlist::Column_Filename);
+      return Playlist::column_name(Playlist::Column::Filename);
     case Field::Filetype:
-      return Playlist::column_name(Playlist::Column_Filetype);
+      return Playlist::column_name(Playlist::Column::Filetype);
     case Field::Filesize:
-      return Playlist::column_name(Playlist::Column_Filesize);
+      return Playlist::column_name(Playlist::Column::Filesize);
     case Field::DateCreated:
-      return Playlist::column_name(Playlist::Column_DateCreated);
+      return Playlist::column_name(Playlist::Column::DateCreated);
     case Field::DateModified:
-      return Playlist::column_name(Playlist::Column_DateModified);
+      return Playlist::column_name(Playlist::Column::DateModified);
     case Field::PlayCount:
-      return Playlist::column_name(Playlist::Column_PlayCount);
+      return Playlist::column_name(Playlist::Column::PlayCount);
     case Field::SkipCount:
-      return Playlist::column_name(Playlist::Column_SkipCount);
+      return Playlist::column_name(Playlist::Column::SkipCount);
     case Field::LastPlayed:
-      return Playlist::column_name(Playlist::Column_LastPlayed);
+      return Playlist::column_name(Playlist::Column::LastPlayed);
     case Field::Rating:
-      return Playlist::column_name(Playlist::Column_Rating);
+      return Playlist::column_name(Playlist::Column::Rating);
     case Field::Samplerate:
-      return Playlist::column_name(Playlist::Column_Samplerate);
+      return Playlist::column_name(Playlist::Column::Samplerate);
     case Field::Bitdepth:
-      return Playlist::column_name(Playlist::Column_Bitdepth);
+      return Playlist::column_name(Playlist::Column::Bitdepth);
     case Field::Bitrate:
-      return Playlist::column_name(Playlist::Column_Bitrate);
+      return Playlist::column_name(Playlist::Column::Bitrate);
     case Field::FieldCount:
       Q_ASSERT(0);
   }
+
   return QString();
 
 }
@@ -437,6 +440,7 @@ QString SmartPlaylistSearchTerm::FieldSortOrderText(const Type type, const bool 
     case Type::Invalid:
       return QString();
   }
+
   return QString();
 
 }
@@ -446,16 +450,17 @@ QString SmartPlaylistSearchTerm::DateName(const DateType datetype, const bool fo
   // If forQuery is true, untranslated keywords are returned
   switch (datetype) {
     case DateType::Hour:
-      return (forQuery ? "hours" : QObject::tr("Hours"));
+      return (forQuery ? u"hours"_s : QObject::tr("Hours"));
     case DateType::Day:
-      return (forQuery ? "days" : QObject::tr("Days"));
+      return (forQuery ? u"days"_s : QObject::tr("Days"));
     case DateType::Week:
-      return (forQuery ? "weeks" : QObject::tr("Weeks"));
+      return (forQuery ? u"weeks"_s : QObject::tr("Weeks"));
     case DateType::Month:
-      return (forQuery ? "months" : QObject::tr("Months"));
+      return (forQuery ? u"months"_s : QObject::tr("Months"));
     case DateType::Year:
-      return (forQuery ? "years" : QObject::tr("Years"));
+      return (forQuery ? u"years"_s : QObject::tr("Years"));
   }
+
   return QString();
 
 }

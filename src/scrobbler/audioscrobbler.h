@@ -30,11 +30,10 @@
 #include <QMap>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
-#include "scrobblersettings.h"
+#include "scrobblersettingsservice.h"
 
-class Application;
 class ScrobblerService;
 class Song;
 
@@ -42,7 +41,7 @@ class AudioScrobbler : public QObject {
   Q_OBJECT
 
  public:
-  explicit AudioScrobbler(Application *app, QObject *parent = nullptr);
+  explicit AudioScrobbler(QObject *parent = nullptr);
   ~AudioScrobbler();
 
   void AddService(SharedPtr<ScrobblerService> service);
@@ -55,11 +54,11 @@ class AudioScrobbler : public QObject {
   SharedPtr<ScrobblerService> ServiceByName(const QString &name);
   template<typename T>
   SharedPtr<T> Service() {
-    return std::static_pointer_cast<T>(ServiceByName(T::kName));
+    return std::static_pointer_cast<T>(ServiceByName(QLatin1String(T::kName)));
   }
 
   void ReloadSettings();
-  SharedPtr<ScrobblerSettings> settings() { return settings_; }
+  SharedPtr<ScrobblerSettingsService> settings() { return settings_; }
 
   bool enabled() const { return settings_->enabled(); }
   bool offline() const { return settings_->offline(); }
@@ -68,15 +67,14 @@ class AudioScrobbler : public QObject {
   int submit_delay() const { return settings_->submit_delay(); }
   bool prefer_albumartist() const { return settings_->prefer_albumartist(); }
   bool ShowErrorDialog() const { return settings_->show_error_dialog(); }
+  bool strip_remastered() const { return settings_->strip_remastered(); }
   QList<Song::Source> sources() const { return settings_->sources(); }
-
-  void ShowConfig();
 
   void UpdateNowPlaying(const Song &song);
   void ClearPlaying();
   void Scrobble(const Song &song, const qint64 scrobble_point);
 
- public slots:
+ public Q_SLOTS:
   void ToggleScrobbling();
   void ToggleOffline();
   void ErrorReceived(const QString &error);
@@ -84,12 +82,11 @@ class AudioScrobbler : public QObject {
   void Love();
   void WriteCache();
 
- signals:
+ Q_SIGNALS:
   void ErrorMessage(const QString &error);
 
  private:
-  Application *app_;
-  SharedPtr<ScrobblerSettings> settings_;
+  SharedPtr<ScrobblerSettingsService> settings_;
   QMap<QString, SharedPtr<ScrobblerService>> services_;
 
   Q_DISABLE_COPY(AudioScrobbler)

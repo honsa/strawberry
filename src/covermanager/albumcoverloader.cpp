@@ -1,6 +1,6 @@
 /*
  * Strawberry Music Player
- * Copyright 2019-2023, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 
 #include <memory>
+#include <chrono>
 
 #include <QtGlobal>
 #include <QObject>
@@ -31,29 +32,45 @@
 #include <QUrl>
 #include <QFile>
 #include <QImage>
+#include <QTimer>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
+#include "includes/shared_ptr.h"
+#include "core/logging.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
-#include "core/tagreaderclient.h"
 #include "utilities/mimeutils.h"
 #include "utilities/imageutils.h"
+#include "tagreader/tagreaderclient.h"
 #include "albumcoverloader.h"
 #include "albumcoverloaderoptions.h"
 #include "albumcoverloaderresult.h"
 #include "albumcoverimageresult.h"
 
+using namespace std::literals::chrono_literals;
 using std::make_shared;
 
-AlbumCoverLoader::AlbumCoverLoader(QObject *parent)
+namespace {
+constexpr int kMaxRedirects = 3;
+}
+
+AlbumCoverLoader::AlbumCoverLoader(const SharedPtr<TagReaderClient> tagreader_client, QObject *parent)
     : QObject(parent),
+      tagreader_client_(tagreader_client),
       network_(new NetworkAccessManager(this)),
+      timer_process_tasks_(new QTimer(this)),
       stop_requested_(false),
       load_image_async_id_(1),
       original_thread_(nullptr) {
 
+  setObjectName(QLatin1String(metaObject()->className()));
+
   original_thread_ = thread();
+
+  timer_process_tasks_->setSingleShot(false);
+  timer_process_tasks_->setInterval(10ms);
+  QObject::connect(timer_process_tasks_, &QTimer::timeout, this, &AlbumCoverLoader::ProcessTasks);
 
 }
 
@@ -68,7 +85,7 @@ void AlbumCoverLoader::Exit() {
 
   Q_ASSERT(QThread::currentThread() == thread());
   moveToThread(original_thread_);
-  emit ExitFinished();
+  Q_EMIT ExitFinished();
 
 }
 
@@ -159,9 +176,17 @@ quint64 AlbumCoverLoader::EnqueueTask(TaskPtr task) {
     tasks_.enqueue(task);
   }
 
-  QMetaObject::invokeMethod(this, &AlbumCoverLoader::ProcessTasks, Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, &AlbumCoverLoader::StartProcessTasks, Qt::QueuedConnection);
 
   return task->id;
+
+}
+
+void AlbumCoverLoader::StartProcessTasks() {
+
+  if (!timer_process_tasks_->isActive()) {
+    timer_process_tasks_->start();
+  }
 
 }
 
@@ -170,7 +195,12 @@ void AlbumCoverLoader::ProcessTasks() {
   TaskPtr task;
   {
     QMutexLocker l(&mutex_load_image_async_);
-    if (tasks_.isEmpty()) return;
+    if (tasks_.isEmpty()) {
+      if (timer_process_tasks_->isActive()) {
+        timer_process_tasks_->stop();
+      }
+      return;
+    }
     task = tasks_.dequeue();
   }
 
@@ -227,7 +257,7 @@ void AlbumCoverLoader::FinishTask(TaskPtr task, const AlbumCoverLoaderResult::Ty
     }
   }
 
-  emit AlbumCoverLoaded(task->id, AlbumCoverLoaderResult(task->success, task->result_type, task->album_cover, image_scaled, task->art_manual_updated, task->art_automatic_updated));
+  Q_EMIT AlbumCoverLoaded(task->id, AlbumCoverLoaderResult(task->success, task->result_type, task->album_cover, image_scaled, task->art_manual_updated, task->art_automatic_updated));
 
 }
 
@@ -290,8 +320,8 @@ AlbumCoverLoader::LoadImageResult AlbumCoverLoader::LoadImage(TaskPtr task, cons
 AlbumCoverLoader::LoadImageResult AlbumCoverLoader::LoadEmbeddedImage(TaskPtr task) {
 
   if (task->art_embedded && task->song_url.isValid() && task->song_url.isLocalFile()) {
-    task->album_cover.image_data = TagReaderClient::Instance()->LoadEmbeddedArtBlocking(task->song_url.toLocalFile());
-    if (!task->album_cover.image_data.isEmpty() && task->album_cover.image.loadFromData(task->album_cover.image_data)) {
+    const TagReaderResult result = tagreader_client_->LoadCoverDataBlocking(task->song_url.toLocalFile(), task->album_cover.image_data);
+    if (result.success() && !task->album_cover.image_data.isEmpty() && task->album_cover.image.loadFromData(task->album_cover.image_data)) {
       return LoadImageResult(AlbumCoverLoaderResult::Type::Embedded, LoadImageResult::Status::Success);
     }
   }
@@ -306,7 +336,7 @@ AlbumCoverLoader::LoadImageResult AlbumCoverLoader::LoadUrlImage(TaskPtr task, c
     if (cover_url.isLocalFile()) {
       return LoadLocalUrlImage(task, result_type, cover_url);
     }
-    else if (network_->supportedSchemes().contains(cover_url.scheme())) {
+    if (network_->supportedSchemes().contains(cover_url.scheme())) {
       return LoadRemoteUrlImage(task, result_type, cover_url);
     }
   }
@@ -381,11 +411,7 @@ void AlbumCoverLoader::LoadRemoteImageFinished(QNetworkReply *reply, TaskPtr tas
   reply->deleteLater();
 
   QVariant redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   if (redirect.isValid() && redirect.metaType().id() == QMetaType::QUrl) {
-#else
-  if (redirect.isValid() && redirect.type() == QVariant::Url) {
-#endif
     if (task->redirects++ >= kMaxRedirects) {
       ProcessTask(task);
       return;

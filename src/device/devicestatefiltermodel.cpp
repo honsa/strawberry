@@ -38,19 +38,24 @@ DeviceStateFilterModel::DeviceStateFilterModel(QObject *parent, DeviceManager::S
 
 }
 
-bool DeviceStateFilterModel::filterAcceptsRow(int row, const QModelIndex&) const {
+bool DeviceStateFilterModel::filterAcceptsRow(const int row, const QModelIndex &parent) const {
+  Q_UNUSED(parent)
   return sourceModel()->index(row, 0).data(DeviceManager::Role_State).toInt() != state_ && sourceModel()->index(row, 0).data(DeviceManager::Role_CopyMusic).toBool();
 }
 
-void DeviceStateFilterModel::ProxyRowCountChanged(const QModelIndex&, const int, const int) {
+void DeviceStateFilterModel::ProxyRowCountChanged(const QModelIndex &idx, const int first, const int last) {
 
-  emit IsEmptyChanged(rowCount() == 0);
+  Q_UNUSED(idx)
+  Q_UNUSED(first);
+  Q_UNUSED(last);
+
+  Q_EMIT IsEmptyChanged(rowCount() == 0);
 
 }
 
 void DeviceStateFilterModel::ProxyReset() {
 
-  emit IsEmptyChanged(rowCount() == 0);
+  Q_EMIT IsEmptyChanged(rowCount() == 0);
 
 }
 

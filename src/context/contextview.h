@@ -46,9 +46,9 @@ class QDragEnterEvent;
 class QDropEvent;
 
 class ResizableTextEdit;
-class Application;
 class CollectionView;
 class AlbumCoverChoiceController;
+class LyricsProviders;
 class LyricsFetcher;
 
 class ContextView : public QWidget {
@@ -57,7 +57,7 @@ class ContextView : public QWidget {
  public:
   explicit ContextView(QWidget *parent = nullptr);
 
-  void Init(Application *app, CollectionView *collectionview, AlbumCoverChoiceController *album_cover_choice_controller);
+  void Init(CollectionView *collectionview, AlbumCoverChoiceController *album_cover_choice_controller, SharedPtr<LyricsProviders> lyrics_providers);
 
   ContextAlbum *album_widget() const { return widget_album_; }
   bool album_enabled() const { return action_show_album_->isChecked(); }
@@ -80,10 +80,10 @@ class ContextView : public QWidget {
   void SearchLyrics();
   void UpdateFonts();
 
- signals:
+ Q_SIGNALS:
   void AlbumEnabledChanged();
 
- private slots:
+ private Q_SLOTS:
   void ActionShowAlbum();
   void ActionShowData();
   void ActionShowLyrics();
@@ -92,7 +92,7 @@ class ContextView : public QWidget {
   void FadeStopFinished();
   void UpdateLyrics(const quint64 id, const QString &provider, const QString &lyrics);
 
- public slots:
+ public Q_SLOTS:
   void ReloadSettings();
   void Playing();
   void Stopped();
@@ -101,9 +101,6 @@ class ContextView : public QWidget {
   void AlbumCoverLoaded(const Song &song, const QImage &image);
 
  private:
-  static const int kWidgetSpacing;
-
-  Application *app_;
   CollectionView *collectionview_;
   AlbumCoverChoiceController *album_cover_choice_controller_;
   LyricsFetcher *lyrics_fetcher_;

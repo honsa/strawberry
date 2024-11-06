@@ -37,13 +37,12 @@
 #include <QUrl>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "qobuzbaserequest.h"
 
 class QNetworkReply;
 class QTimer;
-class Application;
 class NetworkAccessManager;
 class QobuzService;
 class QobuzUrlHandler;
@@ -53,7 +52,7 @@ class QobuzRequest : public QobuzBaseRequest {
 
  public:
 
-  explicit QobuzRequest(QobuzService *service, QobuzUrlHandler *url_handler, Application *app, SharedPtr<NetworkAccessManager> network, const QueryType query_type, QObject *parent = nullptr);
+  explicit QobuzRequest(QobuzService *service, QobuzUrlHandler *url_handler, const SharedPtr<NetworkAccessManager> network, const Type query_type, QObject *parent = nullptr);
   ~QobuzRequest() override;
 
   void ReloadSettings();
@@ -98,7 +97,7 @@ class QobuzRequest : public QobuzBaseRequest {
     QString filename;
   };
 
- signals:
+ Q_SIGNALS:
   void LoginSuccess();
   void LoginFailure(const QString &failure_reason);
   void Results(const int id, const SongMap &songs, const QString &error);
@@ -106,23 +105,23 @@ class QobuzRequest : public QobuzBaseRequest {
   void UpdateProgress(const int id, const int max);
   void StreamURLFinished(const QUrl &media_url, const QUrl &url, const Song::FileType filetype, const QString &error = QString());
 
- private slots:
+ private Q_SLOTS:
   void ArtistsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
 
   void AlbumsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
-  void AlbumsReceived(QNetworkReply *reply, const Artist &artist_requested, const int limit_requested, const int offset_requested);
+  void AlbumsReceived(QNetworkReply *reply, const QobuzRequest::Artist &artist_requested, const int limit_requested, const int offset_requested);
 
   void SongsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
-  void SongsReceived(QNetworkReply *reply, const Artist &artist_requested, const Album &album_requested, const int limit_requested, const int offset_requested);
+  void SongsReceived(QNetworkReply *reply, const QobuzRequest::Artist &artist_requested, const QobuzRequest::Album &album_requested, const int limit_requested, const int offset_requested);
 
-  void ArtistAlbumsReplyReceived(QNetworkReply *reply, const Artist &artist, const int offset_requested);
-  void AlbumSongsReplyReceived(QNetworkReply *reply, const Artist &artist, const Album &album, const int offset_requested);
+  void ArtistAlbumsReplyReceived(QNetworkReply *reply, const QobuzRequest::Artist &artist, const int offset_requested);
+  void AlbumSongsReplyReceived(QNetworkReply *reply, const QobuzRequest::Artist &artist, const QobuzRequest::Album &album, const int offset_requested);
   void AlbumCoverReceived(QNetworkReply *reply, const QUrl &cover_url, const QString &filename);
 
  private:
 
-  bool IsQuery() { return (query_type_ == QueryType::Artists || query_type_ == QueryType::Albums || query_type_ == QueryType::Songs); }
-  bool IsSearch() { return (query_type_ == QueryType::SearchArtists || query_type_ == QueryType::SearchAlbums || query_type_ == QueryType::SearchSongs); }
+  bool IsQuery() const { return (query_type_ == Type::FavouriteArtists || query_type_ == Type::FavouriteAlbums || query_type_ == Type::FavouriteSongs); }
+  bool IsSearch() const { return (query_type_ == Type::SearchArtists || query_type_ == Type::SearchAlbums || query_type_ == Type::SearchSongs); }
 
   void StartRequests();
   void FlushRequests();
@@ -171,21 +170,12 @@ class QobuzRequest : public QobuzBaseRequest {
   static void Warn(const QString &error, const QVariant &debug = QVariant());
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
-  static const int kMaxConcurrentArtistsRequests;
-  static const int kMaxConcurrentAlbumsRequests;
-  static const int kMaxConcurrentSongsRequests;
-  static const int kMaxConcurrentArtistAlbumsRequests;
-  static const int kMaxConcurrentAlbumSongsRequests;
-  static const int kMaxConcurrentAlbumCoverRequests;
-  static const int kFlushRequestsDelay;
-
   QobuzService *service_;
   QobuzUrlHandler *url_handler_;
-  Application *app_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   QTimer *timer_flush_requests_;
 
-  const QueryType query_type_;
+  const Type query_type_;
   int query_id_;
   QString search_text_;
 

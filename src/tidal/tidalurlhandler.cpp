@@ -23,15 +23,15 @@
 #include <QString>
 #include <QUrl>
 
-#include "core/application.h"
+#include "includes/shared_ptr.h"
 #include "core/taskmanager.h"
 #include "core/song.h"
 #include "tidal/tidalservice.h"
 #include "tidalurlhandler.h"
 
-TidalUrlHandler::TidalUrlHandler(Application *app, TidalService *service)
+TidalUrlHandler::TidalUrlHandler(const SharedPtr<TaskManager> task_manager, TidalService *service)
     : UrlHandler(service),
-      app_(app),
+      task_manager_(task_manager),
       service_(service) {
 
   QObject::connect(service, &TidalService::StreamURLFailure, this, &TidalUrlHandler::GetStreamURLFailure);
@@ -42,7 +42,7 @@ TidalUrlHandler::TidalUrlHandler(Application *app, TidalService *service)
 UrlHandler::LoadResult TidalUrlHandler::StartLoading(const QUrl &url) {
 
   Request req;
-  req.task_id = app_->task_manager()->StartTask(QString("Loading %1 stream...").arg(url.scheme()));
+  req.task_id = task_manager_->StartTask(QStringLiteral("Loading %1 stream...").arg(url.scheme()));
   QString error;
   req.id = service_->GetStreamURL(url, error);
   if (req.id == 0) {
@@ -65,7 +65,7 @@ void TidalUrlHandler::GetStreamURLFailure(const uint id, const QUrl &media_url, 
   Request req = requests_.take(id);
   CancelTask(req.task_id);
 
-  emit AsyncLoadComplete(LoadResult(media_url, LoadResult::Type::Error, error));
+  Q_EMIT AsyncLoadComplete(LoadResult(media_url, LoadResult::Type::Error, error));
 
 }
 
@@ -75,10 +75,10 @@ void TidalUrlHandler::GetStreamURLSuccess(const uint id, const QUrl &media_url, 
   Request req = requests_.take(id);
   CancelTask(req.task_id);
 
-  emit AsyncLoadComplete(LoadResult(media_url, LoadResult::Type::TrackAvailable, stream_url, filetype, samplerate, bit_depth, duration));
+  Q_EMIT AsyncLoadComplete(LoadResult(media_url, LoadResult::Type::TrackAvailable, stream_url, filetype, samplerate, bit_depth, duration));
 
 }
 
 void TidalUrlHandler::CancelTask(const int task_id) {
-  app_->task_manager()->SetTaskFinished(task_id);
+  task_manager_->SetTaskFinished(task_id);
 }

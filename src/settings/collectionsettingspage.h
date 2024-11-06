@@ -2,7 +2,7 @@
  * Strawberry Music Player
  * This file was part of Clementine.
  * Copyright 2010, David Sansome <me@davidsansome.com>
- * Copyright 2018-2021, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2018-2024, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,50 +30,54 @@
 
 #include "settingspage.h"
 
+#include "includes/shared_ptr.h"
+
 class QModelIndex;
 class SettingsDialog;
+class CollectionLibrary;
+class CollectionBackend;
+class CollectionModel;
+class CollectionDirectoryModel;
+class CollectionSettingsDirectoryModel;
 class Ui_CollectionSettingsPage;
 
 class CollectionSettingsPage : public SettingsPage {
   Q_OBJECT
 
  public:
-  explicit CollectionSettingsPage(SettingsDialog *dialog, QWidget *parent = nullptr);
+  explicit CollectionSettingsPage(SettingsDialog *dialog, const SharedPtr<CollectionLibrary> collection, const SharedPtr<CollectionBackend> collection_backend, CollectionModel *collection_model, CollectionDirectoryModel *collection_directory_model, QWidget *parent = nullptr);
   ~CollectionSettingsPage() override;
-
-  static const char *kSettingsGroup;
-  static const char *kSettingsCacheSize;
-  static const char *kSettingsCacheSizeUnit;
-  static const char *kSettingsDiskCacheEnable;
-  static const char *kSettingsDiskCacheSize;
-  static const char *kSettingsDiskCacheSizeUnit;
-  static const int kSettingsCacheSizeDefault;
-  static const int kSettingsDiskCacheSizeDefault;
-
-  enum class CacheSizeUnit {
-    KB,
-    MB,
-    GB,
-    TB
-  };
 
   void Load() override;
   void Save() override;
 
- private slots:
-  void Add();
-  void Remove();
+ private Q_SLOTS:
+  void AddDirectory();
+  void RemoveDirectory();
 
   void CurrentRowChanged(const QModelIndex &idx);
   void SongTrackingToggled();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+  void DiskCacheEnable(const Qt::CheckState state);
+#else
   void DiskCacheEnable(const int state);
+#endif
   void ClearPixmapDiskCache();
   void CacheSizeUnitChanged(int index);
   void DiskCacheSizeUnitChanged(int index);
   void WriteAllSongsStatisticsToFiles();
 
  private:
+  void UpdateIconDiskCacheSize();
+
+ private:
   Ui_CollectionSettingsPage *ui_;
+
+  const SharedPtr<CollectionLibrary> collection_;
+  const SharedPtr<CollectionBackend> collection_backend_;
+  CollectionModel *collection_model_;
+  CollectionSettingsDirectoryModel *collectionsettings_directory_model_;
+  CollectionDirectoryModel *collection_directory_model_;
   bool initialized_model_;
 };
 

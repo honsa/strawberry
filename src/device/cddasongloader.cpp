@@ -40,12 +40,14 @@
 #include <gst/tag/tag.h>
 
 #include "cddasongloader.h"
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
-#include "utilities/timeconstants.h"
+#include "constants/timeconstants.h"
 
 using std::make_shared;
+
+using namespace Qt::Literals::StringLiterals;
 
 CddaSongLoader::CddaSongLoader(const QUrl &url, QObject *parent)
     : QObject(parent),
@@ -61,11 +63,10 @@ CddaSongLoader::~CddaSongLoader() {
 QUrl CddaSongLoader::GetUrlFromTrack(int track_number) const {
 
   if (url_.isEmpty()) {
-    return QUrl(QString("cdda://%1a").arg(track_number));
+    return QUrl(QStringLiteral("cdda://%1a").arg(track_number));
   }
-  else {
-    return QUrl(QString("cdda://%1/%2").arg(url_.path()).arg(track_number));
-  }
+
+  return QUrl(QStringLiteral("cdda://%1/%2").arg(url_.path()).arg(track_number));
 
 }
 
@@ -74,7 +75,7 @@ void CddaSongLoader::LoadSongs() {
   QMutexLocker locker(&mutex_load_);
   cdio_ = cdio_open(url_.path().toLocal8Bit().constData(), DRIVER_DEVICE);
   if (cdio_ == nullptr) {
-    Error("Unable to open CDIO device.");
+    Error(u"Unable to open CDIO device."_s);
     return;
   }
 
@@ -82,7 +83,7 @@ void CddaSongLoader::LoadSongs() {
   GError *error = nullptr;
   cdda_ = gst_element_make_from_uri(GST_URI_SRC, "cdda://", nullptr, &error);
   if (error) {
-    Error(QString("%1: %2").arg(error->code).arg(error->message));
+    Error(QStringLiteral("%1: %2").arg(error->code).arg(QString::fromUtf8(error->message)));
   }
   if (!cdda_) return;
 
@@ -140,11 +141,11 @@ void CddaSongLoader::LoadSongs() {
     song.set_valid(true);
     song.set_filetype(Song::FileType::CDDA);
     song.set_url(GetUrlFromTrack(track_number));
-    song.set_title(QString("Track %1").arg(track_number));
+    song.set_title(QStringLiteral("Track %1").arg(track_number));
     song.set_track(track_number);
     songs << song;
   }
-  emit SongsLoaded(songs);
+  Q_EMIT SongsLoaded(songs);
 
 
   gst_tag_register_musicbrainz_tags();
@@ -190,7 +191,7 @@ void CddaSongLoader::LoadSongs() {
     }
     gst_message_unref(msg_toc);
   }
-  emit SongsDurationLoaded(songs);
+  Q_EMIT SongsDurationLoaded(songs);
 
 #ifdef HAVE_MUSICBRAINZ
   // Handle TAG message: generate MusicBrainz DiscId
@@ -199,7 +200,7 @@ void CddaSongLoader::LoadSongs() {
     gst_message_parse_tag(msg_tag, &tags);
     char *string_mb = nullptr;
     if (gst_tag_list_get_string(tags, GST_TAG_CDDA_MUSICBRAINZ_DISCID, &string_mb)) {
-      QString musicbrainz_discid(string_mb);
+      QString musicbrainz_discid = QString::fromUtf8(string_mb);
       qLog(Info) << "MusicBrainz discid: " << musicbrainz_discid;
 
       MusicBrainzClient *musicbrainz_client = new MusicBrainzClient(network_);
@@ -242,7 +243,7 @@ void CddaSongLoader::AudioCDTagsLoaded(const QString &artist, const QString &alb
     song.set_url(GetUrlFromTrack(track_number++));
     songs << song;
   }
-  emit SongsMetadataLoaded(songs);
+  Q_EMIT SongsMetadataLoaded(songs);
 
 }
 #endif
@@ -265,6 +266,6 @@ bool CddaSongLoader::HasChanged() {
 void CddaSongLoader::Error(const QString &error) {
 
   qLog(Error) << error;
-  emit SongsDurationLoaded(SongList(), error);
+  Q_EMIT SongsDurationLoaded(SongList(), error);
 
 }

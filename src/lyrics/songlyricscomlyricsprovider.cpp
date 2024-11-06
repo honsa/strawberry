@@ -17,41 +17,50 @@
  *
  */
 
-#include <QObject>
-#include <QByteArray>
-#include <QVariant>
+#include <QApplication>
+#include <QThread>
 #include <QString>
 #include <QUrl>
 #include <QRegularExpression>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "lyricssearchrequest.h"
 #include "songlyricscomlyricsprovider.h"
 
-const char SongLyricsComLyricsProvider::kUrl[] = "https://www.songlyrics.com/";
-const char SongLyricsComLyricsProvider::kStartTag[] = "<p[^>]*>";
-const char SongLyricsComLyricsProvider::kEndTag[] = "<\\/p>";
-const char SongLyricsComLyricsProvider::kLyricsStart[] = "<p id=\"songLyricsDiv\"[^>]+>";
+using namespace Qt::Literals::StringLiterals;
 
-SongLyricsComLyricsProvider::SongLyricsComLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent)
-    : HtmlLyricsProvider("songlyrics.com", true, kStartTag, kEndTag, kLyricsStart, false, network, parent) {}
+namespace {
+constexpr char kUrl[] = "https://www.songlyrics.com/";
+constexpr char kStartTag[] = "<p[^>]*>";
+constexpr char kEndTag[] = "<\\/p>";
+constexpr char kLyricsStart[] = "<p id=\"songLyricsDiv\"[^>]+>";
+}  // namespace
+
+SongLyricsComLyricsProvider::SongLyricsComLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : HtmlLyricsProvider(u"songlyrics.com"_s, true, QLatin1String(kStartTag), QLatin1String(kEndTag), QLatin1String(kLyricsStart), false, network, parent) {}
 
 QUrl SongLyricsComLyricsProvider::Url(const LyricsSearchRequest &request) {
 
-  return QUrl(kUrl + StringFixup(request.artist) + "/" + StringFixup(request.title) + "-lyrics/");
+  return QUrl(QLatin1String(kUrl) + StringFixup(request.artist) + QLatin1Char('/') + StringFixup(request.title) + "-lyrics/"_L1);
 
 }
 
 QString SongLyricsComLyricsProvider::StringFixup(QString text) {
 
-  return text.replace('/', '-')
-             .replace('\'', '-')
-             .remove(QRegularExpression("[^\\w0-9\\- ]"))
-             .replace(QRegularExpression(" {2,}"), " ")
+  Q_ASSERT(QThread::currentThread() != qApp->thread());
+
+  static const QRegularExpression regex_illegal_characters(u"[^\\w0-9\\- ]"_s);
+  static const QRegularExpression regex_multiple_whitespaces(u" {2,}"_s);
+  static const QRegularExpression regex_multiple_dashes(u"(-)\\1+"_s);
+
+  return text.replace(u'/', u'-')
+             .replace(u'\'', u'-')
+             .remove(regex_illegal_characters)
+             .replace(regex_multiple_whitespaces, u" "_s)
              .simplified()
-             .replace(' ', '-')
-             .replace(QRegularExpression("(-)\\1+"), "-")
+             .replace(u' ', u'-')
+             .replace(regex_multiple_dashes, u"-"_s)
              .toLower();
 
 }

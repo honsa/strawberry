@@ -21,17 +21,20 @@
 
 #include <QObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 
-#include "scrobblersettings.h"
+#include "scrobblersettingsservice.h"
 #include "lastfmscrobbler.h"
 
 const char *LastFMScrobbler::kName = "Last.fm";
 const char *LastFMScrobbler::kSettingsGroup = "LastFM";
-const char *LastFMScrobbler::kAuthUrl = "https://www.last.fm/api/auth/";
 const char *LastFMScrobbler::kApiUrl = "https://ws.audioscrobbler.com/2.0/";
-const char *LastFMScrobbler::kCacheFile = "lastfmscrobbler.cache";
 
-LastFMScrobbler::LastFMScrobbler(SharedPtr<ScrobblerSettings> settings, SharedPtr<NetworkAccessManager> network, QObject *parent)
-    : ScrobblingAPI20(kName, kSettingsGroup, kAuthUrl, kApiUrl, true, kCacheFile, settings, network, parent) {}
+namespace {
+constexpr char kAuthUrl[] = "https://www.last.fm/api/auth/";
+constexpr char kCacheFile[] = "lastfmscrobbler.cache";
+}  // namespace
+
+LastFMScrobbler::LastFMScrobbler(const SharedPtr<ScrobblerSettingsService> settings, const SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : ScrobblingAPI20(QLatin1String(kName), QLatin1String(kSettingsGroup), QLatin1String(kAuthUrl), QLatin1String(kApiUrl), true, QLatin1String(kCacheFile), settings, network, parent) {}

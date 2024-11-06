@@ -29,7 +29,7 @@
 #include <QString>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "lyricsprovider.h"
 #include "lyricssearchrequest.h"
@@ -40,11 +40,10 @@ class HtmlLyricsProvider : public LyricsProvider {
   Q_OBJECT
 
  public:
-  explicit HtmlLyricsProvider(const QString &name, const bool enabled, const QString &start_tag, const QString &end_tag, const QString &lyrics_start, const bool multiple, SharedPtr<NetworkAccessManager> network, QObject *parent);
+  explicit HtmlLyricsProvider(const QString &name, const bool enabled, const QString &start_tag, const QString &end_tag, const QString &lyrics_start, const bool multiple, const SharedPtr<NetworkAccessManager> network, QObject *parent);
   ~HtmlLyricsProvider();
 
-  virtual bool StartSearch(const int id, const LyricsSearchRequest &request) override;
-  virtual void CancelSearch(const int id) override;
+  virtual bool StartSearchAsync(const int id, const LyricsSearchRequest &request) override;
 
   static QString ParseLyricsFromHTML(const QString &content, const QRegularExpression &start_tag, const QRegularExpression &end_tag, const QRegularExpression &lyrics_start, const bool multiple);
 
@@ -52,7 +51,8 @@ class HtmlLyricsProvider : public LyricsProvider {
   virtual QUrl Url(const LyricsSearchRequest &request) = 0;
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
- protected slots:
+ protected Q_SLOTS:
+  virtual void StartSearch(const int id, const LyricsSearchRequest &request) override;
   virtual void HandleLyricsReply(QNetworkReply *reply, const int id, const LyricsSearchRequest &request);
 
  protected:

@@ -31,15 +31,17 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/song.h"
 #include "tidalservice.h"
 #include "tidalbaserequest.h"
 #include "tidalfavoriterequest.h"
 
-TidalFavoriteRequest::TidalFavoriteRequest(TidalService *service, SharedPtr<NetworkAccessManager> network, QObject *parent)
+using namespace Qt::Literals::StringLiterals;
+
+TidalFavoriteRequest::TidalFavoriteRequest(TidalService *service, const SharedPtr<NetworkAccessManager> network, QObject *parent)
     : TidalBaseRequest(service, network, parent),
       service_(service),
       network_(network),
@@ -60,11 +62,11 @@ QString TidalFavoriteRequest::FavoriteText(const FavoriteType type) {
 
   switch (type) {
     case FavoriteType::Artists:
-      return "artists";
+      return u"artists"_s;
     case FavoriteType::Albums:
-      return "albums";
+      return u"albums"_s;
     case FavoriteType::Songs:
-      return "tracks";
+      return u"tracks"_s;
   }
 
   return QString();
@@ -75,11 +77,11 @@ QString TidalFavoriteRequest::FavoriteMethod(const FavoriteType type) {
 
   switch (type) {
     case FavoriteType::Artists:
-      return "artistIds";
+      return u"artistIds"_s;
     case FavoriteType::Albums:
-      return "albumIds";
+      return u"albumIds"_s;
     case FavoriteType::Songs:
-      return "trackIds";
+      return u"trackIds"_s;
   }
 
   return QString();
@@ -134,18 +136,18 @@ void TidalFavoriteRequest::AddFavorites(const FavoriteType type, const SongList 
 
 void TidalFavoriteRequest::AddFavoritesRequest(const FavoriteType type, const QStringList &id_list, const SongList &songs) {
 
-  ParamList params = ParamList() << Param("countryCode", country_code())
-                                 << Param(FavoriteMethod(type), id_list.join(','));
+  const ParamList params = ParamList() << Param(u"countryCode"_s, country_code())
+                                       << Param(FavoriteMethod(type), id_list.join(u','));
 
   QUrlQuery url_query;
   for (const Param &param : params) {
-    url_query.addQueryItem(QUrl::toPercentEncoding(param.first), QUrl::toPercentEncoding(param.second));
+    url_query.addQueryItem(QString::fromLatin1(QUrl::toPercentEncoding(param.first)), QString::fromLatin1(QUrl::toPercentEncoding(param.second)));
   }
 
-  QUrl url(QString(TidalService::kApiUrl) + QString("/") + "users/" + QString::number(service_->user_id()) + "/favorites/" + FavoriteText(type));
+  QUrl url(QLatin1String(TidalService::kApiUrl) + QLatin1Char('/') + "users/"_L1 + QString::number(service_->user_id()) + "/favorites/"_L1 + FavoriteText(type));
   QNetworkRequest req(url);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-  req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  req.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   if (oauth() && !access_token().isEmpty()) req.setRawHeader("authorization", "Bearer " + access_token().toUtf8());
   else if (!session_id().isEmpty()) req.setRawHeader("X-Tidal-SessionId", session_id().toUtf8());
   QByteArray query = url_query.toString(QUrl::FullyEncoded).toUtf8();
@@ -178,13 +180,13 @@ void TidalFavoriteRequest::AddFavoritesReply(QNetworkReply *reply, const Favorit
 
   switch (type) {
     case FavoriteType::Artists:
-      emit ArtistsAdded(songs);
+      Q_EMIT ArtistsAdded(songs);
       break;
     case FavoriteType::Albums:
-      emit AlbumsAdded(songs);
+      Q_EMIT AlbumsAdded(songs);
       break;
     case FavoriteType::Songs:
-      emit SongsAdded(songs);
+      Q_EMIT SongsAdded(songs);
       break;
   }
 
@@ -204,7 +206,7 @@ void TidalFavoriteRequest::RemoveSongs(const SongList &songs) {
 
 void TidalFavoriteRequest::RemoveSongs(const SongMap &songs) {
 
-  SongList songs_list = songs.values();
+  const SongList songs_list = songs.values();
   for (const Song &song : songs_list) {
     RemoveFavoritesRequest(FavoriteType::Songs, song.song_id(), SongList() << song);
   }
@@ -235,7 +237,7 @@ void TidalFavoriteRequest::RemoveFavorites(const FavoriteType type, const SongLi
     }
   }
 
-  QStringList ids = songs_map.uniqueKeys();
+  const QStringList ids = songs_map.uniqueKeys();
   for (const QString &id : ids) {
     RemoveFavoritesRequest(type, id, songs_map.values(id));
   }
@@ -244,18 +246,18 @@ void TidalFavoriteRequest::RemoveFavorites(const FavoriteType type, const SongLi
 
 void TidalFavoriteRequest::RemoveFavoritesRequest(const FavoriteType type, const QString &id, const SongList &songs) {
 
-  ParamList params = ParamList() << Param("countryCode", country_code());
+  const ParamList params = ParamList() << Param(u"countryCode"_s, country_code());
 
   QUrlQuery url_query;
   for (const Param &param : params) {
-    url_query.addQueryItem(QUrl::toPercentEncoding(param.first), QUrl::toPercentEncoding(param.second));
+    url_query.addQueryItem(QString::fromLatin1(QUrl::toPercentEncoding(param.first)), QString::fromLatin1(QUrl::toPercentEncoding(param.second)));
   }
 
-  QUrl url(QString(TidalService::kApiUrl) + QString("/") + "users/" + QString::number(service_->user_id()) + "/favorites/" + FavoriteText(type) + QString("/") + id);
+  QUrl url(QLatin1String(TidalService::kApiUrl) + "/users/"_L1 + QString::number(service_->user_id()) + "/favorites/"_L1 + FavoriteText(type) + "/"_L1 + id);
   url.setQuery(url_query);
   QNetworkRequest req(url);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-  req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  req.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   if (oauth() && !access_token().isEmpty()) req.setRawHeader("authorization", "Bearer " + access_token().toUtf8());
   else if (!session_id().isEmpty()) req.setRawHeader("X-Tidal-SessionId", session_id().toUtf8());
   QNetworkReply *reply = network_->deleteResource(req);
@@ -286,13 +288,13 @@ void TidalFavoriteRequest::RemoveFavoritesReply(QNetworkReply *reply, const Favo
 
   switch (type) {
     case FavoriteType::Artists:
-      emit ArtistsRemoved(songs);
+      Q_EMIT ArtistsRemoved(songs);
       break;
     case FavoriteType::Albums:
-      emit AlbumsRemoved(songs);
+      Q_EMIT AlbumsRemoved(songs);
       break;
     case FavoriteType::Songs:
-      emit SongsRemoved(songs);
+      Q_EMIT SongsRemoved(songs);
       break;
   }
 

@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <QObject>
 #include <QByteArray>
@@ -36,13 +37,15 @@
 #include <QJsonArray>
 #include <QJsonValue>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "qobuzservice.h"
 #include "qobuzbaserequest.h"
 
-QobuzBaseRequest::QobuzBaseRequest(QobuzService *service, SharedPtr<NetworkAccessManager> network, QObject *parent)
+using namespace Qt::Literals::StringLiterals;
+
+QobuzBaseRequest::QobuzBaseRequest(QobuzService *service, const SharedPtr<NetworkAccessManager> network, QObject *parent)
     : QObject(parent),
       service_(service),
       network_(network) {}
@@ -52,20 +55,20 @@ QobuzBaseRequest::~QobuzBaseRequest() = default;
 QNetworkReply *QobuzBaseRequest::CreateRequest(const QString &ressource_name, const ParamList &params_provided) {
 
   ParamList params = ParamList() << params_provided
-                                 << Param("app_id", app_id());
+                                 << Param(u"app_id"_s, app_id());
 
   std::sort(params.begin(), params.end());
 
   QUrlQuery url_query;
-  for (const Param &param : params) {
-    url_query.addQueryItem(QUrl::toPercentEncoding(param.first), QUrl::toPercentEncoding(param.second));
+  for (const Param &param : std::as_const(params)) {
+    url_query.addQueryItem(QString::fromLatin1(QUrl::toPercentEncoding(param.first)), QString::fromLatin1(QUrl::toPercentEncoding(param.second)));
   }
 
-  QUrl url(QString(QobuzService::kApiUrl) + QString("/") + ressource_name);
+  QUrl url(QString::fromLatin1(QobuzService::kApiUrl) + QLatin1Char('/') + ressource_name);
   url.setQuery(url_query);
   QNetworkRequest req(url);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-  req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  req.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   req.setRawHeader("X-App-Id", app_id().toUtf8());
   if (authenticated()) req.setRawHeader("X-User-Auth-Token", user_auth_token().toUtf8());
 
@@ -96,7 +99,7 @@ QByteArray QobuzBaseRequest::GetReplyData(QNetworkReply *reply) {
   else {
     if (reply->error() != QNetworkReply::NoError && reply->error() < 200) {
       // This is a network error, there is nothing more to do.
-      Error(QString("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
+      Error(QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error()));
     }
     else {
       // See if there is Json data containing "status", "code" and "message" - then use that instead.
@@ -106,18 +109,18 @@ QByteArray QobuzBaseRequest::GetReplyData(QNetworkReply *reply) {
       QJsonDocument json_doc = QJsonDocument::fromJson(data, &parse_error);
       if (parse_error.error == QJsonParseError::NoError && !json_doc.isEmpty() && json_doc.isObject()) {
         QJsonObject json_obj = json_doc.object();
-        if (!json_obj.isEmpty() && json_obj.contains("status") && json_obj.contains("code") && json_obj.contains("message")) {
-          int code = json_obj["code"].toInt();
-          QString message = json_obj["message"].toString();
-          error = QString("%1 (%2)").arg(message).arg(code);
+        if (!json_obj.isEmpty() && json_obj.contains("status"_L1) && json_obj.contains("code"_L1) && json_obj.contains("message"_L1)) {
+          int code = json_obj["code"_L1].toInt();
+          QString message = json_obj["message"_L1].toString();
+          error = QStringLiteral("%1 (%2)").arg(message).arg(code);
         }
       }
       if (error.isEmpty()) {
         if (reply->error() != QNetworkReply::NoError) {
-          error = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
+          error = QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error());
         }
         else {
-          error = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
+          error = QStringLiteral("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
         }
       }
       Error(error);
@@ -135,23 +138,23 @@ QJsonObject QobuzBaseRequest::ExtractJsonObj(QByteArray &data) {
   QJsonDocument json_doc = QJsonDocument::fromJson(data, &json_error);
 
   if (json_error.error != QJsonParseError::NoError) {
-    Error("Reply from server missing Json data.", data);
+    Error(u"Reply from server missing Json data."_s, data);
     return QJsonObject();
   }
 
   if (json_doc.isEmpty()) {
-    Error("Received empty Json document.", data);
+    Error(u"Received empty Json document."_s, data);
     return QJsonObject();
   }
 
   if (!json_doc.isObject()) {
-    Error("Json document is not an object.", json_doc);
+    Error(u"Json document is not an object."_s, json_doc);
     return QJsonObject();
   }
 
   QJsonObject json_obj = json_doc.object();
   if (json_obj.isEmpty()) {
-    Error("Received empty Json object.", json_doc);
+    Error(u"Received empty Json object."_s, json_doc);
     return QJsonObject();
   }
 
@@ -169,11 +172,11 @@ QJsonValue QobuzBaseRequest::ExtractItems(QByteArray &data) {
 
 QJsonValue QobuzBaseRequest::ExtractItems(QJsonObject &json_obj) {
 
-  if (!json_obj.contains("items")) {
-    Error("Json reply is missing items.", json_obj);
+  if (!json_obj.contains("items"_L1)) {
+    Error(u"Json reply is missing items."_s, json_obj);
     return QJsonArray();
   }
-  QJsonValue json_items = json_obj["items"];
+  QJsonValue json_items = json_obj["items"_L1];
   return json_items;
 
 }
@@ -182,7 +185,7 @@ QString QobuzBaseRequest::ErrorsToHTML(const QStringList &errors) {
 
   QString error_html;
   for (const QString &error : errors) {
-    error_html += error + "<br />";
+    error_html += error + u"<br />"_s;
   }
   return error_html;
 

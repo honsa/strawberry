@@ -28,6 +28,8 @@
 #include <QString>
 #include <QUrl>
 
+using namespace Qt::Literals::StringLiterals;
+
 std::ostream &operator<<(std::ostream &stream, const QString &str) {
   stream << str.toStdString();
   return stream;
@@ -62,7 +64,7 @@ void PrintTo(const ::QUrl &url, std::ostream &os) {
 
 TemporaryResource::TemporaryResource(const QString &filename, QObject *parent) : QTemporaryFile(parent) {
 
-  setFileTemplate(QDir::tempPath() + "/strawberry_test-XXXXXX." + filename.section('.', -1, -1));
+  setFileTemplate(QDir::tempPath() + u"/strawberry_test-XXXXXX."_s + filename.section(u'.', -1, -1));
   open();
 
   QFile resource(filename);
@@ -79,7 +81,7 @@ TestQObject::TestQObject(QObject *parent)
 }
 
 void TestQObject::Emit() {
-  emit Emitted();
+  Q_EMIT Emitted();
 }
 
 void TestQObject::Invoke() {

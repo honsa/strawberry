@@ -69,13 +69,15 @@ class AlbumCoverExport : public QDialog {
 
   DialogResult Exec();
 
- private slots:
+ private Q_SLOTS:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+  void ForceSizeToggled(Qt::CheckState state);
+#else
   void ForceSizeToggled(int state);
+#endif
 
  private:
   Ui_AlbumCoverExport *ui_;
-
-  static const char *kSettingsGroup;
 };
 
 #endif  // ALBUMCOVEREXPORT_H

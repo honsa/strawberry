@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <utility>
 
 #include <QObject>
 #include <QCoreApplication>
@@ -35,8 +36,8 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "core/networktimeouts.h"
 #include "utilities/imageutils.h"
@@ -47,10 +48,14 @@
 #include "coverproviders.h"
 #include "albumcoverimageresult.h"
 
-const int AlbumCoverFetcherSearch::kSearchTimeoutMs = 20000;
-const int AlbumCoverFetcherSearch::kImageLoadTimeoutMs = 6000;
-const int AlbumCoverFetcherSearch::kTargetSize = 500;
-const float AlbumCoverFetcherSearch::kGoodScore = 4.0;
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+constexpr int kSearchTimeoutMs = 20000;
+constexpr int kImageLoadTimeoutMs = 6000;
+constexpr int kTargetSize = 500;
+constexpr float kGoodScore = 4.0;
+}  // namespace
 
 AlbumCoverFetcherSearch::AlbumCoverFetcherSearch(const CoverSearchRequest &request, SharedPtr<NetworkAccessManager> network, QObject *parent)
     : QObject(parent),
@@ -71,7 +76,7 @@ AlbumCoverFetcherSearch::~AlbumCoverFetcherSearch() {
 
 void AlbumCoverFetcherSearch::TerminateSearch() {
 
-  QList<int> ids = pending_requests_.keys();
+  const QList<int> ids = pending_requests_.keys();
   for (const int id : ids) {
     pending_requests_.take(id)->CancelSearch(id);
   }
@@ -83,7 +88,7 @@ void AlbumCoverFetcherSearch::TerminateSearch() {
 void AlbumCoverFetcherSearch::Start(SharedPtr<CoverProviders> cover_providers) {
 
   // Ignore Radio Paradise "commercial" break.
-  if (request_.artist.compare("commercial-free", Qt::CaseInsensitive) == 0 && request_.title.compare("listener-supported", Qt::CaseInsensitive) == 0) {
+  if (request_.artist.compare("commercial-free"_L1, Qt::CaseInsensitive) == 0 && request_.title.compare("listener-supported"_L1, Qt::CaseInsensitive) == 0) {
     TerminateSearch();
     return;
   }
@@ -91,7 +96,7 @@ void AlbumCoverFetcherSearch::Start(SharedPtr<CoverProviders> cover_providers) {
   QList<CoverProvider*> cover_providers_sorted = cover_providers->List();
   std::stable_sort(cover_providers_sorted.begin(), cover_providers_sorted.end(), ProviderCompareOrder);
 
-  for (CoverProvider *provider : cover_providers_sorted) {
+  for (CoverProvider *provider : std::as_const(cover_providers_sorted)) {
 
     if (!provider->is_enabled()) continue;
 
@@ -131,7 +136,7 @@ void AlbumCoverFetcherSearch::Start(SharedPtr<CoverProviders> cover_providers) {
 void AlbumCoverFetcherSearch::ProviderSearchResults(const int id, const CoverProviderSearchResults &results) {
 
   if (!pending_requests_.contains(id)) return;
-  CoverProvider *provider = pending_requests_[id];
+  CoverProvider *provider = pending_requests_.value(id);
   ProviderSearchResults(provider, results);
 
 }
@@ -167,51 +172,51 @@ void AlbumCoverFetcherSearch::ProviderSearchResults(CoverProvider *provider, con
     // This is done since we can't match the album titles, and we want to prevent compilation or live albums from being picked before studio albums for streams.
     // TODO: Make these regular expressions.
     if (request_album.isEmpty() && (
-        result_album.contains("hits", Qt::CaseInsensitive) ||
-        result_album.contains("greatest", Qt::CaseInsensitive) ||
-        result_album.contains("best", Qt::CaseInsensitive) ||
-        result_album.contains("collection", Qt::CaseInsensitive) ||
-        result_album.contains("classics", Qt::CaseInsensitive) ||
-        result_album.contains("singles", Qt::CaseInsensitive) ||
-        result_album.contains("bootleg", Qt::CaseInsensitive) ||
-        result_album.contains("live", Qt::CaseInsensitive) ||
-        result_album.contains("concert", Qt::CaseInsensitive) ||
-        result_album.contains("essential", Qt::CaseInsensitive) ||
-        result_album.contains("ultimate", Qt::CaseInsensitive) ||
-        result_album.contains("karaoke", Qt::CaseInsensitive) ||
-        result_album.contains("mixtape", Qt::CaseInsensitive) ||
-        result_album.contains("country rock", Qt::CaseInsensitive) ||
-        result_album.contains("indie folk", Qt::CaseInsensitive) ||
-        result_album.contains("soft rock", Qt::CaseInsensitive) ||
-        result_album.contains("folk music", Qt::CaseInsensitive) ||
-        result_album.contains("60's rock", Qt::CaseInsensitive) ||
-        result_album.contains("60's romance", Qt::CaseInsensitive) ||
-        result_album.contains("60s music", Qt::CaseInsensitive) ||
-        result_album.contains("late 60s", Qt::CaseInsensitive) ||
-        result_album.contains("the 60s", Qt::CaseInsensitive) ||
-        result_album.contains("folk and blues", Qt::CaseInsensitive) ||
-        result_album.contains("60 from the 60's", Qt::CaseInsensitive) ||
-        result_album.contains("classic psychedelic", Qt::CaseInsensitive) ||
-        result_album.contains("playlist: acoustic", Qt::CaseInsensitive) ||
-        result_album.contains("90's rnb playlist", Qt::CaseInsensitive) ||
-        result_album.contains("rock 80s", Qt::CaseInsensitive) ||
-        result_album.contains("classic 80s", Qt::CaseInsensitive) ||
-        result_album.contains("rock anthems", Qt::CaseInsensitive) ||
-        result_album.contains("rock songs", Qt::CaseInsensitive) ||
-        result_album.contains("rock 2019", Qt::CaseInsensitive) ||
-        result_album.contains("guitar anthems", Qt::CaseInsensitive) ||
-        result_album.contains("driving anthems", Qt::CaseInsensitive) ||
-        result_album.contains("traffic jam jams", Qt::CaseInsensitive) ||
-        result_album.contains("perfect background music", Qt::CaseInsensitive) ||
-        result_album.contains("70's gold", Qt::CaseInsensitive) ||
-        result_album.contains("rockfluence", Qt::CaseInsensitive) ||
-        result_album.contains("acoustic dinner accompaniment", Qt::CaseInsensitive) ||
-        result_album.contains("complete studio albums", Qt::CaseInsensitive) ||
-        result_album.contains("mellow rock", Qt::CaseInsensitive)
+        result_album.contains("hits"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("greatest"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("best"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("collection"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("classics"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("singles"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("bootleg"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("live"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("concert"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("essential"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("ultimate"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("karaoke"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("mixtape"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("country rock"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("indie folk"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("soft rock"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("folk music"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("60's rock"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("60's romance"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("60s music"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("late 60s"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("the 60s"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("folk and blues"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("60 from the 60's"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("classic psychedelic"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("playlist: acoustic"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("90's rnb playlist"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("rock 80s"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("classic 80s"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("rock anthems"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("rock songs"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("rock 2019"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("guitar anthems"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("driving anthems"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("traffic jam jams"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("perfect background music"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("70's gold"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("rockfluence"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("acoustic dinner accompaniment"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("complete studio albums"_L1, Qt::CaseInsensitive) ||
+        result_album.contains("mellow rock"_L1, Qt::CaseInsensitive)
         )) {
       results_copy[i].score_match -= 1;
     }
-    else if (request_album.isEmpty() && result_album.contains("soundtrack", Qt::CaseInsensitive)) {
+    else if (request_album.isEmpty() && result_album.contains("soundtrack"_L1, Qt::CaseInsensitive)) {
       results_copy[i].score_match -= 0.5;
     }
 
@@ -250,14 +255,14 @@ void AlbumCoverFetcherSearch::AllProvidersFinished() {
 
   // If we only wanted to do the search then we're done
   if (request_.search) {
-    emit SearchFinished(request_.id, results_);
+    Q_EMIT SearchFinished(request_.id, results_);
     return;
   }
 
   // No results?
   if (results_.isEmpty()) {
     statistics_.missing_images_++;
-    emit AlbumCoverFetched(request_.id, AlbumCoverImageResult());
+    Q_EMIT AlbumCoverFetched(request_.id, AlbumCoverImageResult());
     return;
   }
 
@@ -320,8 +325,8 @@ void AlbumCoverFetcherSearch::ProviderCoverFetchFinished(QNetworkReply *reply) {
   }
   else {
     QString mimetype = reply->header(QNetworkRequest::ContentTypeHeader).toString();
-    if (mimetype.contains(';')) {
-      mimetype = mimetype.left(mimetype.indexOf(';'));
+    if (mimetype.contains(u';')) {
+      mimetype = mimetype.left(mimetype.indexOf(u';'));
     }
     if (ImageUtils::SupportedImageMimeTypes().contains(mimetype, Qt::CaseInsensitive) || ImageUtils::SupportedImageFormats().contains(mimetype, Qt::CaseInsensitive)) {
       QByteArray image_data = reply->readAll();
@@ -399,7 +404,7 @@ void AlbumCoverFetcherSearch::SendBestImage() {
     statistics_.missing_images_++;
   }
 
-  emit AlbumCoverFetched(request_.id, result);
+  Q_EMIT AlbumCoverFetched(request_.id, result);
 
 }
 
@@ -411,7 +416,7 @@ void AlbumCoverFetcherSearch::Cancel() {
     TerminateSearch();
   }
   else if (!pending_image_loads_.isEmpty()) {
-    QList<QNetworkReply*> replies = pending_image_loads_.keys();
+    const QList<QNetworkReply*> replies = pending_image_loads_.keys();
     for (QNetworkReply *reply : replies) {
       QObject::disconnect(reply, &QNetworkReply::finished, this, nullptr);
       reply->abort();

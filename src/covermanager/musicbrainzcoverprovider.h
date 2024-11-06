@@ -30,24 +30,23 @@
 #include <QString>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsoncoverprovider.h"
 
 class QNetworkReply;
 class QTimer;
-class Application;
 class NetworkAccessManager;
 
 class MusicbrainzCoverProvider : public JsonCoverProvider {
   Q_OBJECT
 
  public:
-  explicit MusicbrainzCoverProvider(Application *app, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit MusicbrainzCoverProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~MusicbrainzCoverProvider() override;
 
   bool StartSearch(const QString &artist, const QString &album, const QString &title, const int id) override;
 
- private slots:
+ private Q_SLOTS:
   void FlushRequests();
   void HandleSearchReply(QNetworkReply *reply, const int search_id);
 
@@ -64,11 +63,6 @@ class MusicbrainzCoverProvider : public JsonCoverProvider {
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
  private:
-  static const char *kReleaseSearchUrl;
-  static const char *kAlbumCoverUrl;
-  static const int kLimit;
-  static const int kRequestsDelay;
-
   QTimer *timer_flush_requests_;
   QQueue<SearchRequest> queue_search_requests_;
   QList<QNetworkReply*> replies_;

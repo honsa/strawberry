@@ -30,6 +30,7 @@
 #include <QCheckBox>
 #include <QSettings>
 
+#include "core/settings.h"
 #include "utilities/screenutils.h"
 #include "messagedialog.h"
 #include "ui_messagedialog.h"
@@ -53,11 +54,7 @@ void MessageDialog::ShowMessage(const QString &title, const QString &message, co
   setWindowTitle(title);
 
   if (!icon.isNull()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     const QPixmap pixmap = icon.pixmap(QSize(64, 64), devicePixelRatioF());
-#else
-    const QPixmap pixmap = icon.pixmap(QSize(64, 64));
-#endif
     ui_->label_logo->setPixmap(pixmap);
   }
 
@@ -77,7 +74,7 @@ void MessageDialog::ShowMessage(const QString &title, const QString &message, co
 void MessageDialog::DoNotShowMessageAgain() {
 
   if (!settings_group_.isEmpty() && !do_not_show_message_again_.isEmpty()) {
-    QSettings s;
+    Settings s;
     s.beginGroup(settings_group_);
     s.setValue(do_not_show_message_again_, ui_->checkbox_do_not_show_message_again->isChecked());
     s.endGroup();

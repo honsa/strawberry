@@ -57,14 +57,11 @@ class GlobalShortcutsBackendKDE : public GlobalShortcutsBackend {
   static QList<int> ToIntList(const QList<QKeySequence> &sequence_list);
   static QList<QKeySequence> ToKeySequenceList(const QList<int> &sequence_list);
 
- private slots:
+ private Q_SLOTS:
   void RegisterFinished(QDBusPendingCallWatcher *watcher);
-  void GlobalShortcutPressed(const QString &component_unique, const QString &shortcut_unique, qint64);
+  void GlobalShortcutPressed(const QString &component_unique, const QString &shortcut_unique, const qint64 timestamp);
 
  private:
-  static const char *kKdeService;
-  static const char *kKdePath;
-
   OrgKdeKGlobalAccelInterface *interface_;
   OrgKdeKglobalaccelComponentInterface *component_;
   QMultiHash<QString, QAction*> actions_;

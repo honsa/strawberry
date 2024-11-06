@@ -28,8 +28,8 @@
 #include <QString>
 #include <QUrl>
 
-#include "core/scoped_ptr.h"
-#include "core/shared_ptr.h"
+#include "includes/scoped_ptr.h"
+#include "includes/shared_ptr.h"
 
 class QThread;
 class TaskManager;
@@ -40,16 +40,16 @@ class MtpLoader : public QObject {
   Q_OBJECT
 
  public:
-  explicit MtpLoader(const QUrl &url, SharedPtr<TaskManager> task_manager, SharedPtr<CollectionBackend> backend, QObject *parent = nullptr);
+  explicit MtpLoader(const QUrl &url, const SharedPtr<TaskManager> task_manager, const SharedPtr<CollectionBackend> backend, QObject *parent = nullptr);
   ~MtpLoader() override;
 
   bool Init();
   void Abort() { abort_ = true; }
 
- public slots:
+ public Q_SLOTS:
   void LoadDatabase();
 
- signals:
+ Q_SIGNALS:
   void Error(const QString &message);
   void TaskStarted(const int task_id);
   void LoadFinished(const bool success, MtpConnection *connection);

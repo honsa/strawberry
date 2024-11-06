@@ -26,33 +26,25 @@
 #include <QVariant>
 #include <QString>
 
-#include "core/shared_ptr.h"
-#include "core/application.h"
-#include "core/player.h"
+#include "includes/shared_ptr.h"
 #include "engine/enginebase.h"
 #include "dialogs/errordialog.h"
 #include "settingspage.h"
 
 class SettingsDialog;
 class Ui_BackendSettingsPage;
+class Player;
 
 class BackendSettingsPage : public SettingsPage {
   Q_OBJECT
 
  public:
-  explicit BackendSettingsPage(SettingsDialog *dialog, QWidget *parent = nullptr);
+  explicit BackendSettingsPage(SettingsDialog *dialog, const SharedPtr<Player> player, const SharedPtr<DeviceFinders> device_finders, QWidget *parent = nullptr);
   ~BackendSettingsPage() override;
-
-  static const char *kSettingsGroup;
-  static const qint64 kDefaultBufferDuration;
-  static const double kDefaultBufferLowWatermark;
-  static const double kDefaultBufferHighWatermark;
 
   void Load() override;
   void Save() override;
   void Cancel() override;
-
-  SharedPtr<EngineBase> engine() const { return dialog()->app()->player()->engine(); }
 
 #ifdef HAVE_ALSA
   enum class ALSAPluginType {
@@ -62,16 +54,14 @@ class BackendSettingsPage : public SettingsPage {
   };
 #endif
 
- private slots:
+ private Q_SLOTS:
   void EngineChanged(const int index);
   void OutputChanged(const int index);
   void DeviceSelectionChanged(const int index);
   void DeviceStringChanged();
   void RgPreampChanged(const int value);
   void RgFallbackGainChanged(const int value);
-#ifdef HAVE_GSTREAMER
   void EbuR128TargetLevelChanged(const int value);
-#endif
   void radiobutton_alsa_hw_clicked(const bool checked);
   void radiobutton_alsa_plughw_clicked(const bool checked);
   void radiobutton_alsa_pcm_clicked(const bool checked);
@@ -91,10 +81,10 @@ class BackendSettingsPage : public SettingsPage {
   void SelectDevice(const QString &device_new);
 
  private:
-  static const char *kOutputAutomaticallySelect;
-  static const char *kOutputCustom;
-
   Ui_BackendSettingsPage *ui_;
+  const SharedPtr<Player> player_;
+  const SharedPtr<DeviceFinders> device_finders_;
+
   bool configloaded_;
   bool engineloaded_;
   ErrorDialog errordialog_;

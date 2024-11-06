@@ -18,6 +18,8 @@
  *
  */
 
+#include <utility>
+
 #include <QtGlobal>
 #include <QWidget>
 #include <QList>
@@ -40,22 +42,27 @@
 #include "utilities/strutils.h"
 #include "freespacebar.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 class QPaintEvent;
 
-const int FreeSpaceBar::kBarHeight = 20;
-const int FreeSpaceBar::kBarBorderRadius = 8;
-const int FreeSpaceBar::kMarkerSpacing = 32;
-const int FreeSpaceBar::kLabelBoxSize = 12;
-const int FreeSpaceBar::kLabelBoxPadding = 4;
-const int FreeSpaceBar::kLabelSpacing = 16;
+namespace {
+constexpr int kBarHeight = 20;
+constexpr int kBarBorderRadius = 8;
+constexpr int kMarkerSpacing = 32;
+constexpr int kLabelBoxSize = 12;
+constexpr int kLabelBoxPadding = 4;
+constexpr int kLabelSpacing = 16;
 
-const QRgb FreeSpaceBar::kColorBg1 = qRgb(214, 207, 200);
-const QRgb FreeSpaceBar::kColorBg2 = qRgb(234, 226, 218);
-const QRgb FreeSpaceBar::kColorAdd1 = qRgb(136, 180, 229);
-const QRgb FreeSpaceBar::kColorAdd2 = qRgb(72, 146, 229);
-const QRgb FreeSpaceBar::kColorBar1 = qRgb(250, 148, 76);
-const QRgb FreeSpaceBar::kColorBar2 = qRgb(214, 102, 24);
-const QRgb FreeSpaceBar::kColorBorder = qRgb(174, 168, 162);
+constexpr QRgb kColorBg1 = qRgb(214, 207, 200);
+constexpr QRgb kColorBg2 = qRgb(234, 226, 218);
+constexpr QRgb kColorAdd1 = qRgb(136, 180, 229);
+constexpr QRgb kColorAdd2 = qRgb(72, 146, 229);
+constexpr QRgb kColorBar1 = qRgb(250, 148, 76);
+constexpr QRgb kColorBar2 = qRgb(214, 102, 24);
+constexpr QRgb kColorBorder = qRgb(174, 168, 162);
+
+}  // namespace
 
 FreeSpaceBar::FreeSpaceBar(QWidget *parent)
     : QWidget(parent),
@@ -64,6 +71,7 @@ FreeSpaceBar::FreeSpaceBar(QWidget *parent)
       total_(100),
       free_text_(tr("Available")),
       additional_text_(tr("New songs")),
+      exceeded_text_(tr("Exceeded by")),
       used_text_(tr("Used")) {
 
   setMinimumHeight(FreeSpaceBar::sizeHint().height());
@@ -74,7 +82,9 @@ QSize FreeSpaceBar::sizeHint() const {
   return QSize(150, kBarHeight + kLabelBoxPadding + fontMetrics().height());
 }
 
-void FreeSpaceBar::paintEvent(QPaintEvent*) {
+void FreeSpaceBar::paintEvent(QPaintEvent *e) {
+
+  Q_UNUSED(e)
 
   // Geometry
   QRect bar_rect(rect());
@@ -192,10 +202,15 @@ void FreeSpaceBar::DrawText(QPainter *p, const QRect r) {
   if (additional_ > 0) {
     labels << Label(TextForSize(additional_text_, additional_), kColorAdd1);
   }
-  labels << Label(TextForSize(free_text_, free_ - additional_), kColorBg2);
+  if (free_ > additional_ || additional_ == 0) {
+    labels << Label(TextForSize(free_text_, free_ - additional_), kColorBg2);
+  }
+  else {
+    labels << Label(TextForSize(exceeded_text_, additional_ - free_), kColorBar2);
+  }
 
   int text_width = 0;
-  for (const Label &label : labels) {
+  for (const Label &label : std::as_const(labels)) {
     text_width += kLabelBoxSize + kLabelBoxPadding + kLabelSpacing + small_metrics.horizontalAdvance(label.text);
   }
 
@@ -203,7 +218,7 @@ void FreeSpaceBar::DrawText(QPainter *p, const QRect r) {
   int x = (r.width() - text_width) / 2;
 
   p->setRenderHint(QPainter::Antialiasing, false);
-  for (const Label &label : labels) {
+  for (const Label &label : std::as_const(labels)) {
     const bool light = palette().color(QPalette::Base).value() > 128;
 
     QRect box(x, r.top() + (r.height() - kLabelBoxSize) / 2, kLabelBoxSize, kLabelBoxSize);
@@ -226,10 +241,10 @@ QString FreeSpaceBar::TextForSize(const QString &prefix, const quint64 size) {
     ret = Utilities::PrettySize(size);
   }
   else {
-    ret = "0 MB";
+    ret = u"0 MB"_s;
   }
 
-  if (!prefix.isEmpty()) ret.prepend(prefix + " ");
+  if (!prefix.isEmpty()) ret.prepend(prefix + QLatin1Char(' '));
 
   return ret;
 

@@ -32,7 +32,7 @@
 #include <QAction>
 #include <QMovie>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
 #include "core/song.h"
 
 class QTimeLine;
@@ -48,7 +48,6 @@ class QPaintEvent;
 class QResizeEvent;
 
 class AlbumCoverChoiceController;
-class Application;
 
 class PlayingWidget : public QWidget {
   Q_OBJECT
@@ -56,7 +55,7 @@ class PlayingWidget : public QWidget {
  public:
   explicit PlayingWidget(QWidget *parent = nullptr);
 
-  void Init(Application *app, AlbumCoverChoiceController *album_cover_choice_controller);
+  void Init(AlbumCoverChoiceController *album_cover_choice_controller);
   bool IsEnabled() { return enabled_; }
   void SetEnabled(const bool enabled);
   void SetEnabled();
@@ -65,10 +64,10 @@ class PlayingWidget : public QWidget {
   QSize sizeHint() const override;
   bool show_above_status_bar() const { return above_statusbar_action_->isChecked(); }
 
- signals:
+ Q_SIGNALS:
   void ShowAboveStatusBarChanged(const bool above);
 
- public slots:
+ public Q_SLOTS:
   void Playing();
   void Stopped();
   void Error();
@@ -90,7 +89,7 @@ class PlayingWidget : public QWidget {
     LargeSongDetails = 1
   };
 
- private slots:
+ private Q_SLOTS:
   void Update() { update(); }
   void SetMode(const Mode mode);
   void ShowAboveStatusBar(const bool above);
@@ -102,15 +101,6 @@ class PlayingWidget : public QWidget {
   void FadePreviousTrack(const qreal value);
 
  private:
-  static const char *kSettingsGroup;
-  static const int kPadding;
-  static const int kGradientHead;
-  static const int kGradientTail;
-  static const int kMaxCoverSize;
-  static const int kBottomOffset;
-  static const int kTopBorder;
-
-  Application *app_;
   AlbumCoverChoiceController *album_cover_choice_controller_;
   Mode mode_;
   QMenu *menu_;

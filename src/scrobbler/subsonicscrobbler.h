@@ -30,21 +30,18 @@
 #include <QString>
 #include <QTimer>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "scrobblerservice.h"
 
-class Application;
-class ScrobblerSettings;
+class ScrobblerSettingsService;
 class SubsonicService;
 
 class SubsonicScrobbler : public ScrobblerService {
   Q_OBJECT
 
  public:
-  explicit SubsonicScrobbler(SharedPtr<ScrobblerSettings> settings, Application *app, QObject *parent = nullptr);
-
-  static const char *kName;
+  explicit SubsonicScrobbler(const SharedPtr<ScrobblerSettingsService> settings, const SharedPtr<SubsonicService> service, QObject *parent = nullptr);
 
   void ReloadSettings() override;
 
@@ -58,16 +55,14 @@ class SubsonicScrobbler : public ScrobblerService {
   void StartSubmit(const bool initial = false) override { Q_UNUSED(initial) }
   bool submitted() const override { return submitted_; }
 
-  SharedPtr<SubsonicService> service();
+  SharedPtr<SubsonicService> service() const;
 
- public slots:
+ public Q_SLOTS:
   void WriteCache() override {}
   void Submit() override;
 
  private:
-  SharedPtr<ScrobblerSettings> settings_;
-  Application *app_;
-  SharedPtr<SubsonicService> service_;
+  const SharedPtr<SubsonicService> service_;
   bool enabled_;
   bool submitted_;
   Song song_playing_;

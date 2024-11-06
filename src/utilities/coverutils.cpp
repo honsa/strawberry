@@ -26,10 +26,12 @@
 #include <QStandardPaths>
 #include <QCryptographicHash>
 
-#include "filenameconstants.h"
+#include "constants/filenameconstants.h"
 #include "transliterate.h"
 #include "coverutils.h"
 #include "core/logging.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 QByteArray CoverUtils::Sha1CoverHash(const QString &artist, const QString &album) {
 
@@ -43,18 +45,18 @@ QByteArray CoverUtils::Sha1CoverHash(const QString &artist, const QString &album
 
 QString CoverUtils::AlbumCoverFilename(QString artist, QString album, const QString &extension) {
 
-  artist.remove('/').remove('\\');
-  album.remove('/').remove('\\');
+  artist.remove(u'/').remove(u'\\');
+  album.remove(u'/').remove(u'\\');
 
-  QString filename = artist + "-" + album;
+  QString filename = artist + QLatin1Char('-') + album;
   filename = Utilities::Transliterate(filename.toLower());
-  filename = filename.replace(' ', '-')
-               .replace("--", "-")
-               .remove(QRegularExpression(QString(kInvalidFatCharactersRegex), QRegularExpression::CaseInsensitiveOption))
+  filename = filename.replace(u' ', u'-')
+               .replace("--"_L1, "-"_L1)
+               .remove(QRegularExpression(QLatin1String(kInvalidFatCharactersRegex), QRegularExpression::CaseInsensitiveOption))
                .simplified();
 
   if (!extension.isEmpty()) {
-    filename.append('.');
+    filename.append(u'.');
     filename.append(extension);
   }
 
@@ -76,7 +78,7 @@ QString CoverUtils::CoverFilePath(const CoverOptions &options, const Song::Sourc
     path = Song::ImageCacheDir(source);
   }
 
-  if (path.right(1) == QDir::separator() || path.right(1) == "/") {
+  if (path.right(1) == QDir::separator() || path.right(1) == u'/') {
     path.chop(1);
   }
 
@@ -92,11 +94,14 @@ QString CoverUtils::CoverFilePath(const CoverOptions &options, const Song::Sourc
       options.cover_filename == CoverOptions::CoverFilename::Pattern &&
       !options.cover_pattern.isEmpty()) {
     filename = CoverFilenameFromVariable(options, artist, album);
-    filename.remove(QRegularExpression(QString(kInvalidFatCharactersRegex), QRegularExpression::CaseInsensitiveOption)).remove('/').remove('\\');
+    filename.remove(QRegularExpression(QLatin1String(kInvalidFatCharactersRegex), QRegularExpression::CaseInsensitiveOption)).remove(u'/').remove(u'\\');
     if (options.cover_lowercase) filename = filename.toLower();
-    if (options.cover_replace_spaces) filename.replace(QRegularExpression("\\s"), "-");
+    if (options.cover_replace_spaces) {
+      static const QRegularExpression regex_whitespaces(u"\\s"_s);
+      filename.replace(regex_whitespaces, u"-"_s);
+    }
     if (!extension.isEmpty()) {
-      filename.append('.');
+      filename.append(u'.');
       filename.append(extension);
     }
   }
@@ -105,7 +110,7 @@ QString CoverUtils::CoverFilePath(const CoverOptions &options, const Song::Sourc
     filename = CoverFilenameFromSource(source, cover_url, artist, album, album_id, extension);
   }
 
-  QString filepath(path + "/" + filename);
+  QString filepath(path + QLatin1Char('/') + filename);
 
   return filepath;
 
@@ -118,11 +123,12 @@ QString CoverUtils::CoverFilenameFromSource(const Song::Source source, const QUr
   switch (source) {
     case Song::Source::Tidal:
       if (!album_id.isEmpty()) {
-        filename = album_id + "-" + cover_url.fileName();
+        filename = album_id + QLatin1Char('-') + cover_url.fileName();
         break;
       }
       [[fallthrough]];
     case Song::Source::Subsonic:
+    case Song::Source::Spotify:
     case Song::Source::Qobuz:
       if (!album_id.isEmpty()) {
         filename = album_id;
@@ -137,12 +143,12 @@ QString CoverUtils::CoverFilenameFromSource(const Song::Source source, const QUr
     case Song::Source::SomaFM:
     case Song::Source::RadioParadise:
     case Song::Source::Unknown:
-      filename = Sha1CoverHash(artist, album).toHex();
+      filename = QString::fromLatin1(Sha1CoverHash(artist, album).toHex());
       break;
   }
 
   if (!extension.isEmpty()) {
-    filename.append('.');
+    filename.append(u'.');
     filename.append(extension);
   }
 
@@ -152,14 +158,14 @@ QString CoverUtils::CoverFilenameFromSource(const Song::Source source, const QUr
 
 QString CoverUtils::CoverFilenameFromVariable(const CoverOptions &options, const QString &artist, QString album, const QString &extension) {
 
-  album = album.remove(Song::kAlbumRemoveDisc);
+  album = Song::AlbumRemoveDisc(album);
 
   QString filename(options.cover_pattern);
-  filename.replace("%albumartist", artist);
-  filename.replace("%artist", artist);
-  filename.replace("%album", album);
+  filename.replace("%albumartist"_L1, artist);
+  filename.replace("%artist"_L1, artist);
+  filename.replace("%album"_L1, album);
   if (!extension.isEmpty()) {
-    filename.append('.');
+    filename.append(u'.');
     filename.append(extension);
   }
   return filename;

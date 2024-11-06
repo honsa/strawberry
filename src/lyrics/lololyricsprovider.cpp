@@ -19,7 +19,8 @@
 
 #include "config.h"
 
-#include <QObject>
+#include <QApplication>
+#include <QThread>
 #include <QByteArray>
 #include <QVariant>
 #include <QString>
@@ -29,17 +30,21 @@
 #include <QNetworkReply>
 #include <QXmlStreamReader>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "utilities/strutils.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
 #include "lololyricsprovider.h"
 
-const char *LoloLyricsProvider::kUrlSearch = "http://api.lololyrics.com/0.5/getLyric";
+using namespace Qt::Literals::StringLiterals;
 
-LoloLyricsProvider::LoloLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent) : LyricsProvider("LoloLyrics", true, false, network, parent) {}
+namespace {
+constexpr char kUrlSearch[] = "http://api.lololyrics.com/0.5/getLyric";
+}
+
+LoloLyricsProvider::LoloLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent) : LyricsProvider(u"LoloLyrics"_s, true, false, network, parent) {}
 
 LoloLyricsProvider::~LoloLyricsProvider() {
 
@@ -52,13 +57,15 @@ LoloLyricsProvider::~LoloLyricsProvider() {
 
 }
 
-bool LoloLyricsProvider::StartSearch(const int id, const LyricsSearchRequest &request) {
+void LoloLyricsProvider::StartSearch(const int id, const LyricsSearchRequest &request) {
+
+  Q_ASSERT(QThread::currentThread() != qApp->thread());
 
   QUrlQuery url_query;
-  url_query.addQueryItem("artist", QUrl::toPercentEncoding(request.artist));
-  url_query.addQueryItem("track", QUrl::toPercentEncoding(request.title));
+  url_query.addQueryItem(u"artist"_s, QString::fromLatin1(QUrl::toPercentEncoding(request.artist)));
+  url_query.addQueryItem(u"track"_s, QString::fromLatin1(QUrl::toPercentEncoding(request.title)));
 
-  QUrl url(kUrlSearch);
+  QUrl url(QString::fromLatin1(kUrlSearch));
   url.setQuery(url_query);
   QNetworkRequest req(url);
   req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -66,11 +73,7 @@ bool LoloLyricsProvider::StartSearch(const int id, const LyricsSearchRequest &re
   replies_ << reply;
   QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, id, request]() { HandleSearchReply(reply, id, request); });
 
-  return true;
-
 }
-
-void LoloLyricsProvider::CancelSearch(const int id) { Q_UNUSED(id); }
 
 void LoloLyricsProvider::HandleSearchReply(QNetworkReply *reply, const int id, const LyricsSearchRequest &request) {
 
@@ -81,15 +84,15 @@ void LoloLyricsProvider::HandleSearchReply(QNetworkReply *reply, const int id, c
 
   QString failure_reason;
   if (reply->error() != QNetworkReply::NoError) {
-    failure_reason = QString("%1 (%2)").arg(reply->errorString()).arg(reply->error());
+    failure_reason = QStringLiteral("%1 (%2)").arg(reply->errorString()).arg(reply->error());
     if (reply->error() < 200) {
       Error(failure_reason);
-      emit SearchFinished(id);
+      Q_EMIT SearchFinished(id);
       return;
     }
   }
   else if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-    failure_reason = QString("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
+    failure_reason = QStringLiteral("Received HTTP code %1").arg(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt());
   }
 
   QByteArray data = reply->readAll();
@@ -103,15 +106,15 @@ void LoloLyricsProvider::HandleSearchReply(QNetworkReply *reply, const int id, c
       QXmlStreamReader::TokenType type = reader.readNext();
       QString name = reader.name().toString();
       if (type == QXmlStreamReader::StartElement) {
-        if (name == "result") {
+        if (name == "result"_L1) {
           status.clear();
           result = LyricsSearchResult();
         }
-        else if (name == "status") {
+        else if (name == "status"_L1) {
           status = reader.readElementText();
         }
-        else if (name == "response") {
-          if (status == "OK") {
+        else if (name == "response"_L1) {
+          if (status == "OK"_L1) {
             result.lyrics = reader.readElementText();
           }
           else {
@@ -121,7 +124,7 @@ void LoloLyricsProvider::HandleSearchReply(QNetworkReply *reply, const int id, c
         }
       }
       else if (type == QXmlStreamReader::EndElement) {
-        if (name == "result") {
+        if (name == "result"_L1) {
           if (!result.lyrics.isEmpty()) {
             result.lyrics = Utilities::DecodeHtmlEntities(result.lyrics);
             results << result;
@@ -139,7 +142,7 @@ void LoloLyricsProvider::HandleSearchReply(QNetworkReply *reply, const int id, c
     qLog(Debug) << "LoloLyrics: Got lyrics for" << request.artist << request.title;
   }
 
-  emit SearchFinished(id, results);
+  Q_EMIT SearchFinished(id, results);
 
 }
 

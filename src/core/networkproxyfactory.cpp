@@ -29,7 +29,10 @@
 #include <QSettings>
 
 #include "core/logging.h"
+#include "core/settings.h"
 #include "networkproxyfactory.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 NetworkProxyFactory *NetworkProxyFactory::sInstance = nullptr;
 const char *NetworkProxyFactory::kSettingsGroup = "NetworkProxy";
@@ -43,11 +46,10 @@ NetworkProxyFactory::NetworkProxyFactory()
 #ifdef Q_OS_LINUX
   // Linux uses environment variables to pass proxy configuration information, which systemProxyForQuery doesn't support for some reason.
 
-  QStringList urls;
-  urls << QString::fromLocal8Bit(qgetenv("HTTP_PROXY"));
-  urls << QString::fromLocal8Bit(qgetenv("http_proxy"));
-  urls << QString::fromLocal8Bit(qgetenv("ALL_PROXY"));
-  urls << QString::fromLocal8Bit(qgetenv("all_proxy"));
+  const QStringList urls = QStringList() << QString::fromLocal8Bit(qgetenv("HTTP_PROXY"))
+                                         << QString::fromLocal8Bit(qgetenv("http_proxy"))
+                                         << QString::fromLocal8Bit(qgetenv("ALL_PROXY"))
+                                         << QString::fromLocal8Bit(qgetenv("all_proxy"));
 
   qLog(Debug) << "Detected system proxy URLs:" << urls;
 
@@ -78,7 +80,7 @@ void NetworkProxyFactory::ReloadSettings() {
 
   QMutexLocker l(&mutex_);
 
-  QSettings s;
+  Settings s;
   s.beginGroup(kSettingsGroup);
 
   mode_ = static_cast<Mode>(s.value("mode", static_cast<int>(Mode::System)).toInt());
@@ -112,7 +114,7 @@ QList<QNetworkProxy> NetworkProxyFactory::queryProxy(const QNetworkProxyQuery &q
         ret.setPort(env_url_.port());
         ret.setUser(env_url_.userName());
         ret.setPassword(env_url_.password());
-        if (env_url_.scheme().startsWith("http")) {
+        if (env_url_.scheme().startsWith("http"_L1)) {
           ret.setType(QNetworkProxy::HttpProxy);
         }
         else {

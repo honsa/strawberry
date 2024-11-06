@@ -17,6 +17,8 @@
  *
  */
 
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+
 #include <utility>
 #include <functional>
 #include <string>
@@ -41,7 +43,9 @@ using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Foundation::Collections;
 using namespace ABI::Windows::Devices::Enumeration;
 
-UWPDeviceFinder::UWPDeviceFinder() : DeviceFinder("uwpdevice", { "wasapi2sink" }) {}
+using namespace Qt::Literals::StringLiterals;
+
+UWPDeviceFinder::UWPDeviceFinder() : DeviceFinder(u"uwpdevice"_s, { u"wasapi2sink"_s }) {}
 
 namespace {
 
@@ -107,7 +111,7 @@ EngineDeviceList UWPDeviceFinder::ListDevices() {
 
   {
     EngineDevice default_device;
-    default_device.description = "Default device";
+    default_device.description = "Default device"_L1;
     default_device.iconname = default_device.GuessIconName();
     devices.append(default_device);
   }

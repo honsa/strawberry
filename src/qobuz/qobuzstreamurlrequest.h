@@ -29,7 +29,7 @@
 #include <QStringList>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "qobuzbaserequest.h"
 
@@ -41,7 +41,7 @@ class QobuzStreamURLRequest : public QobuzBaseRequest {
   Q_OBJECT
 
  public:
-  explicit QobuzStreamURLRequest(QobuzService *service, SharedPtr<NetworkAccessManager> network, const QUrl &media_url, const uint id, QObject *parent = nullptr);
+  explicit QobuzStreamURLRequest(QobuzService *service, const SharedPtr<NetworkAccessManager> network, const QUrl &media_url, const uint id, QObject *parent = nullptr);
   ~QobuzStreamURLRequest();
 
   void GetStreamURL();
@@ -49,19 +49,19 @@ class QobuzStreamURLRequest : public QobuzBaseRequest {
   void NeedLogin() { need_login_ = true; }
   void Cancel();
 
-  QUrl media_url() { return media_url_; }
-  int song_id() { return song_id_; }
-  bool need_login() { return need_login_; }
+  QUrl media_url() const { return media_url_; }
+  int song_id() const { return song_id_; }
+  bool need_login() const { return need_login_; }
 
- signals:
+ Q_SIGNALS:
   void TryLogin();
   void StreamURLFailure(const uint id, const QUrl &media_url, const QString &error);
   void StreamURLSuccess(const uint id, const QUrl &media_url, const QUrl &stream_url, const Song::FileType filetype, const int samplerate, const int bit_depth, const qint64 duration);
 
- private slots:
+ private Q_SLOTS:
   void StreamURLReceived();
 
- public slots:
+ public Q_SLOTS:
   void LoginComplete(const bool success, const QString &error = QString());
 
  private:

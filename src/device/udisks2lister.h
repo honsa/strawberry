@@ -38,10 +38,10 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
-#include "core/scoped_ptr.h"
-#include "core/shared_ptr.h"
+#include "includes/scoped_ptr.h"
+#include "includes/shared_ptr.h"
+#include "includes/dbus_metatypes.h"
 
-#include "dbus/metatypes.h"
 #include "devicelister.h"
 
 class OrgFreedesktopDBusObjectManagerInterface;
@@ -65,14 +65,14 @@ class Udisks2Lister : public DeviceLister {
   QString MakeFriendlyName(const QString &id) override;
   QList<QUrl> MakeDeviceUrls(const QString &id) override;
 
- public slots:
+ public Q_SLOTS:
   void UnmountDevice(const QString &id) override;
   void UpdateDeviceFreeSpace(const QString &id) override;
 
  protected:
   bool Init() override;
 
- private slots:
+ private Q_SLOTS:
   void DBusInterfaceAdded(const QDBusObjectPath &path, const InterfacesAndProperties &interfaces);
   void DBusInterfaceRemoved(const QDBusObjectPath &path, const QStringList &interfaces);
   void JobCompleted(const bool success, const QString &message);
@@ -124,8 +124,6 @@ class Udisks2Lister : public DeviceLister {
 
  private:
   ScopedPtr<OrgFreedesktopDBusObjectManagerInterface> udisks2_interface_;
-
-  static constexpr char udisks2_service_[] = "org.freedesktop.UDisks2";
 };
 
 #endif  // UDISKS2LISTER_H

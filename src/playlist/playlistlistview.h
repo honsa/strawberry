@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef PLAYLISTVIEW_H
-#define PLAYLISTVIEW_H
+#ifndef PLAYLISTLISTVIEW_H
+#define PLAYLISTLISTVIEW_H
 
 #include "config.h"
 
@@ -46,7 +46,7 @@ class PlaylistListView : public AutoExpandingTreeView {
 
   bool ItemsSelected() const;
 
- signals:
+ Q_SIGNALS:
   void ItemsSelectedChanged(const bool);
   void ItemMimeDataDroppedSignal(const QModelIndex &proxy_idx, const QMimeData *q_mimedata);
 
@@ -62,9 +62,7 @@ class PlaylistListView : public AutoExpandingTreeView {
   void timerEvent(QTimerEvent *e) override;
 
  private:
-  static const int kDragHoverTimeout = 500;
-
   QBasicTimer drag_hover_timer_;
 };
 
-#endif  // PLAYLISTVIEW_H
+#endif  // PLAYLISTLISTVIEW_H

@@ -29,7 +29,7 @@
 #include <algorithm>
 
 #include <QWidget>
-#include <QVector>
+#include <QList>
 #include <QPainter>
 #include <QPalette>
 #include <QBasicTimer>
@@ -67,11 +67,13 @@ AnalyzerBase::~AnalyzerBase() {
   delete fht_;
 }
 
-void AnalyzerBase::showEvent(QShowEvent*) {
+void AnalyzerBase::showEvent(QShowEvent *e) {
+  Q_UNUSED(e)
   timer_.start(timeout(), this);
 }
 
-void AnalyzerBase::hideEvent(QHideEvent*) {
+void AnalyzerBase::hideEvent(QHideEvent *e) {
+  Q_UNUSED(e)
   timer_.stop();
 }
 
@@ -87,8 +89,8 @@ void AnalyzerBase::ChangeTimeout(const int timeout) {
 
 void AnalyzerBase::transform(Scope &scope) {
 
-  QVector<float> aux(fht_->size());
-  if (static_cast<unsigned long int>(aux.size()) >= scope.size()) {
+  QList<float> aux(fht_->size());
+  if (static_cast<quint64>(aux.size()) >= scope.size()) {
     std::copy(scope.begin(), scope.end(), aux.begin());
   }
   else {
@@ -108,7 +110,7 @@ void AnalyzerBase::paintEvent(QPaintEvent *e) {
   p.fillRect(e->rect(), palette().color(QPalette::Window));
 
   switch (engine_->state()) {
-    case EngineBase::State::Playing: {
+    case EngineBase::State::Playing:{
       const EngineBase::Scope &thescope = engine_->scope(timeout_);
       int i = 0;
 

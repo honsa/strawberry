@@ -1,19 +1,23 @@
-/* This file was part of Clementine.
-   Copyright 2012, David Sansome <me@davidsansome.com>
-
-   Strawberry is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Strawberry is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * Strawberry Music Player
+ * This file was part of Clementine.
+ * Copyright 2012, David Sansome <me@davidsansome.com>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
+ *
+ * Strawberry is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Strawberry is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include "moodbarloader.h"
 
@@ -37,31 +41,31 @@
 #include <QUrl>
 #include <QSettings>
 
+#include "includes/scoped_ptr.h"
 #include "core/logging.h"
-#include "core/scoped_ptr.h"
-#include "core/application.h"
+#include "core/settings.h"
 
 #include "moodbarpipeline.h"
 
-#include "settings/moodbarsettingspage.h"
+#include "constants/moodbarsettings.h"
 
 using namespace std::chrono_literals;
+using namespace Qt::Literals::StringLiterals;
 
 #ifdef Q_OS_WIN32
 #  include <windows.h>
 #endif
 
-MoodbarLoader::MoodbarLoader(Application *app, QObject *parent)
+MoodbarLoader::MoodbarLoader(QObject *parent)
     : QObject(parent),
       cache_(new QNetworkDiskCache(this)),
       thread_(new QThread(this)),
       kMaxActiveRequests(qMax(1, QThread::idealThreadCount() / 2)),
       save_(false) {
 
-  cache_->setCacheDirectory(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/moodbar");
-  cache_->setMaximumCacheSize(60 * 1024 * 1024);  // 60MB - enough for 20,000 moodbars
+  cache_->setCacheDirectory(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + u"/moodbar"_s);
+  cache_->setMaximumCacheSize(60LL * 1024LL * 1024LL);  // 60MB - enough for 20,000 moodbars
 
-  QObject::connect(app, &Application::SettingsChanged, this, &MoodbarLoader::ReloadSettings);
   ReloadSettings();
 
 }
@@ -73,12 +77,14 @@ MoodbarLoader::~MoodbarLoader() {
 
 void MoodbarLoader::ReloadSettings() {
 
-  QSettings s;
-  s.beginGroup(MoodbarSettingsPage::kSettingsGroup);
-  save_ = s.value("save", false).toBool();
+  Settings s;
+  s.beginGroup(MoodbarSettings::kSettingsGroup);
+  save_ = s.value(MoodbarSettings::kSave, false).toBool();
   s.endGroup();
 
   MaybeTakeNextRequest();
+
+  Q_EMIT SettingsReloaded();
 
 }
 
@@ -86,15 +92,15 @@ QStringList MoodbarLoader::MoodFilenames(const QString &song_filename) {
 
   const QFileInfo file_info(song_filename);
   const QString dir_path(file_info.dir().path());
-  const QString mood_filename = file_info.completeBaseName() + ".mood";
+  const QString mood_filename = file_info.completeBaseName() + u".mood"_s;
 
-  return QStringList() << dir_path + "/." + mood_filename << dir_path + "/" + mood_filename;
+  return QStringList() << dir_path + u"/."_s + mood_filename << dir_path + QLatin1Char('/') + mood_filename;
 
 }
 
 QUrl MoodbarLoader::CacheUrlEntry(const QString &filename) {
 
-  return QUrl(QUrl::toPercentEncoding(filename));
+  return QUrl(QString::fromLatin1(QUrl::toPercentEncoding(filename)));
 
 }
 
@@ -106,14 +112,15 @@ MoodbarLoader::Result MoodbarLoader::Load(const QUrl &url, const bool has_cue, Q
 
   // Are we in the middle of loading this moodbar already?
   if (requests_.contains(url)) {
-    *async_pipeline = requests_[url];
+    *async_pipeline = requests_.value(url);
     return Result::WillLoadAsync;
   }
 
   // Check if a mood file exists for this file already
   const QString filename(url.toLocalFile());
 
-  for (const QString &possible_mood_file : MoodFilenames(filename)) {
+  const QStringList possible_mood_files = MoodFilenames(filename);
+  for (const QString &possible_mood_file : possible_mood_files) {
     QFile f(possible_mood_file);
     if (f.exists()) {
       if (f.open(QIODevice::ReadOnly)) {
@@ -171,7 +178,7 @@ void MoodbarLoader::MaybeTakeNextRequest() {
   active_requests_ << url;
 
   qLog(Info) << "Creating moodbar data for" << url.toLocalFile();
-  QMetaObject::invokeMethod(requests_[url], &MoodbarPipeline::Start, Qt::QueuedConnection);
+  QMetaObject::invokeMethod(requests_.value(url), &MoodbarPipeline::Start, Qt::QueuedConnection);
 
 }
 
@@ -190,7 +197,7 @@ void MoodbarLoader::RequestFinished(MoodbarPipeline *request, const QUrl &url) {
     disk_cache_metadata.setSaveToDisk(true);
     disk_cache_metadata.setUrl(CacheUrlEntry(filename));
     // Qt 6 now ignores any entry without headers, so add a fake header.
-    disk_cache_metadata.setRawHeaders(QNetworkCacheMetaData::RawHeaderList() << qMakePair(QByteArray(), QByteArray()));
+    disk_cache_metadata.setRawHeaders(QNetworkCacheMetaData::RawHeaderList() << qMakePair(QByteArray("moodbar"), QByteArray("moodbar")));
 
     QIODevice *device_cache_file = cache_->prepare(disk_cache_metadata);
     if (device_cache_file) {
@@ -202,7 +209,7 @@ void MoodbarLoader::RequestFinished(MoodbarPipeline *request, const QUrl &url) {
 
     // Save the data alongside the original as well if we're configured to.
     if (save_) {
-      QList<QString> mood_filenames = MoodFilenames(url.toLocalFile());
+      QStringList mood_filenames = MoodFilenames(url.toLocalFile());
       const QString mood_filename(mood_filenames[0]);
       QFile mood_file(mood_filename);
       if (mood_file.open(QIODevice::WriteOnly)) {

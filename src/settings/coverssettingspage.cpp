@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <QObject>
 #include <QList>
@@ -37,31 +38,26 @@
 #include "settingsdialog.h"
 #include "coverssettingspage.h"
 #include "ui_coverssettingspage.h"
-#include "core/application.h"
 #include "core/iconloader.h"
+#include "core/settings.h"
 #include "utilities/coveroptions.h"
 #include "covermanager/coverproviders.h"
 #include "covermanager/coverprovider.h"
 #include "widgets/loginstatewidget.h"
+#include "constants/coverssettings.h"
 
-const char *CoversSettingsPage::kSettingsGroup = "Covers";
-const char *CoversSettingsPage::kProviders = "providers";
-const char *CoversSettingsPage::kTypes = "types";
-const char *CoversSettingsPage::kSaveType = "save_type";
-const char *CoversSettingsPage::kSaveFilename = "save_filename";
-const char *CoversSettingsPage::kSavePattern = "save_pattern";
-const char *CoversSettingsPage::kSaveOverwrite = "save_overwrite";
-const char *CoversSettingsPage::kSaveLowercase = "save_lowercase";
-const char *CoversSettingsPage::kSaveReplaceSpaces = "save_replace_spaces";
+using namespace Qt::Literals::StringLiterals;
+using namespace CoversSettings;
 
-CoversSettingsPage::CoversSettingsPage(SettingsDialog *dialog, QWidget *parent)
+CoversSettingsPage::CoversSettingsPage(SettingsDialog *dialog, const SharedPtr<CoverProviders> cover_providers, QWidget *parent)
     : SettingsPage(dialog, parent),
       ui_(new Ui::CoversSettingsPage),
+      cover_providers_(cover_providers),
       provider_selected_(false),
       types_selected_(false) {
 
   ui_->setupUi(this);
-  setWindowIcon(IconLoader::Load("cdcase", true, 0, 32));
+  setWindowIcon(IconLoader::Load(u"cdcase"_s, true, 0, 32));
 
   QObject::connect(ui_->providers_up, &QPushButton::clicked, this, &CoversSettingsPage::ProvidersMoveUp);
   QObject::connect(ui_->providers_down, &QPushButton::clicked, this, &CoversSettingsPage::ProvidersMoveDown);
@@ -97,23 +93,23 @@ void CoversSettingsPage::Load() {
 
   ui_->providers->clear();
 
-  QList<CoverProvider*> cover_providers_sorted = dialog()->app()->cover_providers()->List();
+  QList<CoverProvider*> cover_providers_sorted = cover_providers_->List();
   std::stable_sort(cover_providers_sorted.begin(), cover_providers_sorted.end(), ProviderCompareOrder);
 
-  for (CoverProvider *provider : cover_providers_sorted) {
+  for (CoverProvider *provider : std::as_const(cover_providers_sorted)) {
     QListWidgetItem *item = new QListWidgetItem(ui_->providers);
     item->setText(provider->name());
     item->setCheckState(provider->is_enabled() ? Qt::Checked : Qt::Unchecked);
     item->setForeground(provider->is_enabled() ? palette().color(QPalette::Active, QPalette::Text) : palette().color(QPalette::Disabled, QPalette::Text));
   }
 
-  QSettings s;
+  Settings s;
   s.beginGroup(kSettingsGroup);
 
-  const QStringList all_types = QStringList() << "art_unset"
-                                              << "art_manual"
-                                              << "art_automatic"
-                                              << "art_embedded";
+  const QStringList all_types = QStringList() << u"art_unset"_s
+                                              << u"art_manual"_s
+                                              << u"art_automatic"_s
+                                              << u"art_embedded"_s;
 
   const QStringList types = s.value(kTypes, all_types).toStringList();
 
@@ -160,13 +156,13 @@ void CoversSettingsPage::Load() {
 
   Init(ui_->layout_coverssettingspage->parentWidget());
 
-  if (!QSettings().childGroups().contains(kSettingsGroup)) set_changed();
+  if (!Settings().childGroups().contains(QLatin1String(kSettingsGroup))) set_changed();
 
 }
 
 void CoversSettingsPage::Save() {
 
-  QSettings s;
+  Settings s;
   s.beginGroup(kSettingsGroup);
 
   QStringList providers;
@@ -209,7 +205,7 @@ void CoversSettingsPage::Save() {
 void CoversSettingsPage::ProvidersCurrentItemChanged(QListWidgetItem *item_current, QListWidgetItem *item_previous) {
 
   if (item_previous) {
-    CoverProvider *provider = dialog()->app()->cover_providers()->ProviderByName(item_previous->text());
+    CoverProvider *provider = cover_providers_->ProviderByName(item_previous->text());
     if (provider && provider->AuthenticationRequired()) DisconnectAuthentication(provider);
   }
 
@@ -217,14 +213,18 @@ void CoversSettingsPage::ProvidersCurrentItemChanged(QListWidgetItem *item_curre
     const int row = ui_->providers->row(item_current);
     ui_->providers_up->setEnabled(row != 0);
     ui_->providers_down->setEnabled(row != ui_->providers->count() - 1);
-    CoverProvider *provider = dialog()->app()->cover_providers()->ProviderByName(item_current->text());
+    CoverProvider *provider = cover_providers_->ProviderByName(item_current->text());
     if (provider) {
       if (provider->AuthenticationRequired()) {
-        if (provider->name() == "Tidal" && !provider->IsAuthenticated()) {
+        if (provider->name() == "Tidal"_L1 && !provider->IsAuthenticated()) {
           DisableAuthentication();
           ui_->label_auth_info->setText(tr("Use Tidal settings to authenticate."));
         }
-        else if (provider->name() == "Qobuz" && !provider->IsAuthenticated()) {
+        else if (provider->name() == "Spotify"_L1 && !provider->IsAuthenticated()) {
+          DisableAuthentication();
+          ui_->label_auth_info->setText(tr("Use Spotify settings to authenticate."));
+        }
+        else if (provider->name() == "Qobuz"_L1 && !provider->IsAuthenticated()) {
           DisableAuthentication();
           ui_->label_auth_info->setText(tr("Use Qobuz settings to authenticate."));
         }
@@ -316,7 +316,7 @@ void CoversSettingsPage::DisconnectAuthentication(CoverProvider *provider) const
 void CoversSettingsPage::AuthenticateClicked() {
 
   if (!ui_->providers->currentItem()) return;
-  CoverProvider *provider = dialog()->app()->cover_providers()->ProviderByName(ui_->providers->currentItem()->text());
+  CoverProvider *provider = cover_providers_->ProviderByName(ui_->providers->currentItem()->text());
   if (!provider) return;
   ui_->button_authenticate->setEnabled(false);
   ui_->login_state->SetLoggedIn(LoginStateWidget::State::LoginInProgress);
@@ -329,15 +329,19 @@ void CoversSettingsPage::AuthenticateClicked() {
 void CoversSettingsPage::LogoutClicked() {
 
   if (!ui_->providers->currentItem()) return;
-  CoverProvider *provider = dialog()->app()->cover_providers()->ProviderByName(ui_->providers->currentItem()->text());
+  CoverProvider *provider = cover_providers_->ProviderByName(ui_->providers->currentItem()->text());
   if (!provider) return;
   provider->Deauthenticate();
 
-  if (provider->name() == "Tidal") {
+  if (provider->name() == "Tidal"_L1) {
     DisableAuthentication();
     ui_->label_auth_info->setText(tr("Use Tidal settings to authenticate."));
   }
-  else if (provider->name() == "Qobuz") {
+  else if (provider->name() == "Spotify"_L1) {
+    DisableAuthentication();
+    ui_->label_auth_info->setText(tr("Use Spotify settings to authenticate."));
+  }
+  else if (provider->name() == "Qobuz"_L1) {
     DisableAuthentication();
     ui_->label_auth_info->setText(tr("Use Qobuz settings to authenticate."));
   }
@@ -369,7 +373,7 @@ void CoversSettingsPage::AuthenticationFailure(const QStringList &errors) {
 
   if (!isVisible() || !ui_->providers->currentItem() || ui_->providers->currentItem()->text() != provider->name()) return;
 
-  QMessageBox::warning(this, tr("Authentication failed"), errors.join("\n"));
+  QMessageBox::warning(this, tr("Authentication failed"), errors.join(u'\n'));
 
   ui_->login_state->SetLoggedIn(LoginStateWidget::State::LoggedOut);
   ui_->button_authenticate->setEnabled(true);
@@ -419,16 +423,16 @@ void CoversSettingsPage::AddAlbumCoverArtType(const QString &name, const QString
 
 QString CoversSettingsPage::AlbumCoverArtTypeDescription(const QString &type) const {
 
-  if (type == "art_unset") {
+  if (type == "art_unset"_L1) {
     return tr("Manually unset (%1)").arg(type);
   }
-  if (type == "art_manual") {
+  if (type == "art_manual"_L1) {
     return tr("Set through album cover search (%1)").arg(type);
   }
-  if (type == "art_automatic") {
+  if (type == "art_automatic"_L1) {
     return tr("Automatically picked up from album directory (%1)").arg(type);
   }
-  if (type == "art_embedded") {
+  if (type == "art_embedded"_L1) {
     return tr("Embedded album cover art (%1)").arg(type);
   }
 

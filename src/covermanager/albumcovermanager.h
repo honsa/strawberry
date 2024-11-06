@@ -32,19 +32,20 @@
 #include <QListWidgetItem>
 #include <QMap>
 #include <QMultiMap>
+#include <QQueue>
 #include <QString>
 #include <QImage>
 #include <QIcon>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
-#include "core/tagreaderclient.h"
+#include "tagreader/tagreaderclient.h"
 #include "albumcoverloaderoptions.h"
 #include "albumcoverloaderresult.h"
 #include "albumcoverchoicecontroller.h"
 #include "coversearchstatistics.h"
 
-class QWidget;
+class QTimer;
 class QMimeData;
 class QMenu;
 class QAction;
@@ -54,8 +55,11 @@ class QEvent;
 class QCloseEvent;
 class QShowEvent;
 
-class Application;
+class NetworkAccessManager;
 class CollectionBackend;
+class AlbumCoverLoader;
+class CurrentAlbumCoverLoader;
+class CoverProviders;
 class SongMimeData;
 class AlbumCoverExport;
 class AlbumCoverExporter;
@@ -77,7 +81,15 @@ class AlbumCoverManager : public QMainWindow {
   Q_OBJECT
 
  public:
-  explicit AlbumCoverManager(Application *app, SharedPtr<CollectionBackend> collection_backend, QMainWindow *mainwindow, QWidget *parent = nullptr);
+  explicit AlbumCoverManager(const SharedPtr<NetworkAccessManager> network,
+                             const SharedPtr<CollectionBackend> collection_backend,
+                             const SharedPtr<TagReaderClient> tagreader_client,
+                             const SharedPtr<AlbumCoverLoader> albumcover_loader,
+                             const SharedPtr<CurrentAlbumCoverLoader> current_albumcover_loader,
+                             const SharedPtr<CoverProviders> cover_providers,
+                             const SharedPtr<StreamingServices> streaming_services,
+                             QMainWindow *mainwindow,
+                             QWidget *parent = nullptr);
   ~AlbumCoverManager() override;
 
   void Reset();
@@ -136,6 +148,9 @@ class AlbumCoverManager : public QMainWindow {
   Song AlbumItemAsSong(QListWidgetItem *list_widget_item) { return AlbumItemAsSong(static_cast<AlbumItem*>(list_widget_item)); }
   static Song AlbumItemAsSong(AlbumItem *album_item);
 
+  void QueueAlbumCoverLoad(AlbumItem *album_item);
+  void LoadAlbumCoverAsync(AlbumItem *album_item);
+
   void UpdateStatusText();
   bool ShouldHide(const AlbumItem &album_item, const QString &filter, const HideCovers hide_covers) const;
   void SaveAndSetCover(AlbumItem *album_item, const AlbumCoverImageResult &result);
@@ -147,14 +162,13 @@ class AlbumCoverManager : public QMainWindow {
 
   bool ItemHasCover(const AlbumItem &album_item) const;
 
-  void LoadAlbumCoverAsync(AlbumItem *album_item);
-
- signals:
+ Q_SIGNALS:
   void Error(const QString &error);
   void AddToPlaylist(QMimeData *data);
 
- private slots:
+ private Q_SLOTS:
   void ArtistChanged(QListWidgetItem *current);
+  void LoadAlbumCovers();
   void AlbumCoverLoaded(const quint64 id, const AlbumCoverLoaderResult &result);
   void UpdateFilter();
   void FetchAlbumCovers();
@@ -182,22 +196,26 @@ class AlbumCoverManager : public QMainWindow {
   void UpdateCoverInList(AlbumItem *album_item, const QUrl &cover);
   void UpdateExportStatus(const int exported, const int skipped, const int max);
 
-  void SaveEmbeddedCoverFinished(TagReaderReply *reply, AlbumItem *album_item, const QUrl &url, const bool art_embedded);
+  void SaveEmbeddedCoverFinished(TagReaderReplyPtr reply, AlbumItem *album_item, const QUrl &url, const bool art_embedded);
 
  private:
-  static const char *kSettingsGroup;
-  static const int kThumbnailSize;
-
   Ui_CoverManager *ui_;
   QMainWindow *mainwindow_;
-  Application *app_;
-  SharedPtr<CollectionBackend> collection_backend_;
+
+  const SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<CollectionBackend> collection_backend_;
+  const SharedPtr<TagReaderClient> tagreader_client_;
+  const SharedPtr<AlbumCoverLoader> albumcover_loader_;
+  const SharedPtr<CoverProviders> cover_providers_;
+
   AlbumCoverChoiceController *album_cover_choice_controller_;
+  QTimer *timer_album_cover_load_;
 
   QAction *filter_all_;
   QAction *filter_with_covers_;
   QAction *filter_without_covers_;
 
+  QQueue<AlbumItem*> cover_loading_pending_;
   QMap<quint64, AlbumItem*> cover_loading_tasks_;
 
   AlbumCoverFetcher *cover_fetcher_;

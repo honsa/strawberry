@@ -31,13 +31,15 @@
 #include <QNetworkRequest>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "utilities/mimeutils.h"
 #include "widgets/busyindicator.h"
 #include "albumcoverimageresult.h"
 #include "coverfromurldialog.h"
 #include "ui_coverfromurldialog.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 CoverFromURLDialog::CoverFromURLDialog(SharedPtr<NetworkAccessManager> network, QWidget *parent)
     : QDialog(parent),
@@ -56,7 +58,7 @@ CoverFromURLDialog::~CoverFromURLDialog() {
 AlbumCoverImageResult CoverFromURLDialog::Exec() {
 
   // reset state
-  ui_->url->setText("");
+  ui_->url->setText(""_L1);
   last_album_cover_ = AlbumCoverImageResult();
 
   QClipboard *clipboard = QApplication::clipboard();

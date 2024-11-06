@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include <QWidget>
 #include <QStringList>
 #include <QUrl>
@@ -31,20 +33,16 @@
 #include <QMimeData>
 #include <QDropEvent>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
 #include "core/song.h"
+#include "core/songmimedata.h"
 #include "collection/collectionbackend.h"
-#include "playlist/songmimedata.h"
 #include "albumcovermanager.h"
 #include "albumcovermanagerlist.h"
 
 AlbumCoverManagerList::AlbumCoverManagerList(QWidget *parent) : QListWidget(parent), manager_(nullptr) {}
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 QMimeData *AlbumCoverManagerList::mimeData(const QList<QListWidgetItem*> &items) const {
-#else
-QMimeData *AlbumCoverManagerList::mimeData(const QList<QListWidgetItem*> items) const {
-#endif
 
   // Get songs
   SongList songs;
@@ -57,7 +55,7 @@ QMimeData *AlbumCoverManagerList::mimeData(const QList<QListWidgetItem*> items) 
   // Get URLs from the songs
   QList<QUrl> urls;
   urls.reserve(songs.count());
-  for (const Song &song : songs) {
+  for (const Song &song : std::as_const(songs)) {
     urls << song.url();
   }
 

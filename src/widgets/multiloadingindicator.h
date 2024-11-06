@@ -26,7 +26,7 @@
 #include <QSize>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class QPaintEvent;
 
@@ -39,21 +39,17 @@ class MultiLoadingIndicator : public QWidget {
  public:
   explicit MultiLoadingIndicator(QWidget *parent = nullptr);
 
-  static const int kVerticalPadding;
-  static const int kHorizontalPadding;
-  static const int kSpacing;
-
   void SetTaskManager(SharedPtr<TaskManager> task_manager);
 
   QSize sizeHint() const override;
 
- signals:
+ Q_SIGNALS:
   void TaskCountChange(const int tasks);
 
  protected:
-  void paintEvent(QPaintEvent*) override;
+  void paintEvent(QPaintEvent *e) override;
 
- private slots:
+ private Q_SLOTS:
   void UpdateText();
 
  private:

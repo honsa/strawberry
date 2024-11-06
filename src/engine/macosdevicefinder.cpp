@@ -27,11 +27,13 @@
 
 #include <QString>
 
+#include "includes/scoped_cftyperef.h"
 #include "core/logging.h"
-#include "core/scoped_cftyperef.h"
 
 #include "macosdevicefinder.h"
 #include "enginedevice.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 namespace {
 
@@ -63,7 +65,7 @@ std::unique_ptr<T> GetProperty(const AudioDeviceID &device_id, const AudioObject
 }  // namespace
 
 
-MacOsDeviceFinder::MacOsDeviceFinder() : DeviceFinder("osxaudio", { "osxaudio", "osx", "osxaudiosink" }) {}
+MacOsDeviceFinder::MacOsDeviceFinder() : DeviceFinder(u"osxaudio"_s, { u"osxaudio"_s, u"osx"_s, u"osxaudiosink"_s }) {}
 
 EngineDeviceList MacOsDeviceFinder::ListDevices() {
 
@@ -107,7 +109,7 @@ EngineDeviceList MacOsDeviceFinder::ListDevices() {
     EngineDevice device;
     device.value = id;
     device.description = QString::fromUtf8(CFStringGetCStringPtr(*device_name, CFStringGetSystemEncoding()));
-    if (device.description.isEmpty()) device.description = QString("Unknown device " + device.value.toString());
+    if (device.description.isEmpty()) device.description = "Unknown device "_L1 + device.value.toString();
     device.iconname = device.GuessIconName();
     device_list.append(device);
   }
@@ -115,4 +117,3 @@ EngineDeviceList MacOsDeviceFinder::ListDevices() {
   return device_list;
 
 }
-

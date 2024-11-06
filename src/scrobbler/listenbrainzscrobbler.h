@@ -32,7 +32,7 @@
 #include <QJsonDocument>
 #include <QTimer>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "scrobblerservice.h"
 #include "scrobblercache.h"
@@ -40,7 +40,7 @@
 
 class QNetworkReply;
 
-class ScrobblerSettings;
+class ScrobblerSettingsService;
 class NetworkAccessManager;
 class LocalRedirectServer;
 
@@ -48,7 +48,7 @@ class ListenBrainzScrobbler : public ScrobblerService {
   Q_OBJECT
 
  public:
-  explicit ListenBrainzScrobbler(SharedPtr<ScrobblerSettings> settings, SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit ListenBrainzScrobbler(const SharedPtr<ScrobblerSettingsService> settings, const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~ListenBrainzScrobbler() override;
 
   static const char *kName;
@@ -64,7 +64,6 @@ class ListenBrainzScrobbler : public ScrobblerService {
 
   void Authenticate();
   void Logout();
-  void ShowConfig();
   void Submit() override;
   void UpdateNowPlaying(const Song &song) override;
   void ClearPlaying() override;
@@ -77,13 +76,13 @@ class ListenBrainzScrobbler : public ScrobblerService {
     APIError
   };
 
- signals:
+ Q_SIGNALS:
   void AuthenticationComplete(const bool success, const QString &error = QString());
 
- public slots:
+ public Q_SLOTS:
   void WriteCache() override { cache_->WriteCache(); }
 
- private slots:
+ private Q_SLOTS:
   void RedirectArrived();
   void AuthenticateReplyFinished(QNetworkReply *reply);
   void RequestNewAccessToken() { RequestAccessToken(); }
@@ -101,17 +100,7 @@ class ListenBrainzScrobbler : public ScrobblerService {
   void StartSubmit(const bool initial = false) override;
   void CheckScrobblePrevSong();
 
-  static const char *kOAuthAuthorizeUrl;
-  static const char *kOAuthAccessTokenUrl;
-  static const char *kOAuthRedirectUrl;
-  static const char *kApiUrl;
-  static const char *kClientIDB64;
-  static const char *kClientSecretB64;
-  static const char *kCacheFile;
-  static const int kScrobblesPerRequest;
-
-  SharedPtr<ScrobblerSettings> settings_;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<NetworkAccessManager> network_;
   ScrobblerCache *cache_;
   LocalRedirectServer *server_;
   bool enabled_;

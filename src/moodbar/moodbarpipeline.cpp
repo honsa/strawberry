@@ -1,19 +1,23 @@
-/* This file was part of Clementine.
-   Copyright 2012, David Sansome <me@davidsansome.com>
-
-   Strawberry is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Strawberry is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * Strawberry Music Player
+ * This file was part of Clementine.
+ * Copyright 2012, David Sansome <me@davidsansome.com>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
+ *
+ * Strawberry is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Strawberry is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Strawberry.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include "moodbarpipeline.h"
 
@@ -24,7 +28,6 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <gst/gst.h>
-#include <gst/app/gstappsink.h>
 
 #include <QObject>
 #include <QCoreApplication>
@@ -36,12 +39,14 @@
 #include "core/signalchecker.h"
 #include "utilities/threadutils.h"
 #include "moodbar/moodbarbuilder.h"
+#include "engine/gstfastspectrum.h"
 
-#include "ext/gstmoodbar/gstfastspectrum.h"
-
+using namespace Qt::Literals::StringLiterals;
 using std::make_unique;
 
-const int MoodbarPipeline::kBands = 128;
+namespace {
+constexpr int kBands = 128;
+}
 
 MoodbarPipeline::MoodbarPipeline(const QUrl &url, QObject *parent)
     : QObject(parent),
@@ -71,11 +76,12 @@ GstElement *MoodbarPipeline::CreateElement(const QString &factory_name) {
 QByteArray MoodbarPipeline::ToGstUrl(const QUrl &url) {
 
   if (url.isLocalFile() && !url.host().isEmpty()) {
-    QString str = "file:////" + url.host() + url.path();
+    QString str = "file:////"_L1 + url.host() + url.path();
     return str.toUtf8();
   }
 
   return url.toEncoded();
+
 }
 
 void MoodbarPipeline::Start() {
@@ -90,15 +96,15 @@ void MoodbarPipeline::Start() {
 
   pipeline_ = gst_pipeline_new("moodbar-pipeline");
 
-  GstElement *decodebin = CreateElement("uridecodebin");
-  convert_element_ = CreateElement("audioconvert");
-  GstElement *spectrum = CreateElement("fastspectrum");
-  GstElement *fakesink = CreateElement("fakesink");
+  GstElement *decodebin = CreateElement(u"uridecodebin"_s);
+  convert_element_ = CreateElement(u"audioconvert"_s);
+  GstElement *spectrum = CreateElement(u"strawberry-fastspectrum"_s);
+  GstElement *fakesink = CreateElement(u"fakesink"_s);
 
   if (!decodebin || !convert_element_ || !spectrum || !fakesink) {
     gst_object_unref(GST_OBJECT(pipeline_));
     pipeline_ = nullptr;
-    emit Finished(false);
+    Q_EMIT Finished(false);
     return;
   }
 
@@ -107,7 +113,7 @@ void MoodbarPipeline::Start() {
     qLog(Error) << "Failed to link elements";
     gst_object_unref(GST_OBJECT(pipeline_));
     pipeline_ = nullptr;
-    emit Finished(false);
+    Q_EMIT Finished(false);
     return;
   }
 
@@ -119,8 +125,8 @@ void MoodbarPipeline::Start() {
   g_object_set(decodebin, "uri", gst_url.constData(), nullptr);
   g_object_set(spectrum, "bands", kBands, nullptr);
 
-  GstFastSpectrum *fast_spectrum = reinterpret_cast<GstFastSpectrum*>(spectrum);
-  fast_spectrum->output_callback = [this](double *magnitudes, int size) { builder_->AddFrame(magnitudes, size); };
+  GstStrawberryFastSpectrum *fastspectrum = reinterpret_cast<GstStrawberryFastSpectrum*>(spectrum);
+  fastspectrum->output_callback = [this](double *magnitudes, const int size) { builder_->AddFrame(magnitudes, size); };
 
   // Connect signals
   CHECKED_GCONNECT(decodebin, "pad-added", &NewPadCallback, this);
@@ -151,16 +157,18 @@ void MoodbarPipeline::ReportError(GstMessage *msg) {
 
 }
 
-void MoodbarPipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer data) {
+void MoodbarPipeline::NewPadCallback(GstElement *element, GstPad *pad, gpointer self) {
 
-  MoodbarPipeline *self = reinterpret_cast<MoodbarPipeline*>(data);
+  Q_UNUSED(element)
 
-  if (!self->running_) {
+  MoodbarPipeline *instance = reinterpret_cast<MoodbarPipeline*>(self);
+
+  if (!instance->running_) {
     qLog(Warning) << "Received gstreamer callback after pipeline has stopped.";
     return;
   }
 
-  GstPad *const audiopad = gst_element_get_static_pad(self->convert_element_, "sink");
+  GstPad *const audiopad = gst_element_get_static_pad(instance->convert_element_, "sink");
   if (!audiopad) return;
 
   if (GST_PAD_IS_LINKED(audiopad)) {
@@ -181,8 +189,8 @@ void MoodbarPipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer data) {
     gst_caps_unref(caps);
   }
 
-  if (self->builder_) {
-    self->builder_->Init(kBands, rate);
+  if (instance->builder_) {
+    instance->builder_->Init(kBands, rate);
   }
   else {
     qLog(Error) << "Builder does not exist";
@@ -190,23 +198,26 @@ void MoodbarPipeline::NewPadCallback(GstElement*, GstPad *pad, gpointer data) {
 
 }
 
-GstBusSyncReply MoodbarPipeline::BusCallbackSync(GstBus*, GstMessage *msg, gpointer data) {
+GstBusSyncReply MoodbarPipeline::BusCallbackSync(GstBus *bus, GstMessage *message, gpointer self) {
 
-  MoodbarPipeline *self = reinterpret_cast<MoodbarPipeline*>(data);
+  Q_UNUSED(bus)
 
-  switch (GST_MESSAGE_TYPE(msg)) {
+  MoodbarPipeline *instance = reinterpret_cast<MoodbarPipeline*>(self);
+
+  switch (GST_MESSAGE_TYPE(message)) {
     case GST_MESSAGE_EOS:
-      self->Stop(true);
+      instance->Stop(true);
       break;
 
     case GST_MESSAGE_ERROR:
-      self->ReportError(msg);
-      self->Stop(false);
+      instance->ReportError(message);
+      instance->Stop(false);
       break;
 
     default:
       break;
   }
+
   return GST_BUS_PASS;
 
 }
@@ -215,12 +226,12 @@ void MoodbarPipeline::Stop(const bool success) {
 
   success_ = success;
   running_ = false;
-  if (builder_ != nullptr) {
+  if (builder_) {
     data_ = builder_->Finish(1000);
     builder_.reset();
   }
 
-  emit Finished(success);
+  Q_EMIT Finished(success);
 
 }
 

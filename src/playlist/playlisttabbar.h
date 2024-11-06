@@ -46,16 +46,13 @@ class QTimerEvent;
 class PlaylistManager;
 class RenameTabLineEdit;
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class PlaylistTabBar : public QTabBar {
   Q_OBJECT
 
  public:
   explicit PlaylistTabBar(QWidget *parent = nullptr);
-
-  static const int kDragHoverTimeout = 500;
-  static const char *kSettingsGroup;
 
   void SetActions(QAction *new_playlist, QAction *load_playlist);
   void SetManager(SharedPtr<PlaylistManager> manager);
@@ -73,7 +70,7 @@ class PlaylistTabBar : public QTabBar {
   void RemoveTab(const int id);
   void InsertTab(const int id, const int index, const QString &text, const bool favorite);
 
- signals:
+ Q_SIGNALS:
   void CurrentIdChanged(const int id);
   void Rename(const int id, const QString &name);
   void Close(const int id);
@@ -92,7 +89,7 @@ class PlaylistTabBar : public QTabBar {
   void timerEvent(QTimerEvent *e) override;
   bool event(QEvent *e) override;
 
- private slots:
+ private Q_SLOTS:
   void CurrentIndexChanged(const int index);
   void RenameSlot();
   void RenameInline();

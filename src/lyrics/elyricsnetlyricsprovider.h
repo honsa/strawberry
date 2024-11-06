@@ -22,12 +22,10 @@
 
 #include <QtGlobal>
 #include <QObject>
-#include <QList>
-#include <QVariant>
 #include <QString>
 #include <QUrl>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "htmllyricsprovider.h"
 #include "lyricssearchrequest.h"
@@ -36,19 +34,13 @@ class ElyricsNetLyricsProvider : public HtmlLyricsProvider {
   Q_OBJECT
 
  public:
-  explicit ElyricsNetLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit ElyricsNetLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
 
  protected:
   QUrl Url(const LyricsSearchRequest &request) override;
 
  private:
-  QString StringFixup(const QString &text);
-
- private:
-  static const char kUrl[];
-  static const char kStartTag[];
-  static const char kEndTag[];
-  static const char kLyricsStart[];
+  static QString StringFixup(const QString &text);
 };
 
 #endif  // ELYRICSNETLYRICSPROVIDER_H

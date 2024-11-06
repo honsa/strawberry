@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <utility>
 #include <memory>
 
 #include <QWizardPage>
@@ -29,10 +30,12 @@
 #include <QVBoxLayout>
 #include <QScrollBar>
 
-#include "core/scoped_ptr.h"
-#include "core/shared_ptr.h"
+#include "includes/scoped_ptr.h"
+#include "includes/shared_ptr.h"
 #include "playlistquerygenerator.h"
 #include "smartplaylistquerywizardplugin.h"
+#include "smartplaylistquerywizardpluginsearchpage.h"
+#include "smartplaylistquerywizardpluginsortpage.h"
 #include "smartplaylistsearchtermwidget.h"
 #include "ui_smartplaylistquerysearchpage.h"
 #include "ui_smartplaylistquerysortpage.h"
@@ -40,53 +43,22 @@
 using std::make_unique;
 using std::make_shared;
 
-class SmartPlaylistQueryWizardPlugin::SearchPage : public QWizardPage {  // clazy:exclude=missing-qobject-macro
-
-  friend class SmartPlaylistQueryWizardPlugin;
-
- public:
-  explicit SearchPage(QWidget *parent = nullptr)
-      : QWizardPage(parent),
-        layout_(nullptr),
-        new_term_(nullptr),
-        preview_(nullptr),
-        ui_(new Ui_SmartPlaylistQuerySearchPage) {
-
-    ui_->setupUi(this);
-
-  }
-
-  bool isComplete() const override {
-    if (ui_->type->currentIndex() == 2) {  // All songs
-      return true;
-    }
-    return !std::any_of(terms_.begin(), terms_.end(), [](SmartPlaylistSearchTermWidget *widget) { return !widget->Term().is_valid(); });
-  }
-
-  QVBoxLayout *layout_;
-  QList<SmartPlaylistSearchTermWidget*> terms_;
-  SmartPlaylistSearchTermWidget *new_term_;
-
-  SmartPlaylistSearchPreview *preview_;
-
-  ScopedPtr<Ui_SmartPlaylistQuerySearchPage> ui_;
-};
-
-class SmartPlaylistQueryWizardPlugin::SortPage : public QWizardPage {  // clazy:exclude=missing-qobject-macro
- public:
-  SortPage(SmartPlaylistQueryWizardPlugin *plugin, QWidget *parent, int next_id)
-      : QWizardPage(parent), next_id_(next_id), plugin_(plugin) {}
-
-  void showEvent(QShowEvent*) override { plugin_->UpdateSortPreview(); }
-
-  int nextId() const override { return next_id_; }
-  int next_id_;
-
-  SmartPlaylistQueryWizardPlugin *plugin_;
-};
-
-SmartPlaylistQueryWizardPlugin::SmartPlaylistQueryWizardPlugin(Application *app, SharedPtr<CollectionBackend> collection_backend, QObject *parent)
-    : SmartPlaylistWizardPlugin(app, collection_backend, parent),
+SmartPlaylistQueryWizardPlugin::SmartPlaylistQueryWizardPlugin(const SharedPtr<Player> player,
+                                                               const SharedPtr<PlaylistManager> playlist_manager,
+                                                               const SharedPtr<CollectionBackend> collection_backend,
+#ifdef HAVE_MOODBAR
+                                                               const SharedPtr<MoodbarLoader> moodbar_loader,
+#endif
+                                                               const SharedPtr<CurrentAlbumCoverLoader> current_albumcover_loader,
+                                                               QObject *parent)
+    : SmartPlaylistWizardPlugin(collection_backend, parent),
+      player_(player),
+      playlist_manager_(playlist_manager),
+      collection_backend_(collection_backend),
+#ifdef HAVE_MOODBAR
+      moodbar_loader_(moodbar_loader),
+#endif
+      current_albumcover_loader_(current_albumcover_loader),
       search_page_(nullptr),
       previous_scrollarea_max_(0) {}
 
@@ -101,9 +73,9 @@ QString SmartPlaylistQueryWizardPlugin::description() const {
 int SmartPlaylistQueryWizardPlugin::CreatePages(QWizard *wizard, int finish_page_id) {
 
   // Create the UI
-  search_page_ = new SearchPage(wizard);
+  search_page_ = new SmartPlaylistQueryWizardPluginSearchPage(wizard);
 
-  QWizardPage *sort_page = new SortPage(this, wizard, finish_page_id);
+  QWizardPage *sort_page = new SmartPlaylistQueryWizardPluginSortPage(this, wizard, finish_page_id);
   sort_ui_ = make_unique<Ui_SmartPlaylistQuerySortPage>();
   sort_ui_->setupUi(sort_page);
 
@@ -128,8 +100,13 @@ int SmartPlaylistQueryWizardPlugin::CreatePages(QWizard *wizard, int finish_page
   QVBoxLayout *terms_page_layout = static_cast<QVBoxLayout*>(search_page_->layout());
   terms_page_layout->addStretch();
   search_page_->preview_ = new SmartPlaylistSearchPreview(search_page_);
-  search_page_->preview_->set_application(app_);
-  search_page_->preview_->set_collection(collection_backend_);
+  search_page_->preview_->Init(player_,
+                               playlist_manager_,
+                               collection_backend_,
+#ifdef HAVE_MOODBAR
+                               moodbar_loader_,
+#endif
+                               current_albumcover_loader_);
   terms_page_layout->addWidget(search_page_->preview_);
 
   // Add sort field texts
@@ -147,8 +124,14 @@ int SmartPlaylistQueryWizardPlugin::CreatePages(QWizard *wizard, int finish_page
   sort_ui_->limit_none->setChecked(true);
 
   // Set up the preview widget that's already at the bottom of the sort page
-  sort_ui_->preview->set_application(app_);
-  sort_ui_->preview->set_collection(collection_backend_);
+  sort_ui_->preview->Init(player_,
+                          playlist_manager_,
+                          collection_backend_,
+#ifdef HAVE_MOODBAR
+                          moodbar_loader_,
+#endif
+                          current_albumcover_loader_);
+
   QObject::connect(sort_ui_->field, &QRadioButton::toggled, this, &SmartPlaylistQueryWizardPlugin::UpdateSortPreview);
   QObject::connect(sort_ui_->field_value, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SmartPlaylistQueryWizardPlugin::UpdateSortPreview);
   QObject::connect(sort_ui_->limit_limit, &QRadioButton::toggled, this, &SmartPlaylistQueryWizardPlugin::UpdateSortPreview);
@@ -183,9 +166,9 @@ void SmartPlaylistQueryWizardPlugin::SetGenerator(PlaylistGeneratorPtr g) {
   qDeleteAll(search_page_->terms_);
   search_page_->terms_.clear();
 
-  for (const SmartPlaylistSearchTerm &term : search.terms_) {
+  for (const SmartPlaylistSearchTerm &term : std::as_const(search.terms_)) {
     AddSearchTerm();
-    search_page_->terms_.last()->SetTerm(term);
+    search_page_->terms_.constLast()->SetTerm(term);
   }
 
   // Sort order
@@ -262,7 +245,7 @@ void SmartPlaylistQueryWizardPlugin::RemoveSearchTerm() {
 void SmartPlaylistQueryWizardPlugin::UpdateTermPreview() {
 
   SmartPlaylistSearch search = MakeSearch();
-  emit search_page_->completeChanged();
+  Q_EMIT search_page_->completeChanged();
   // When removing last term, update anyway the search
   if (!search.is_valid() && !search_page_->terms_.isEmpty()) return;
 
@@ -290,7 +273,7 @@ SmartPlaylistSearch SmartPlaylistQueryWizardPlugin::MakeSearch() const {
   ret.search_type_ = static_cast<SmartPlaylistSearch::SearchType>(search_page_->ui_->type->currentIndex());
 
   // Search terms
-  for (SmartPlaylistSearchTermWidget *widget : search_page_->terms_) {
+  for (SmartPlaylistSearchTermWidget *widget : std::as_const(search_page_->terms_)) {
     SmartPlaylistSearchTerm term = widget->Term();
     if (term.is_valid()) ret.terms_ << term;
   }

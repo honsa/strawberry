@@ -19,27 +19,25 @@
 
 #include "config.h"
 
+#include <utility>
 #include <memory>
 
 #include <QList>
 #include <QString>
 
-#include "core/shared_ptr.h"
-#include "core/application.h"
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
 #include "core/song.h"
-#include "settings/settingsdialog.h"
 
 #include "audioscrobbler.h"
-#include "scrobblersettings.h"
+#include "scrobblersettingsservice.h"
 #include "scrobblerservice.h"
 
 using std::make_shared;
 
-AudioScrobbler::AudioScrobbler(Application *app, QObject *parent)
+AudioScrobbler::AudioScrobbler(QObject *parent)
     : QObject(parent),
-      app_(app),
-      settings_(make_shared<ScrobblerSettings>(app)) {
+      settings_(make_shared<ScrobblerSettingsService>()) {
 
   ReloadSettings();
 
@@ -48,7 +46,7 @@ AudioScrobbler::AudioScrobbler(Application *app, QObject *parent)
 AudioScrobbler::~AudioScrobbler() {
 
   while (!services_.isEmpty()) {
-    ScrobblerServicePtr service = services_.first();
+    ScrobblerServicePtr service = services_.value(services_.firstKey());
     RemoveService(service);
   }
 
@@ -98,8 +96,8 @@ void AudioScrobbler::ReloadSettings() {
 
   settings_->ReloadSettings();
 
-  QList<ScrobblerServicePtr> services = services_.values();
-  for (ScrobblerServicePtr service : services) {
+  const QList<ScrobblerServicePtr> services = services_.values();
+  for (ScrobblerServicePtr service : std::as_const(services)) {
     service->ReloadSettings();
   }
 
@@ -121,17 +119,13 @@ void AudioScrobbler::ToggleOffline() {
 
 }
 
-void AudioScrobbler::ShowConfig() {
-  app_->OpenSettingsDialogAtPage(SettingsDialog::Page::Scrobbler);
-}
-
 void AudioScrobbler::UpdateNowPlaying(const Song &song) {
 
   if (!settings_->sources().contains(song.source())) return;
 
   qLog(Debug) << "Sending now playing for song" << song.artist() << song.album() << song.title();
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled()) continue;
     service->UpdateNowPlaying(song);
@@ -141,7 +135,7 @@ void AudioScrobbler::UpdateNowPlaying(const Song &song) {
 
 void AudioScrobbler::ClearPlaying() {
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled()) continue;
     service->ClearPlaying();
@@ -155,7 +149,7 @@ void AudioScrobbler::Scrobble(const Song &song, const qint64 scrobble_point) {
 
   qLog(Debug) << "Scrobbling song" << song.artist() << song.album() << song.title() << "at" << scrobble_point;
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled()) continue;
     service->Scrobble(song);
@@ -165,7 +159,7 @@ void AudioScrobbler::Scrobble(const Song &song, const qint64 scrobble_point) {
 
 void AudioScrobbler::Love() {
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled() || !service->authenticated()) continue;
     service->Love();
@@ -175,7 +169,7 @@ void AudioScrobbler::Love() {
 
 void AudioScrobbler::Submit() {
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled() || !service->authenticated() || service->submitted()) continue;
     service->StartSubmit();
@@ -185,7 +179,7 @@ void AudioScrobbler::Submit() {
 
 void AudioScrobbler::WriteCache() {
 
-  QList<ScrobblerServicePtr> services = GetAll();
+  const QList<ScrobblerServicePtr> services = GetAll();
   for (ScrobblerServicePtr service : services) {
     if (!service->enabled()) continue;
     service->WriteCache();
@@ -194,5 +188,5 @@ void AudioScrobbler::WriteCache() {
 }
 
 void AudioScrobbler::ErrorReceived(const QString &error) {
-  emit ErrorMessage(error);
+  Q_EMIT ErrorMessage(error);
 }

@@ -27,20 +27,21 @@
 #include <QQueue>
 #include <QString>
 
+#include "includes/shared_ptr.h"
+
 #include "albumcoverloaderoptions.h"
 #include "albumcoverexport.h"
 
 class QThreadPool;
 class Song;
 class CoverExportRunnable;
+class TagReaderClient;
 
 class AlbumCoverExporter : public QObject {
   Q_OBJECT
 
  public:
-  explicit AlbumCoverExporter(QObject *parent = nullptr);
-
-  static const int kMaxConcurrentRequests;
+  explicit AlbumCoverExporter(const SharedPtr<TagReaderClient> tagreader_client, QObject *parent = nullptr);
 
   void SetDialogResult(const AlbumCoverExport::DialogResult &dialog_result);
   void SetCoverTypes(const AlbumCoverLoaderOptions::Types &cover_types);
@@ -50,15 +51,17 @@ class AlbumCoverExporter : public QObject {
 
   int request_count() { return static_cast<int>(requests_.size()); }
 
- signals:
+ Q_SIGNALS:
   void AlbumCoversExportUpdate(const int exported, const int skipped, const int all);
 
- private slots:
+ private Q_SLOTS:
   void CoverExported();
   void CoverSkipped();
 
  private:
   void AddJobsToPool();
+
+  const SharedPtr<TagReaderClient> tagreader_client_;
 
   AlbumCoverLoaderOptions::Types cover_types_;
   AlbumCoverExport::DialogResult dialog_result_;

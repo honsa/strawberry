@@ -32,8 +32,9 @@
 #include <QUrl>
 #include <QSslError>
 #include <QJsonArray>
+#include <QMutex>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "jsonlyricsprovider.h"
 #include "lyricssearchrequest.h"
 #include "lyricssearchresult.h"
@@ -46,15 +47,15 @@ class GeniusLyricsProvider : public JsonLyricsProvider {
   Q_OBJECT
 
  public:
-  explicit GeniusLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit GeniusLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~GeniusLyricsProvider() override;
 
-  bool IsAuthenticated() const override { return !access_token_.isEmpty(); }
+  bool IsAuthenticated() const override { return !access_token().isEmpty(); }
   void Authenticate() override;
-  void Deauthenticate() override { access_token_.clear(); }
+  void Deauthenticate() override { clear_access_token(); }
 
-  bool StartSearch(const int id, const LyricsSearchRequest &request) override;
-  void CancelSearch(const int id) override;
+ protected Q_SLOTS:
+  void StartSearch(const int id, const LyricsSearchRequest &request) override;
 
  private:
   struct GeniusLyricsLyricContext {
@@ -74,12 +75,15 @@ class GeniusLyricsProvider : public JsonLyricsProvider {
   using GeniusLyricsSearchContextPtr = SharedPtr<GeniusLyricsSearchContext>;
 
  private:
+  QString access_token() const;
+  void clear_access_token();
+  void set_access_token(const QString &access_token);
   void RequestAccessToken(const QUrl &url, const QUrl &redirect_url);
   void AuthError(const QString &error = QString(), const QVariant &debug = QVariant());
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
   void EndSearch(GeniusLyricsSearchContextPtr search, const GeniusLyricsLyricContext &lyric = GeniusLyricsLyricContext());
 
- private slots:
+ private Q_SLOTS:
   void HandleLoginSSLErrors(const QList<QSslError> &ssl_errors);
   void RedirectArrived();
   void AccessTokenRequestFinished(QNetworkReply *reply);
@@ -87,18 +91,10 @@ class GeniusLyricsProvider : public JsonLyricsProvider {
   void HandleLyricReply(QNetworkReply *reply, const int search_id, const QUrl &url);
 
  private:
-  static const char *kSettingsGroup;
-  static const char *kClientIDB64;
-  static const char *kClientSecretB64;
-  static const char *kOAuthAuthorizeUrl;
-  static const char *kOAuthAccessTokenUrl;
-  static const char *kOAuthRedirectUrl;
-  static const char *kUrlSearch;
-
- private:
   LocalRedirectServer *server_;
   QString code_verifier_;
   QString code_challenge_;
+  mutable QMutex mutex_access_token_;
   QString access_token_;
   QStringList login_errors_;
   QMap<int, SharedPtr<GeniusLyricsSearchContext>> requests_search_;

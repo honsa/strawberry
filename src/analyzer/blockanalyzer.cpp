@@ -36,12 +36,14 @@
 #include "analyzerbase.h"
 #include "fht.h"
 
-const int BlockAnalyzer::kHeight = 2;
-const int BlockAnalyzer::kWidth = 4;
-const int BlockAnalyzer::kMinRows = 3;       // arbitrary
-const int BlockAnalyzer::kMinColumns = 32;   // arbitrary
-const int BlockAnalyzer::kMaxColumns = 256;  // must be 2**n
-const int BlockAnalyzer::kFadeSize = 90;
+namespace {
+constexpr int kHeight = 2;
+constexpr int kWidth = 4;
+constexpr int kMinRows = 3;       // arbitrary
+constexpr int kMinColumns = 32;   // arbitrary
+constexpr int kMaxColumns = 256;  // must be 2**n
+constexpr int kFadeSize = 90;
+}  // namespace
 
 const char *BlockAnalyzer::kName = QT_TRANSLATE_NOOP("AnalyzerContainer", "Block analyzer");
 
@@ -136,7 +138,7 @@ void BlockAnalyzer::transform(Scope &s) {
 
 }
 
-void BlockAnalyzer::analyze(QPainter &p, const Scope &s, bool new_frame) {
+void BlockAnalyzer::analyze(QPainter &p, const Scope &s, const bool new_frame) {
 
   // y = 2 3 2 1 0 2
   //     . . . . # .
@@ -165,11 +167,12 @@ void BlockAnalyzer::analyze(QPainter &p, const Scope &s, bool new_frame) {
 
   for (int x = 0, y = 0; x < static_cast<int>(scope_.size()); ++x) {
     // determine y
-    for (y = 0; scope_[x] < yscale_[y]; ++y);
+    for (y = 0; scope_[x] < yscale_.at(y); ++y);
 
     // This is opposite to what you'd think, higher than y means the bar is lower than y (physically)
-    if (static_cast<double>(y) > store_[x]) {
-      y = static_cast<int>(store_[x] += step_);
+    if (static_cast<double>(y) > store_.at(x)) {
+      store_[x] += step_;
+      y = static_cast<int>(store_.value(x));
     }
     else {
       store_[x] = y;
@@ -177,18 +180,19 @@ void BlockAnalyzer::analyze(QPainter &p, const Scope &s, bool new_frame) {
 
     // If y is lower than fade_pos_, then the bar has exceeded the height of the fadeout
     // if the fadeout is quite faded now, then display the new one
-    if (y <= fade_pos_[x] /*|| fade_intensity_[x] < kFadeSize / 3*/) {
+    if (y <= fade_pos_.at(x) /*|| fade_intensity_[x] < kFadeSize / 3*/) {
       fade_pos_[x] = y;
       fade_intensity_[x] = kFadeSize;
     }
 
-    if (fade_intensity_[x] > 0) {
-      const int offset = --fade_intensity_[x];
-      const int y2 = y_ + (fade_pos_[x] * (kHeight + 1));
+    if (fade_intensity_.at(x) > 0) {
+      --fade_intensity_[x];
+      const int offset = fade_intensity_.value(x);
+      const int y2 = y_ + (fade_pos_.value(x) * (kHeight + 1));
       canvas_painter.drawPixmap(x * (kWidth + 1), y2, fade_bars_[offset], 0, 0, kWidth, height() - y2);
     }
 
-    if (fade_intensity_[x] == 0) fade_pos_[x] = rows_;
+    if (fade_intensity_.at(x) == 0) fade_pos_[x] = rows_;
 
     // REMEMBER: y is a number from 0 to rows_, 0 means all blocks are glowing, rows_ means none are
     canvas_painter.drawPixmap(x * (kWidth + 1), y * (kHeight + 1) + y_, *bar(), 0, y * (kHeight + 1), bar()->width(), bar()->height());
@@ -266,12 +270,12 @@ QColor ensureContrast(const QColor &bg, const QColor &fg, int amount) {
 
   // value is the best measure of contrast
   // if there is enough difference in value already, return fg unchanged
-  if (dv > static_cast<int>(amount)) return fg;
+  if (dv > amount) return fg;
 
   int ds = abs(bs - fs);
 
   // saturation is good enough too. But not as good. TODO adapt this a little
-  if (ds > static_cast<int>(amount)) return fg;
+  if (ds > amount) return fg;
 
   int dh = abs(bh - fh);
 
@@ -285,7 +289,7 @@ QColor ensureContrast(const QColor &bg, const QColor &fg, int amount) {
     if (ds > amount / 2 && (bs > 125 && fs > 125)) {
       return fg;
     }
-    else if (dv > amount / 2 && (bv > 125 && fv > 125)) {
+    if (dv > amount / 2 && (bv > 125 && fv > 125)) {
       return fg;
     }
   }
@@ -294,7 +298,7 @@ QColor ensureContrast(const QColor &bg, const QColor &fg, int amount) {
     // low saturation on a low saturation is sad
     const int tmp = 50 - fs;
     fs = 50;
-    if (static_cast<int>(amount) > tmp) {
+    if (amount > tmp) {
       amount -= tmp;
     }
     else {
@@ -310,25 +314,25 @@ QColor ensureContrast(const QColor &bg, const QColor &fg, int amount) {
     if (amount > 0) adjustToLimits(bs, fs, amount);
 
     // see if we need to adjust the hue
-    if (static_cast<int>(amount) > 0)
-      fh += static_cast<int>(amount);  // cycles around;
+    if (amount > 0)
+      fh += amount;  // cycles around;
 
     return QColor::fromHsv(fh, fs, fv);
   }
 
-  if (fv > bv && bv > static_cast<int>(amount)) {
-    return QColor::fromHsv(fh, fs, bv - static_cast<int>(amount));
+  if (fv > bv && bv > amount) {
+    return QColor::fromHsv(fh, fs, bv - amount);
   }
 
-  if (fv < bv && fv > static_cast<int>(amount)) {
+  if (fv < bv && fv > amount) {
     return QColor::fromHsv(fh, fs, fv - amount);
   }
 
-  if (fv > bv && (255 - fv > static_cast<int>(amount))) {
+  if (fv > bv && (255 - fv > amount)) {
     return QColor::fromHsv(fh, fs, fv + amount);
   }
 
-  if (fv < bv && (255 - bv > static_cast<int>(amount))) {
+  if (fv < bv && (255 - bv > amount)) {
     return QColor::fromHsv(fh, fs, bv + amount);
   }
 
@@ -336,7 +340,9 @@ QColor ensureContrast(const QColor &bg, const QColor &fg, int amount) {
 
 }
 
-void BlockAnalyzer::paletteChange(const QPalette&) {
+void BlockAnalyzer::paletteChange(const QPalette &_palette) {
+
+  Q_UNUSED(_palette)
 
   const QColor bg = palette().color(QPalette::Window);
   const QColor fg = ensureContrast(bg, palette().color(QPalette::Highlight));

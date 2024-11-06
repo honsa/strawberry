@@ -20,6 +20,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include <QWidget>
 #include <QString>
 #include <QIcon>
@@ -32,6 +34,8 @@
 
 #include "errordialog.h"
 #include "ui_errordialog.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 ErrorDialog::ErrorDialog(QWidget *parent)
     : QDialog(parent),
@@ -79,9 +83,9 @@ void ErrorDialog::closeEvent(QCloseEvent *e) {
 void ErrorDialog::UpdateContent() {
 
   QString html;
-  for (const QString &message : current_messages_) {
+  for (const QString &message : std::as_const(current_messages_)) {
     if (!html.isEmpty()) {
-      html += "<hr/>";
+      html += "<hr/>"_L1;
     }
     html += message.toHtmlEscaped();
   }

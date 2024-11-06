@@ -27,26 +27,25 @@
 #include <QDateTime>
 #include <QTimer>
 
-#include "core/shared_ptr.h"
-#include "core/application.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "core/logging.h"
-#include "utilities/timeconstants.h"
-#include "settings/subsonicsettingspage.h"
-#include "internet/internetservices.h"
+#include "core/settings.h"
+#include "constants/timeconstants.h"
+#include "constants/subsonicsettings.h"
 #include "subsonic/subsonicservice.h"
 
-#include "scrobblersettings.h"
+#include "scrobblersettingsservice.h"
 #include "scrobblerservice.h"
 #include "subsonicscrobbler.h"
 
-const char *SubsonicScrobbler::kName = "Subsonic";
+namespace {
+constexpr char kName[] = "Subsonic";
+}
 
-SubsonicScrobbler::SubsonicScrobbler(SharedPtr<ScrobblerSettings> settings, Application *app, QObject *parent)
-    : ScrobblerService(kName, parent),
-      settings_(settings),
-      app_(app),
-      service_(nullptr),
+SubsonicScrobbler::SubsonicScrobbler(const SharedPtr<ScrobblerSettingsService> settings, const SharedPtr<SubsonicService> service, QObject *parent)
+    : ScrobblerService(QLatin1String(kName), settings, parent),
+      service_(service),
       enabled_(false),
       submitted_(false) {
 
@@ -59,18 +58,14 @@ SubsonicScrobbler::SubsonicScrobbler(SharedPtr<ScrobblerSettings> settings, Appl
 
 void SubsonicScrobbler::ReloadSettings() {
 
-  QSettings s;
-  s.beginGroup(SubsonicSettingsPage::kSettingsGroup);
+  Settings s;
+  s.beginGroup(SubsonicSettings::kSettingsGroup);
   enabled_ = s.value("serversidescrobbling", false).toBool();
   s.endGroup();
 
 }
 
-SubsonicServicePtr SubsonicScrobbler::service() {
-
-  if (!service_) {
-    service_ = app_->internet_services()->Service<SubsonicService>();
-  }
+SubsonicServicePtr SubsonicScrobbler::service() const {
 
   return service_;
 

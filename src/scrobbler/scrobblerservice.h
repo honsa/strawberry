@@ -30,14 +30,16 @@
 #include <QString>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
+
+#include "scrobblersettingsservice.h"
 
 class ScrobblerService : public QObject {
   Q_OBJECT
 
  public:
-  explicit ScrobblerService(const QString &name, QObject *parent);
+  explicit ScrobblerService(const QString &name, const SharedPtr<ScrobblerSettingsService> settings, QObject *parent);
 
   QString name() const { return name_; }
 
@@ -61,18 +63,20 @@ class ScrobblerService : public QObject {
 
   bool ExtractJsonObj(const QByteArray &data, QJsonObject &json_obj, QString &error_description);
 
-  QString StripAlbum(QString album) const;
-  QString StripTitle(QString title) const;
+  QString StripAlbum(const QString &album) const;
+  QString StripTitle(const QString &title) const;
 
- public slots:
+ public Q_SLOTS:
   virtual void Submit() = 0;
   virtual void WriteCache() = 0;
 
- signals:
+ Q_SIGNALS:
   void ErrorMessage(const QString &error);
+  void OpenSettingsDialog();
 
- private:
-  QString name_;
+ protected:
+  const QString name_;
+  const SharedPtr<ScrobblerSettingsService> settings_;
 };
 
 using ScrobblerServicePtr = SharedPtr<ScrobblerService>;

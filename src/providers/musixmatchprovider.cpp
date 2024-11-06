@@ -22,18 +22,24 @@
 
 #include "musixmatchprovider.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 const char *MusixmatchProvider::kApiUrl = "https://api.musixmatch.com/ws/1.1";
 const char *MusixmatchProvider::kApiKey = "Y2FhMDRlN2Y4OWE5OTIxYmZlOGMzOWQzOGI3ZGU4MjE=";
 
 QString MusixmatchProvider::StringFixup(QString text) {
 
-  return text.replace('/', '-')
-             .replace('\'', '-')
-             .remove(QRegularExpression("[^\\w0-9\\- ]", QRegularExpression::UseUnicodePropertiesOption))
-             .replace(QRegularExpression(" {2,}"), " ")
+  static const QRegularExpression regex_illegal_characters(u"[^\\w0-9\\- ]"_s, QRegularExpression::UseUnicodePropertiesOption);
+  static const QRegularExpression regex_duplicate_whitespaces(u" {2,}"_s);
+  static const QRegularExpression regex_duplicate_dashes(u"(-)\\1+"_s);
+
+  return text.replace(u'/', u'-')
+             .replace(u'\'', u'-')
+             .remove(regex_illegal_characters)
+             .replace(regex_duplicate_whitespaces, u" "_s)
              .simplified()
-             .replace(' ', '-')
-             .replace(QRegularExpression("(-)\\1+"), "-")
+             .replace(u' ', u'-')
+             .replace(regex_duplicate_dashes, u"-"_s)
              .toLower();
 
 }

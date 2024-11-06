@@ -29,7 +29,7 @@
 #include <QMetaObject>
 #include <QCoreApplication>
 #include <QStandardPaths>
-#include <QtConcurrent>
+#include <QtConcurrentRun>
 #include <QString>
 #include <QDir>
 #include <QFile>
@@ -39,14 +39,18 @@
 #include "utilities/envutils.h"
 
 #ifdef HAVE_MOODBAR
-#  include "ext/gstmoodbar/gstmoodbarplugin.h"
+#  include "gstfastspectrumplugin.h"
 #endif
 
 #include "gststartup.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 GThread *GstStartup::kGThread = nullptr;
 
-gpointer GstStartup::GLibMainLoopThreadFunc(gpointer) {
+gpointer GstStartup::GLibMainLoopThreadFunc(gpointer data) {
+
+  Q_UNUSED(data)
 
   qLog(Info) << "Creating GLib main event loop.";
 
@@ -81,7 +85,7 @@ void GstStartup::InitializeGStreamer() {
   gst_pb_utils_init();
 
 #ifdef HAVE_MOODBAR
-  gstfastspectrum_register_static();
+  gst_strawberry_fastspectrum_register_static();
 #endif
 
 #ifdef Q_OS_WIN32
@@ -115,28 +119,28 @@ void GstStartup::SetEnvironment() {
   // Set plugin root path
   QString plugin_root_path;
 #  if defined(Q_OS_MACOS)
-  plugin_root_path = QDir::cleanPath(app_path + "/../PlugIns");
+  plugin_root_path = QDir::cleanPath(app_path + "/../PlugIns"_L1);
 #  elif defined(Q_OS_UNIX)
-  plugin_root_path = QDir::cleanPath(app_path + "/../plugins");
+  plugin_root_path = QDir::cleanPath(app_path + "/../plugins"_L1);
 #  elif defined(Q_OS_WIN32)
   plugin_root_path = app_path;
 #  endif
 
   // Set GIO module path
-  const QString gio_module_path = plugin_root_path + "/gio-modules";
+  const QString gio_module_path = plugin_root_path + "/gio-modules"_L1;
 
   // Set GStreamer plugin scanner path
   QString gst_plugin_scanner;
 #  if defined(Q_OS_UNIX)
-  gst_plugin_scanner = plugin_root_path + "/gst-plugin-scanner";
+  gst_plugin_scanner = plugin_root_path + "/gst-plugin-scanner"_L1;
 #  endif
 
   // Set GStreamer plugin path
   QString gst_plugin_path;
 #  if defined(Q_OS_WIN32)
-  gst_plugin_path = plugin_root_path + "/gstreamer-plugins";
+  gst_plugin_path = plugin_root_path + "/gstreamer-plugins"_L1;
 #  else
-  gst_plugin_path = plugin_root_path + "/gstreamer";
+  gst_plugin_path = plugin_root_path + "/gstreamer"_L1;
 #  endif
 
   if (!gio_module_path.isEmpty()) {
@@ -175,7 +179,7 @@ void GstStartup::SetEnvironment() {
 
 
 #if defined(Q_OS_WIN32) || defined(Q_OS_MACOS)
-  QString gst_registry_filename = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QString("/gst-registry-%1-bin").arg(QCoreApplication::applicationVersion());
+  QString gst_registry_filename = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/gst-registry-%1-bin").arg(QCoreApplication::applicationVersion());
   qLog(Debug) << "Setting GStreamer registry file to" << gst_registry_filename;
   Utilities::SetEnv("GST_REGISTRY", gst_registry_filename);
 #endif

@@ -27,7 +27,7 @@
 #include <QVariant>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "lyricsprovider.h"
 #include "lyricsfetcher.h"
 
@@ -38,20 +38,19 @@ class ChartLyricsProvider : public LyricsProvider {
   Q_OBJECT
 
  public:
-  explicit ChartLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
+  explicit ChartLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent = nullptr);
   ~ChartLyricsProvider() override;
-
-  bool StartSearch(const int id, const LyricsSearchRequest &request) override;
-  void CancelSearch(int id) override;
 
  private:
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
- private slots:
+ protected Q_SLOTS:
+  void StartSearch(const int id, const LyricsSearchRequest &request) override;
+
+ private Q_SLOTS:
   void HandleSearchReply(QNetworkReply *reply, const int id, const LyricsSearchRequest &request);
 
  private:
-  static const char *kUrlSearch;
   QList<QNetworkReply*> replies_;
 };
 

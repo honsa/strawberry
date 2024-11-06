@@ -37,14 +37,13 @@
 #include <QUrl>
 #include <QJsonObject>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 
 #include "tidalbaserequest.h"
 
 class QNetworkReply;
 class QTimer;
-class Application;
 class NetworkAccessManager;
 class TidalService;
 class TidalUrlHandler;
@@ -53,7 +52,7 @@ class TidalRequest : public TidalBaseRequest {
   Q_OBJECT
 
  public:
-  explicit TidalRequest(TidalService *service, TidalUrlHandler *url_handler, Application *app, SharedPtr<NetworkAccessManager> network, QueryType query_type, QObject *parent);
+  explicit TidalRequest(TidalService *service, TidalUrlHandler *url_handler, const SharedPtr<NetworkAccessManager> network, const Type query_type, QObject *parent);
   ~TidalRequest() override;
 
   void ReloadSettings();
@@ -99,7 +98,7 @@ class TidalRequest : public TidalBaseRequest {
     QString filename;
   };
 
- signals:
+ Q_SIGNALS:
   void LoginSuccess();
   void LoginFailure(const QString &failure_reason);
   void Results(const int id, const SongMap &songs = SongMap(), const QString &error = QString());
@@ -107,25 +106,25 @@ class TidalRequest : public TidalBaseRequest {
   void UpdateProgress(const int id, const int max);
   void StreamURLFinished(const QUrl &media_url, const QUrl &url, const Song::FileType filetype, const QString &error = QString());
 
- private slots:
+ private Q_SLOTS:
   void ArtistsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
 
   void AlbumsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
-  void AlbumsReceived(QNetworkReply *reply, const Artist &artist_requested, const int limit_requested, const int offset_requested, const bool auto_login);
+  void AlbumsReceived(QNetworkReply *reply, const TidalRequest::Artist &artist_requested, const int limit_requested, const int offset_requested, const bool auto_login);
 
   void SongsReplyReceived(QNetworkReply *reply, const int limit_requested, const int offset_requested);
-  void SongsReceived(QNetworkReply *reply, const Artist &artist, const Album &album, const int limit_requested, const int offset_requested, const bool auto_login = false);
+  void SongsReceived(QNetworkReply *reply, const TidalRequest::Artist &artist, const TidalRequest::Album &album, const int limit_requested, const int offset_requested, const bool auto_login = false);
 
-  void ArtistAlbumsReplyReceived(QNetworkReply *reply, const Artist &artist, const int offset_requested);
-  void AlbumSongsReplyReceived(QNetworkReply *reply, const Artist &artist, const Album &album, const int offset_requested);
+  void ArtistAlbumsReplyReceived(QNetworkReply *reply, const TidalRequest::Artist &artist, const int offset_requested);
+  void AlbumSongsReplyReceived(QNetworkReply *reply, const TidalRequest::Artist &artist, const TidalRequest::Album &album, const int offset_requested);
   void AlbumCoverReceived(QNetworkReply *reply, const QString &album_id, const QUrl &url, const QString &filename);
 
- public slots:
+ public Q_SLOTS:
   void LoginComplete(const bool success, const QString &error = QString());
 
  private:
-  bool IsQuery() { return (query_type_ == QueryType::Artists || query_type_ == QueryType::Albums || query_type_ == QueryType::Songs); }
-  bool IsSearch() { return (query_type_ == QueryType::SearchArtists || query_type_ == QueryType::SearchAlbums || query_type_ == QueryType::SearchSongs); }
+  bool IsQuery() const { return (query_type_ == Type::FavouriteArtists || query_type_ == Type::FavouriteAlbums || query_type_ == Type::FavouriteSongs); }
+  bool IsSearch() const { return (query_type_ == Type::SearchArtists || query_type_ == Type::SearchAlbums || query_type_ == Type::SearchSongs); }
 
   void StartRequests();
   void FlushRequests();
@@ -172,22 +171,12 @@ class TidalRequest : public TidalBaseRequest {
   static void Warn(const QString &error, const QVariant &debug = QVariant());
   void Error(const QString &error, const QVariant &debug = QVariant()) override;
 
-  static const char kResourcesUrl[];
-  static const int kMaxConcurrentArtistsRequests;
-  static const int kMaxConcurrentAlbumsRequests;
-  static const int kMaxConcurrentSongsRequests;
-  static const int kMaxConcurrentArtistAlbumsRequests;
-  static const int kMaxConcurrentAlbumSongsRequests;
-  static const int kMaxConcurrentAlbumCoverRequests;
-  static const int kFlushRequestsDelay;
-
   TidalService *service_;
   TidalUrlHandler *url_handler_;
-  Application *app_;
   SharedPtr<NetworkAccessManager> network_;
   QTimer *timer_flush_requests_;
 
-  const QueryType query_type_;
+  const Type query_type_;
   const bool fetchalbums_;
   const QString coversize_;
 

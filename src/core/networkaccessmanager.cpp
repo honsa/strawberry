@@ -22,7 +22,6 @@
 #include "config.h"
 
 #include <QtGlobal>
-#include <QObject>
 #include <QCoreApplication>
 #include <QIODevice>
 #include <QByteArray>
@@ -33,6 +32,8 @@
 
 #include "networkaccessmanager.h"
 #include "threadsafenetworkdiskcache.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 NetworkAccessManager::NetworkAccessManager(QObject *parent)
     : QNetworkAccessManager(parent) {
@@ -46,18 +47,18 @@ QNetworkReply *NetworkAccessManager::createRequest(Operation op, const QNetworkR
 
   QByteArray user_agent;
   if (request.hasRawHeader("User-Agent")) {
-    user_agent = request.rawHeader("User-Agent");
+    user_agent = request.header(QNetworkRequest::UserAgentHeader).toByteArray();
   }
   else {
-    user_agent = QString("%1 %2").arg(QCoreApplication::applicationName(), QCoreApplication::applicationVersion()).toUtf8();
+    user_agent = QStringLiteral("%1 %2").arg(QCoreApplication::applicationName(), QCoreApplication::applicationVersion()).toUtf8();
   }
 
   QNetworkRequest new_request(request);
   new_request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-  new_request.setRawHeader("User-Agent", user_agent);
+  new_request.setHeader(QNetworkRequest::UserAgentHeader, user_agent);
 
   if (op == QNetworkAccessManager::PostOperation && !new_request.header(QNetworkRequest::ContentTypeHeader).isValid()) {
-    new_request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    new_request.setHeader(QNetworkRequest::ContentTypeHeader, u"application/x-www-form-urlencoded"_s);
   }
 
   // Prefer the cache unless the caller has changed the setting already

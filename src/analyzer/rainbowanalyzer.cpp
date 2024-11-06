@@ -41,18 +41,23 @@
 #include "fht.h"
 #include "analyzerbase.h"
 
-const int RainbowAnalyzer::kHeight[] = { 21, 33 };
-const int RainbowAnalyzer::kWidth[] = { 34, 53 };
-const int RainbowAnalyzer::kFrameCount[] = { 6, 16 };
-const int RainbowAnalyzer::kRainbowHeight[] = { 21, 16 };
-const int RainbowAnalyzer::kRainbowOverlap[] = { 13, 15 };
-const int RainbowAnalyzer::kSleepingHeight[] = { 24, 33 };
+using namespace Qt::Literals::StringLiterals;
 
 const char *NyanCatAnalyzer::kName = "Nyanalyzer Cat";
 const char *RainbowDashAnalyzer::kName = "Rainbow Dash";
-const float RainbowAnalyzer::kPixelScale = 0.02F;
 
 RainbowAnalyzer::RainbowType RainbowAnalyzer::rainbowtype;
+const int RainbowAnalyzer::kHeight[] = { 21, 33 };
+const int RainbowAnalyzer::kWidth[] = { 34, 53 };
+const int RainbowAnalyzer::kFrameCount[] = { 6, 16 };
+const int RainbowAnalyzer::kSleepingHeight[] = { 24, 33 };
+
+namespace {
+constexpr int kFrameIntervalMs = 150;
+constexpr int kRainbowHeight[] = { 21, 16 };
+constexpr int kRainbowOverlap[] = { 13, 15 };
+constexpr float kPixelScale = 0.02F;
+}  // namespace
 
 RainbowAnalyzer::RainbowAnalyzer(const RainbowType rbtype, QWidget *parent)
     : AnalyzerBase(parent, 9),
@@ -65,8 +70,8 @@ RainbowAnalyzer::RainbowAnalyzer(const RainbowType rbtype, QWidget *parent)
       background_brush_(QColor(0x0f, 0x43, 0x73)) {
 
   rainbowtype = rbtype;
-  cat_dash_[0] = QPixmap(":/pictures/nyancat.png");
-  cat_dash_[1] = QPixmap(":/pictures/rainbowdash.png");
+  cat_dash_[0] = QPixmap(u":/pictures/nyancat.png"_s);
+  cat_dash_[1] = QPixmap(u":/pictures/rainbowdash.png"_s);
   memset(history_, 0, sizeof(history_));
 
   for (int i = 0; i < kRainbowBands; ++i) {
@@ -106,7 +111,7 @@ void RainbowAnalyzer::resizeEvent(QResizeEvent *e) {
 
 }
 
-void RainbowAnalyzer::analyze(QPainter &p, const Scope &s, bool new_frame) {
+void RainbowAnalyzer::analyze(QPainter &p, const Scope &s, const bool new_frame) {
 
   // Discard the second half of the transform
   const int scope_size = static_cast<int>(s.size() / 2);

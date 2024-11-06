@@ -30,7 +30,7 @@
 #include <QIcon>
 #include <QPixmap>
 
-#include "core/scoped_ptr.h"
+#include "includes/scoped_ptr.h"
 
 class QMenu;
 class QAction;
@@ -60,27 +60,23 @@ class PlaylistSequence : public QWidget {
     Albums = 3
   };
 
-  static const char *kSettingsGroup;
-
   RepeatMode repeat_mode() const;
   ShuffleMode shuffle_mode() const;
 
   QMenu *repeat_menu() const { return repeat_menu_; }
   QMenu *shuffle_menu() const { return shuffle_menu_; }
 
-  void set_dynamic(const bool dynamic) { dynamic_ = dynamic; }
-
- public slots:
+ public Q_SLOTS:
   void SetRepeatMode(const PlaylistSequence::RepeatMode mode);
   void SetShuffleMode(const PlaylistSequence::ShuffleMode mode);
   void CycleShuffleMode();
   void CycleRepeatMode();
 
- signals:
+ Q_SIGNALS:
   void RepeatModeChanged(const PlaylistSequence::RepeatMode mode);
   void ShuffleModeChanged(const PlaylistSequence::ShuffleMode mode);
 
- private slots:
+ private Q_SLOTS:
   void RepeatActionTriggered(QAction *action);
   void ShuffleActionTriggered(QAction *action);
 
@@ -100,7 +96,6 @@ class PlaylistSequence : public QWidget {
   bool loading_;
   RepeatMode repeat_mode_;
   ShuffleMode shuffle_mode_;
-  bool dynamic_;
 };
 
 #endif  // PLAYLISTSEQUENCE_H

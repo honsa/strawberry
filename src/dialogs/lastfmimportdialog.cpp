@@ -27,9 +27,11 @@
 #include "lastfmimportdialog.h"
 #include "ui_lastfmimportdialog.h"
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/iconloader.h"
 #include "scrobbler/lastfmimport.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 LastFMImportDialog::LastFMImportDialog(SharedPtr<LastFMImport> lastfm_import, QWidget *parent)
     : QDialog(parent),
@@ -41,7 +43,7 @@ LastFMImportDialog::LastFMImportDialog(SharedPtr<LastFMImport> lastfm_import, QW
 
   ui_->setupUi(this);
 
-  setWindowIcon(IconLoader::Load("scrobble"));
+  setWindowIcon(IconLoader::Load(u"scrobble"_s));
 
   ui_->stackedWidget->setCurrentWidget(ui_->page_start);
 
@@ -51,8 +53,13 @@ LastFMImportDialog::LastFMImportDialog(SharedPtr<LastFMImport> lastfm_import, QW
   QObject::connect(ui_->button_go, &QPushButton::clicked, this, &LastFMImportDialog::Start);
   QObject::connect(ui_->button_cancel, &QPushButton::clicked, this, &LastFMImportDialog::Cancel);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+  QObject::connect(ui_->checkbox_last_played, &QCheckBox::checkStateChanged, this, &LastFMImportDialog::UpdateGoButtonState);
+  QObject::connect(ui_->checkbox_playcounts, &QCheckBox::checkStateChanged, this, &LastFMImportDialog::UpdateGoButtonState);
+#else
   QObject::connect(ui_->checkbox_last_played, &QCheckBox::stateChanged, this, &LastFMImportDialog::UpdateGoButtonState);
   QObject::connect(ui_->checkbox_playcounts, &QCheckBox::stateChanged, this, &LastFMImportDialog::UpdateGoButtonState);
+#endif
 
 }
 

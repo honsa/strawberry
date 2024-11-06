@@ -41,6 +41,8 @@
 #include "core/iconloader.h"
 #include "lineedit.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 ExtendedEditor::ExtendedEditor(QWidget *widget, int extra_right_padding, bool draw_hint)
     : LineEditInterface(widget),
       has_clear_button_(true),
@@ -51,10 +53,10 @@ ExtendedEditor::ExtendedEditor(QWidget *widget, int extra_right_padding, bool dr
       font_point_size_(widget->font().pointSizeF() - 1),
       is_rtl_(false) {
 
-  clear_button_->setIcon(IconLoader::Load("edit-clear-locationbar-ltr"));
+  clear_button_->setIcon(IconLoader::Load(u"edit-clear-locationbar-ltr"_s));
   clear_button_->setIconSize(QSize(16, 16));
   clear_button_->setCursor(Qt::ArrowCursor);
-  clear_button_->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  clear_button_->setStyleSheet(u"QToolButton { border: none; padding: 0px; }"_s);
   clear_button_->setToolTip(QWidget::tr("Clear"));
   clear_button_->setFocusPolicy(Qt::NoFocus);
 
@@ -64,7 +66,7 @@ ExtendedEditor::ExtendedEditor(QWidget *widget, int extra_right_padding, bool dr
   reset_button_->setIcon(widget->style()->standardIcon(QStyle::SP_DialogResetButton, &opt, widget));
   reset_button_->setIconSize(QSize(16, 16));
   reset_button_->setCursor(Qt::ArrowCursor);
-  reset_button_->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  reset_button_->setStyleSheet(u"QToolButton { border: none; padding: 0px; }"_s);
   reset_button_->setToolTip(QWidget::tr("Reset"));
   reset_button_->setFocusPolicy(Qt::NoFocus);
   reset_button_->hide();
@@ -112,7 +114,7 @@ void ExtendedEditor::UpdateButtonGeometry() {
   const int left = frame_width + 1 + (has_clear_button() ? clear_button_->sizeHint().width() : 0);
   const int right = frame_width + 1 + (has_reset_button() ? reset_button_->sizeHint().width() : 0);
 
-  widget_->setStyleSheet(QString("QLineEdit { padding-left: %1px; padding-right: %2px; }").arg(left).arg(right));
+  widget_->setStyleSheet(QStringLiteral("QLineEdit { padding-left: %1px; padding-right: %2px; }").arg(left).arg(right));
 
   QSize msz = widget_->minimumSizeHint();
   widget_->setMinimumSize(msz.width() + (clear_button_->sizeHint().width() + frame_width + 1) * 2 + extra_right_padding_, qMax(msz.height(), clear_button_->sizeHint().height() + frame_width * 2 + 2));
@@ -251,7 +253,7 @@ void CheckBox::resizeEvent(QResizeEvent *e) {
 QString SpinBox::textFromValue(int val) const {
 
   if (val <= 0 && !hint_.isEmpty()) {
-    return "-";
+    return u"-"_s;
   }
   return QSpinBox::textFromValue(val);
 

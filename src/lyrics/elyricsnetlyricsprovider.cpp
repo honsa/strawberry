@@ -17,40 +17,48 @@
  *
  */
 
-#include <QObject>
-#include <QByteArray>
-#include <QVariant>
+#include <QApplication>
+#include <QThread>
 #include <QString>
 #include <QUrl>
 #include <QRegularExpression>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/networkaccessmanager.h"
 #include "utilities/transliterate.h"
 #include "lyricssearchrequest.h"
 #include "elyricsnetlyricsprovider.h"
 
-const char ElyricsNetLyricsProvider::kUrl[] = "https://www.elyrics.net/read/";
-const char ElyricsNetLyricsProvider::kStartTag[] = "<div[^>]*>";
-const char ElyricsNetLyricsProvider::kEndTag[] = "<\\/div>";
-const char ElyricsNetLyricsProvider::kLyricsStart[] = "<div id='inlyr'>";
+using namespace Qt::Literals::StringLiterals;
 
-ElyricsNetLyricsProvider::ElyricsNetLyricsProvider(SharedPtr<NetworkAccessManager> network, QObject *parent)
-    : HtmlLyricsProvider("elyrics.net", true, kStartTag, kEndTag, kLyricsStart, false, network, parent) {}
+namespace {
+constexpr char kUrl[] = "https://www.elyrics.net/read/";
+constexpr char kStartTag[] = "<div[^>]*>";
+constexpr char kEndTag[] = "<\\/div>";
+constexpr char kLyricsStart[] = "<div id='inlyr'>";
+}  // namespace
+
+ElyricsNetLyricsProvider::ElyricsNetLyricsProvider(const SharedPtr<NetworkAccessManager> network, QObject *parent)
+    : HtmlLyricsProvider(u"elyrics.net"_s, true, QLatin1String(kStartTag), QLatin1String(kEndTag), QLatin1String(kLyricsStart), false, network, parent) {}
 
 QUrl ElyricsNetLyricsProvider::Url(const LyricsSearchRequest &request) {
 
-  return QUrl(kUrl + request.artist[0].toLower() + "/" + StringFixup(request.artist) + "-lyrics/" + StringFixup(request.title) + "-lyrics.html");
+  return QUrl(QLatin1String(kUrl) + request.artist[0].toLower() + QLatin1Char('/') + StringFixup(request.artist) + "-lyrics/"_L1 + StringFixup(request.title) + "-lyrics.html"_L1);
 
 }
 
 QString ElyricsNetLyricsProvider::StringFixup(const QString &text) {
 
+  Q_ASSERT(QThread::currentThread() != qApp->thread());
+
+  static const QRegularExpression regex_illegal_characters(u"[^\\w0-9_,&\\-\\(\\) ]"_s);
+  static const QRegularExpression regex_duplicate_whitespaces(u" {2,}"_s);
+
   return Utilities::Transliterate(text)
-    .replace(QRegularExpression("[^\\w0-9_,&\\-\\(\\) ]"), "_")
-    .replace(QRegularExpression(" {2,}"), " ")
+    .replace(regex_illegal_characters, u"_"_s)
+    .replace(regex_duplicate_whitespaces, u" "_s)
     .simplified()
-    .replace(' ', '-')
+    .replace(u' ', u'-')
     .toLower();
 
 }

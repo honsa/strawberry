@@ -26,7 +26,7 @@
 #include <QObject>
 #include <QString>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 #include "playlist/playlist.h"
 #include "playlist/playlistitem.h"
@@ -48,11 +48,11 @@ class PlaylistGeneratorInserter : public QObject {
  private:
   static PlaylistItemPtrList Generate(PlaylistGeneratorPtr generator, const int dynamic_count);
 
- signals:
+ Q_SIGNALS:
   void Error(const QString &message);
   void PlayRequested(const QModelIndex idx, const Playlist::AutoScroll autoscroll);
 
- private slots:
+ private Q_SLOTS:
   void Finished();
 
  private:

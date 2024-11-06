@@ -1,6 +1,6 @@
 /*
  * Strawberry Music Player
- * Copyright 2019-2023, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2019-2024, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,21 +32,23 @@
 #include <QString>
 #include <QImage>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "albumcoverloaderoptions.h"
 #include "albumcoverloaderresult.h"
 #include "albumcoverimageresult.h"
 
 class QThread;
+class QTimer;
 class QNetworkReply;
 class NetworkAccessManager;
+class TagReaderClient;
 
 class AlbumCoverLoader : public QObject {
   Q_OBJECT
 
  public:
-  explicit AlbumCoverLoader(QObject *parent = nullptr);
+  explicit AlbumCoverLoader(const SharedPtr<TagReaderClient> tagreader_client, QObject *parent = nullptr);
 
   void ExitAsync();
   void Stop() { stop_requested_ = true; }
@@ -59,7 +61,7 @@ class AlbumCoverLoader : public QObject {
   void CancelTask(const quint64 id);
   void CancelTasks(const QSet<quint64> &ids);
 
- signals:
+ Q_SIGNALS:
   void ExitFinished();
   void AlbumCoverLoaded(const quint64 id, const AlbumCoverLoaderResult &result);
 
@@ -117,14 +119,16 @@ class AlbumCoverLoader : public QObject {
   LoadImageResult LoadRemoteUrlImage(TaskPtr task, const AlbumCoverLoaderResult::Type result_type, const QUrl &cover_url);
   void FinishTask(TaskPtr task, const AlbumCoverLoaderResult::Type result_type);
 
- private slots:
+ private Q_SLOTS:
   void Exit();
+  void StartProcessTasks();
   void ProcessTasks();
-  void LoadRemoteImageFinished(QNetworkReply *reply, TaskPtr task, const AlbumCoverLoaderResult::Type result_type, const QUrl &cover_url);
+  void LoadRemoteImageFinished(QNetworkReply *reply, AlbumCoverLoader::TaskPtr task, const AlbumCoverLoaderResult::Type result_type, const QUrl &cover_url);
 
  private:
-  static const int kMaxRedirects = 3;
-  SharedPtr<NetworkAccessManager> network_;
+  const SharedPtr<TagReaderClient> tagreader_client_;
+  const SharedPtr<NetworkAccessManager> network_;
+  QTimer *timer_process_tasks_;
   bool stop_requested_;
   QMutex mutex_load_image_async_;
   QQueue<TaskPtr> tasks_;

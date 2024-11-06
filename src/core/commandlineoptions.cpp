@@ -34,6 +34,7 @@
 #include <QIODevice>
 #include <QDataStream>
 #include <QBuffer>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QByteArray>
@@ -45,7 +46,11 @@
 
 #include <getopt.h>
 
-const char *CommandlineOptions::kHelpText =
+using namespace Qt::Literals::StringLiterals;
+
+namespace {
+
+constexpr char kHelpText[] =
     "%1: strawberry [%2] [%3]\n"
     "\n"
     "%4:\n"
@@ -82,7 +87,9 @@ const char *CommandlineOptions::kHelpText =
     "      --log-levels <levels>  %33\n"
     "      --version              %34\n";
 
-const char *CommandlineOptions::kVersionText = "Strawberry %1";
+constexpr char kVersionText[] = "Strawberry %1";
+
+}  // namespace
 
 CommandlineOptions::CommandlineOptions(int argc, char **argv)
     : argc_(argc),
@@ -100,7 +107,7 @@ CommandlineOptions::CommandlineOptions(int argc, char **argv)
       play_track_at_(-1),
       show_osd_(false),
       toggle_pretty_osd_(false),
-      log_levels_(logging::kDefaultLogLevels) {
+      log_levels_(QLatin1String(logging::kDefaultLogLevels)) {
 
 #ifdef Q_OS_WIN32
   Q_UNUSED(argv);
@@ -108,11 +115,11 @@ CommandlineOptions::CommandlineOptions(int argc, char **argv)
 
 #ifdef Q_OS_MACOS
   // Remove -psn_xxx option that Mac passes when opened from Finder.
-  RemoveArg("-psn", 1);
+  RemoveArg(u"-psn"_s, 1);
 #endif
 
   // Remove the -session option that KDE passes
-  RemoveArg("-session", 2);
+  RemoveArg(u"-session"_s, 2);
 
 }
 
@@ -201,7 +208,7 @@ bool CommandlineOptions::Parse() {
 
   // Parse the arguments
   bool ok = false;
-  forever {
+  Q_FOREVER {
 #ifdef Q_OS_WIN32
     int c = getopt_long(argc_, argv_, L"hptusqrfv:c:alk:i:oyg:w:", kOptions, nullptr);
 #else
@@ -212,9 +219,9 @@ bool CommandlineOptions::Parse() {
     if (c == -1) break;
 
     switch (c) {
-      case 'h': {
+      case 'h':{
         QString translated_help_text =
-            QString(kHelpText)
+            QString::fromUtf8(kHelpText)
                 .arg(QObject::tr("Usage"), QObject::tr("options"), QObject::tr("URL(s)"),
                      QObject::tr("Player options"),
                      QObject::tr("Start the playlist currently playing"),
@@ -301,16 +308,16 @@ bool CommandlineOptions::Parse() {
         volume_modifier_ = -4;
         break;
       case LongOptions::Quiet:
-        log_levels_ = "1";
+        log_levels_ = u"1"_s;
         break;
       case LongOptions::Verbose:
-        log_levels_ = "3";
+        log_levels_ = u"3"_s;
         break;
       case LongOptions::LogLevels:
         log_levels_ = OptArgToString(optarg);
         break;
-      case LongOptions::Version: {
-        QString version_text = QString(kVersionText).arg(STRAWBERRY_VERSION_DISPLAY);
+      case LongOptions::Version:{
+        QString version_text = QString::fromUtf8(kVersionText).arg(QLatin1String(STRAWBERRY_VERSION_DISPLAY));
         std::cout << version_text.toLocal8Bit().constData() << std::endl;
         std::exit(0);
       }
@@ -364,7 +371,7 @@ bool CommandlineOptions::Parse() {
     const QString value = DecodeName(argv_[i]);
     QFileInfo fileinfo(value);
     if (fileinfo.exists()) {
-      urls_ << QUrl::fromLocalFile(fileinfo.canonicalFilePath());
+      urls_ << QUrl::fromLocalFile(QDir::cleanPath(fileinfo.filePath()));
     }
     else {
       urls_ << QUrl::fromUserInput(value);
@@ -416,7 +423,7 @@ void CommandlineOptions::Load(const QByteArray &serialized) {
 }
 
 #ifdef Q_OS_WIN32
-QString CommandlineOptions::OptArgToString(wchar_t *opt) {
+QString CommandlineOptions::OptArgToString(const wchar_t *opt) {
 
   return QString::fromWCharArray(opt);
 
@@ -427,9 +434,9 @@ QString CommandlineOptions::DecodeName(wchar_t *opt) {
   return QString::fromWCharArray(opt);
 }
 #else
-QString CommandlineOptions::OptArgToString(char *opt) {
+QString CommandlineOptions::OptArgToString(const char *opt) {
 
-  return QString(opt);
+  return QString::fromUtf8(opt);
 }
 
 QString CommandlineOptions::DecodeName(char *opt) {

@@ -2,7 +2,7 @@
  * Strawberry Music Player
  * This file was part of Clementine.
  * Copyright 2010, David Sansome <me@davidsansome.com>
- * Copyright 2018-2023, Jonas Kvinge <jonas@jkvinge.net>
+ * Copyright 2018-2024, Jonas Kvinge <jonas@jkvinge.net>
  *
  * Strawberry is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@
 #include <QUrl>
 #include <QSqlDatabase>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 #include "core/song.h"
 #include "collectionfilteroptions.h"
 #include "collectionquery.h"
@@ -45,7 +45,6 @@
 class QThread;
 class TaskManager;
 class Database;
-class SmartPlaylistSearch;
 
 class CollectionBackendInterface : public QObject {
   Q_OBJECT
@@ -80,11 +79,12 @@ class CollectionBackendInterface : public QObject {
   using AlbumList = QList<Album>;
 
   virtual QString songs_table() const = 0;
-  virtual QString fts_table() const = 0;
 
   virtual Song::Source source() const = 0;
 
   virtual SharedPtr<Database> db() const = 0;
+
+  virtual void GetAllSongsAsync(const int id = 0) = 0;
 
   // Get a list of directories in the collection.  Emits DirectoriesDiscovered.
   virtual void LoadDirectoriesAsync() = 0;
@@ -130,9 +130,10 @@ class CollectionBackendInterface : public QObject {
   // Returns a section of a song with the given filename and beginning. If the section is not present in collection, returns invalid song.
   // Using default beginning value is suitable when searching for single-section songs.
   virtual Song GetSongByUrl(const QUrl &url, const qint64 beginning = 0) = 0;
+  virtual Song GetSongByUrlAndTrack(const QUrl &url, const int track) = 0;
 
-  virtual void AddDirectory(const QString &path) = 0;
-  virtual void RemoveDirectory(const CollectionDirectory &dir) = 0;
+  virtual void AddDirectoryAsync(const QString &path) = 0;
+  virtual void RemoveDirectoryAsync(const CollectionDirectory &dir) = 0;
 };
 
 class CollectionBackend : public CollectionBackendInterface {
@@ -144,7 +145,8 @@ class CollectionBackend : public CollectionBackendInterface {
 
   ~CollectionBackend();
 
-  void Init(SharedPtr<Database> db, SharedPtr<TaskManager> task_manager, const Song::Source source, const QString &songs_table, const QString &fts_table, const QString &dirs_table = QString(), const QString &subdirs_table = QString());
+  void Init(SharedPtr<Database> db, SharedPtr<TaskManager> task_manager, const Song::Source source, const QString &songs_table, const QString &dirs_table = QString(), const QString &subdirs_table = QString());
+
   void Close();
 
   void ExitAsync();
@@ -156,9 +158,10 @@ class CollectionBackend : public CollectionBackendInterface {
   SharedPtr<Database> db() const override { return db_; }
 
   QString songs_table() const override { return songs_table_; }
-  QString fts_table() const override { return fts_table_; }
   QString dirs_table() const { return dirs_table_; }
   QString subdirs_table() const { return subdirs_table_; }
+
+  void GetAllSongsAsync(const int id = 0) override;
 
   // Get a list of directories in the collection.  Emits DirectoriesDiscovered.
   void LoadDirectoriesAsync() override;
@@ -203,9 +206,10 @@ class CollectionBackend : public CollectionBackendInterface {
 
   SongList GetSongsByUrl(const QUrl &url, const bool unavailable = false) override;
   Song GetSongByUrl(const QUrl &url, qint64 beginning = 0) override;
+  Song GetSongByUrlAndTrack(const QUrl &url, const int track) override;
 
-  void AddDirectory(const QString &path) override;
-  void RemoveDirectory(const CollectionDirectory &dir) override;
+  void AddDirectoryAsync(const QString &path) override;
+  void RemoveDirectoryAsync(const CollectionDirectory &dir) override;
 
   bool ExecCollectionQuery(CollectionQuery *query, SongList &songs);
   bool ExecCollectionQuery(CollectionQuery *query, SongMap &songs);
@@ -222,8 +226,7 @@ class CollectionBackend : public CollectionBackendInterface {
 
   SongList GetSongsByFingerprint(const QString &fingerprint) override;
 
-  SongList SmartPlaylistsGetAllSongs();
-  SongList SmartPlaylistsFindSongs(const SmartPlaylistSearch &search);
+  SongList ExecuteQuery(const QString &sql);
 
   void AddOrUpdateSongsAsync(const SongList &songs);
   void UpdateSongsBySongIDAsync(const SongMap &new_songs);
@@ -231,12 +234,15 @@ class CollectionBackend : public CollectionBackendInterface {
   void UpdateSongRatingAsync(const int id, const float rating, const bool save_tags = false);
   void UpdateSongsRatingAsync(const QList<int> &ids, const float rating, const bool save_tags = false);
 
- public slots:
+ public Q_SLOTS:
   void Exit();
+  void GetAllSongs(const int id);
   void LoadDirectories();
   void UpdateTotalSongCount();
   void UpdateTotalArtistCount();
   void UpdateTotalAlbumCount();
+  void AddDirectory(const QString &path);
+  void RemoveDirectory(const CollectionDirectory &dir);
   void AddOrUpdateSongs(const SongList &songs);
   void UpdateSongsBySongID(const SongMap &new_songs);
   void UpdateMTimesOnly(const SongList &songs);
@@ -248,7 +254,7 @@ class CollectionBackend : public CollectionBackendInterface {
   void UpdateManualAlbumArt(const QString &effective_albumartist, const QString &album, const QUrl &art_manual);
   void UnsetAlbumArt(const QString &effective_albumartist, const QString &album);
   void ClearAlbumArt(const QString &effective_albumartist, const QString &album, const bool art_unset);
-  void ForceCompilation(const QString &album, const QList<QString> &artists, const bool on);
+  void ForceCompilation(const QString &album, const QStringList &artists, const bool on);
   void IncrementPlayCount(const int id);
   void IncrementSkipCount(const int id, const float progress);
   void ResetPlayStatistics(const int id, const bool save_tags = false);
@@ -267,12 +273,14 @@ class CollectionBackend : public CollectionBackendInterface {
   void UpdateLastSeen(const int directory_id, const int expire_unavailable_songs_days);
   void ExpireSongs(const int directory_id, const int expire_unavailable_songs_days);
 
- signals:
-  void DirectoryDiscovered(const CollectionDirectory &dir, const CollectionSubdirectoryList &subdir);
+ Q_SIGNALS:
+  void DirectoryAdded(const CollectionDirectory &dir, const CollectionSubdirectoryList &subdir);
   void DirectoryDeleted(const CollectionDirectory &dir);
 
-  void SongsDiscovered(const SongList &songs);
+  void GotSongs(const SongList &songs, const int id);
+  void SongsAdded(const SongList &songs);
   void SongsDeleted(const SongList &songs);
+  void SongsChanged(const SongList &songs);
   void SongsStatisticsChanged(const SongList &songs, const bool save_tags = false);
 
   void DatabaseReset();
@@ -297,7 +305,7 @@ class CollectionBackend : public CollectionBackendInterface {
     int has_not_compilation_detected;
   };
 
-  bool UpdateCompilations(const QSqlDatabase &db, SongList &deleted_songs, SongList &added_songs, const QUrl &url, const bool compilation_detected);
+  bool UpdateCompilations(const QSqlDatabase &db, SongList &changed_songs, const QUrl &url, const bool compilation_detected);
   AlbumList GetAlbums(const QString &artist, const QString &album_artist, const bool compilation_required = false, const CollectionFilterOptions &opt = CollectionFilterOptions());
   AlbumList GetAlbums(const QString &artist, const bool compilation_required, const CollectionFilterOptions &opt = CollectionFilterOptions());
   CollectionSubdirectoryList SubdirsInDirectory(const int id, QSqlDatabase &db);
@@ -315,7 +323,6 @@ class CollectionBackend : public CollectionBackendInterface {
   QString songs_table_;
   QString dirs_table_;
   QString subdirs_table_;
-  QString fts_table_;
   QThread *original_thread_;
 };
 

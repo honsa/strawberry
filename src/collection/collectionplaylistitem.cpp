@@ -24,8 +24,9 @@
 #include <QVariant>
 #include <QUrl>
 
+#include "core/logging.h"
 #include "collectionplaylistitem.h"
-#include "core/tagreaderclient.h"
+#include "tagreader/tagreaderclient.h"
 
 class SqlRow;
 
@@ -41,7 +42,11 @@ QUrl CollectionPlaylistItem::Url() const { return song_.url(); }
 
 void CollectionPlaylistItem::Reload() {
 
-  TagReaderClient::Instance()->ReadFileBlocking(song_.url().toLocalFile(), &song_);
+  const TagReaderResult result = TagReaderClient::Instance()->ReadFileBlocking(song_.url().toLocalFile(), &song_);
+  if (!result.success()) {
+    qLog(Error) << "Could not reload file" << song_.url() << result.error_string();
+    return;
+  }
   UpdateTemporaryMetadata(song_);
 
 }

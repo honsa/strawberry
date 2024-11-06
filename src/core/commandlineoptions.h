@@ -41,9 +41,6 @@ class CommandlineOptions {
  public:
   explicit CommandlineOptions(int argc = 0, char **argv = nullptr);
 
-  static const char *kHelpText;
-  static const char *kVersionText;
-
   // Don't change the values or order, these get serialised and sent to
   // possibly a different version of Strawberry
   enum class UrlListAction {
@@ -108,10 +105,10 @@ class CommandlineOptions {
   void RemoveArg(const QString &starts_with, int count);
 
 #ifdef Q_OS_WIN32
-  static QString OptArgToString(wchar_t *opt);
+  static QString OptArgToString(const wchar_t *opt);
   static QString DecodeName(wchar_t *opt);
 #else
-  static QString OptArgToString(char *opt);
+  static QString OptArgToString(const char *opt);
   static QString DecodeName(char *opt);
 #endif
 

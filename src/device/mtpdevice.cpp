@@ -33,9 +33,8 @@
 #include <QString>
 #include <QUrl>
 
+#include "includes/shared_ptr.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
-#include "core/application.h"
 #include "core/musicstorage.h"
 #include "collection/collectionmodel.h"
 #include "collection/collectionbackend.h"
@@ -44,13 +43,29 @@
 #include "mtploader.h"
 #include "mtpconnection.h"
 
+using namespace Qt::Literals::StringLiterals;
+
+class TaskManager;
+class Database;
+class AlbumCoverLoader;
 class DeviceLister;
 class DeviceManager;
 
 bool MtpDevice::sInitializedLibMTP = false;
 
-MtpDevice::MtpDevice(const QUrl &url, DeviceLister *lister, const QString &unique_id, SharedPtr<DeviceManager> manager, Application *app, const int database_id, const bool first_time, QObject *parent)
-    : ConnectedDevice(url, lister, unique_id, manager, app, database_id, first_time, parent),
+MtpDevice::MtpDevice(const QUrl &url,
+                     DeviceLister *lister,
+                     const QString &unique_id,
+                     DeviceManager *device_manager,
+                     const SharedPtr<TaskManager> task_manager,
+                     const SharedPtr<Database> database,
+                     const SharedPtr<TagReaderClient> tagreader_client,
+                     const SharedPtr<AlbumCoverLoader> albumcover_loader,
+                     const int database_id,
+                     const bool first_time,
+                     QObject *parent)
+    : ConnectedDevice(url, lister, unique_id, device_manager, task_manager, database, tagreader_client, albumcover_loader, database_id, first_time, parent),
+      task_manager_(task_manager),
       loader_(nullptr),
       loader_thread_(nullptr),
       closing_(false) {
@@ -76,10 +91,10 @@ MtpDevice::~MtpDevice() {
 
 bool MtpDevice::Init() {
 
-  InitBackendDirectory("/", first_time_, false);
-  model_->Init();
+  InitBackendDirectory(u"/"_s, first_time_, false);
+  collection_model_->Init();
 
-  loader_ = new MtpLoader(url_, app_->task_manager(), backend_);
+  loader_ = new MtpLoader(url_, task_manager_, collection_backend_);
   loader_thread_ = new QThread();
   loader_->moveToThread(loader_thread_);
 
@@ -124,13 +139,13 @@ void MtpDevice::LoadFinished(const bool success, MtpConnection *connection) {
     ConnectedDevice::Close();
   }
   else {
-    emit DeviceConnectFinished(unique_id_, success);
+    Q_EMIT DeviceConnectFinished(unique_id_, success);
   }
 
 }
 
 void MtpDevice::LoaderError(const QString &message) {
-  app_->AddError(message);
+  Q_EMIT Error(message);
 }
 
 bool MtpDevice::StartCopy(QList<Song::FileType> *supported_types) {
@@ -143,7 +158,8 @@ bool MtpDevice::StartCopy(QList<Song::FileType> *supported_types) {
   // Did the caller want a list of supported types?
   if (supported_types) {
     if (!GetSupportedFiletypes(supported_types, connection_->device())) {
-      FinishCopy(false);
+      QString error_text;
+      FinishCopy(false, error_text);
       return false;
     }
   }
@@ -161,7 +177,7 @@ static int ProgressCallback(uint64_t const sent, uint64_t const total, void cons
 
 }
 
-bool MtpDevice::CopyToStorage(const CopyJob &job) {
+bool MtpDevice::CopyToStorage(const CopyJob &job, QString &error_text) {
 
   if (!connection_ || !connection_->is_valid()) return false;
 
@@ -171,14 +187,22 @@ bool MtpDevice::CopyToStorage(const CopyJob &job) {
 
   // Send the file
   int ret = LIBMTP_Send_Track_From_File(connection_->device(), job.source_.toUtf8().constData(), &track, ProgressCallback, &job);
-  if (ret != 0) return false;
+  if (ret != 0) {
+    LIBMTP_error_struct *error = LIBMTP_Get_Errorstack(connection_->device());
+    if (error) {
+      error_text = QString::fromUtf8(error->error_text);
+      qLog(Error) << error_text;
+      LIBMTP_Clear_Errorstack(connection_->device());
+    }
+    return false;
+  }
 
   // Add it to our CollectionModel
   Song metadata_on_device(Song::Source::Device);
   metadata_on_device.InitFromMTP(&track, url_.host());
   metadata_on_device.set_directory_id(1);
   metadata_on_device.set_artist(metadata_on_device.effective_albumartist());
-  metadata_on_device.set_albumartist("");
+  metadata_on_device.set_albumartist(""_L1);
   songs_to_add_ << metadata_on_device;
 
   // Remove the original if requested
@@ -190,22 +214,22 @@ bool MtpDevice::CopyToStorage(const CopyJob &job) {
 
 }
 
-void MtpDevice::FinishCopy(const bool success) {
+bool MtpDevice::FinishCopy(const bool success, QString &error_text) {
 
   if (success) {
-    if (!songs_to_add_.isEmpty()) backend_->AddOrUpdateSongs(songs_to_add_);
-    if (!songs_to_remove_.isEmpty()) backend_->DeleteSongs(songs_to_remove_);
+    if (!songs_to_add_.isEmpty()) collection_backend_->AddOrUpdateSongs(songs_to_add_);
+    if (!songs_to_remove_.isEmpty()) collection_backend_->DeleteSongs(songs_to_remove_);
   }
 
   songs_to_add_.clear();
   songs_to_remove_.clear();
 
   // This is done in the organize thread so close the unique DB connection.
-  backend_->Close();
+  collection_backend_->Close();
 
   db_busy_.unlock();
 
-  ConnectedDevice::FinishCopy(success);
+  return ConnectedDevice::FinishCopy(success, error_text);
 
 }
 
@@ -217,7 +241,7 @@ bool MtpDevice::DeleteFromStorage(const DeleteJob &job) {
 
   // Extract the ID from the song's URL
   QString filename = job.metadata_.url().path();
-  filename.remove('/');
+  filename.remove(u'/');
 
   bool ok = false;
   uint32_t id = filename.toUInt(&ok);
@@ -234,7 +258,7 @@ bool MtpDevice::DeleteFromStorage(const DeleteJob &job) {
 
 }
 
-void MtpDevice::FinishDelete(const bool success) { FinishCopy(success); }
+bool MtpDevice::FinishDelete(const bool success, QString &error_text) { return FinishCopy(success, error_text); }
 
 bool MtpDevice::GetSupportedFiletypes(QList<Song::FileType> *ret) {
 

@@ -29,7 +29,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "core/shared_ptr.h"
+#include "includes/shared_ptr.h"
 
 class QNetworkReply;
 class NetworkAccessManager;
@@ -60,17 +60,13 @@ class AcoustidClient : public QObject {
   // Cancels all requests.  Finished() will never be emitted for any pending requests.
   void CancelAll();
 
- signals:
+ Q_SIGNALS:
   void Finished(const int id, const QStringList &mbid_list, const QString &error = QString());
 
- private slots:
+ private Q_SLOTS:
   void RequestFinished(QNetworkReply *reply, const int id);
 
  private:
-  static const char *kClientId;
-  static const char *kUrl;
-  static const int kDefaultTimeout;
-
   SharedPtr<NetworkAccessManager> network_;
   NetworkTimeouts *timeouts_;
   QMap<int, QNetworkReply*> requests_;

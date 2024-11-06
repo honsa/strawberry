@@ -29,9 +29,9 @@
 #include <QString>
 #include <QStringList>
 
+#include "includes/shared_ptr.h"
+#include "constants/playlistsettings.h"
 #include "core/logging.h"
-#include "core/shared_ptr.h"
-#include "settings/playlistsettingspage.h"
 #include "playlistparser.h"
 #include "parserbase.h"
 #include "asxiniparser.h"
@@ -42,18 +42,30 @@
 #include "wplparser.h"
 #include "xspfparser.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 const int PlaylistParser::kMagicSize = 512;
 
-PlaylistParser::PlaylistParser(SharedPtr<CollectionBackendInterface> collection_backend, QObject *parent) : QObject(parent) {
+PlaylistParser::PlaylistParser(const SharedPtr<TagReaderClient> tagreader_client, const SharedPtr<CollectionBackendInterface> collection_backend, QObject *parent) : QObject(parent), default_parser_(nullptr) {
 
-  default_parser_ = new XSPFParser(collection_backend, this);
-  parsers_ << default_parser_;
-  parsers_ << new M3UParser(collection_backend, this);
-  parsers_ << new PLSParser(collection_backend, this);
-  parsers_ << new ASXParser(collection_backend, this);
-  parsers_ << new AsxIniParser(collection_backend, this);
-  parsers_ << new CueParser(collection_backend, this);
-  parsers_ << new WplParser(collection_backend, this);
+  AddParser(new XSPFParser(tagreader_client, collection_backend, this));
+  AddParser(new M3UParser(tagreader_client, collection_backend, this));
+  AddParser(new PLSParser(tagreader_client, collection_backend, this));
+  AddParser(new ASXParser(tagreader_client, collection_backend, this));
+  AddParser(new AsxIniParser(tagreader_client, collection_backend, this));
+  AddParser(new CueParser(tagreader_client, collection_backend, this));
+  AddParser(new WplParser(tagreader_client, collection_backend, this));
+
+}
+
+void PlaylistParser::AddParser(ParserBase *parser) {
+
+  if (!default_parser_) {
+    default_parser_ = parser;
+  }
+
+  parsers_ << parser;
+  QObject::connect(parser, &ParserBase::Error, this, &PlaylistParser::Error);
 
 }
 
@@ -100,10 +112,10 @@ QString PlaylistParser::filters(const Type type) const {
   }
 
   if (type == Type::Load) {
-    filters.prepend(tr("All playlists (%1)").arg(all_extensions.join(" ")));
+    filters.prepend(tr("All playlists (%1)").arg(all_extensions.join(u' ')));
   }
 
-  return filters.join(";;");
+  return filters.join(";;"_L1);
 
 }
 
@@ -113,12 +125,12 @@ QString PlaylistParser::FilterForParser(const ParserBase *parser, QStringList *a
   QStringList extensions;
   extensions.reserve(file_extensions.count());
   for (const QString &extension : file_extensions) {
-    extensions << "*." + extension;
+    extensions << u"*."_s + extension;
   }
 
   if (all_extensions) *all_extensions << extensions;
 
-  return tr("%1 playlists (%2)").arg(parser->name(), extensions.join(" "));
+  return tr("%1 playlists (%2)").arg(parser->name(), extensions.join(u' '));
 
 }
 
@@ -171,18 +183,22 @@ SongList PlaylistParser::LoadFromFile(const QString &filename) const {
   // Find a parser that supports this file extension
   ParserBase *parser = ParserForExtension(Type::Load, fileinfo.suffix());
   if (!parser) {
-    qLog(Warning) << "Unknown filetype:" << filename;
+    qLog(Error) << "Unknown filetype:" << filename;
+    Q_EMIT Error(tr("Unknown filetype: %1").arg(filename));
     return SongList();
   }
 
   // Open the file
   QFile file(filename);
-  if (!file.open(QIODevice::ReadOnly)) return SongList();
+  if (!file.open(QIODevice::ReadOnly)) {
+    Q_EMIT Error(tr("Could not open file %1").arg(filename));
+    return SongList();
+  }
 
-  SongList ret = parser->Load(&file, filename, fileinfo.absolutePath());
+  const SongList songs = parser->Load(&file, filename, fileinfo.absolutePath(), true);
   file.close();
 
-  return ret;
+  return songs;
 
 }
 
@@ -198,34 +214,37 @@ SongList PlaylistParser::LoadFromDevice(QIODevice *device, const QString &path_h
 
 }
 
-void PlaylistParser::Save(const SongList &songs, const QString &filename, const PlaylistSettingsPage::PathType path_type) const {
+void PlaylistParser::Save(const SongList &songs, const QString &filename, const PlaylistSettings::PathType path_type) const {
 
   QFileInfo fileinfo(filename);
   QDir dir(fileinfo.path());
 
   if (!dir.exists()) {
-    qLog(Warning) << "Directory does not exist" << dir.path();
+    qLog(Error) << "Directory" << dir.path() << "does not exist";
+    Q_EMIT Error(tr("Directory %1 does not exist.").arg(dir.path()));
     return;
   }
 
   // Find a parser that supports this file extension
   ParserBase *parser = ParserForExtension(Type::Save, fileinfo.suffix());
   if (!parser) {
-    qLog(Warning) << "Unknown filetype" << filename;
+    qLog(Error) << "Unknown filetype" << filename;
+    Q_EMIT Error(tr("Unknown filetype: %1").arg(filename));
     return;
   }
 
-  if (path_type == PlaylistSettingsPage::PathType::Absolute && dir.path() != dir.absolutePath()) {
+  if (path_type == PlaylistSettings::PathType::Absolute && dir.path() != dir.absolutePath()) {
     dir.setPath(dir.absolutePath());
   }
-  else if (path_type != PlaylistSettingsPage::PathType::Absolute && !dir.canonicalPath().isEmpty() && dir.path() != dir.canonicalPath()) {
+  else if (path_type != PlaylistSettings::PathType::Absolute && !dir.canonicalPath().isEmpty() && dir.path() != dir.canonicalPath()) {
     dir.setPath(dir.canonicalPath());
   }
 
   // Open the file
   QFile file(fileinfo.absoluteFilePath());
   if (!file.open(QIODevice::WriteOnly)) {
-    qLog(Warning) << "Failed to open" << filename << "for writing.";
+    qLog(Error) << "Failed to open" << filename << "for writing.";
+    Q_EMIT Error(tr("Failed to open %1 for writing.").arg(filename));
     return;
   }
 
